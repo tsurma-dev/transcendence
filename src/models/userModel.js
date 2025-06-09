@@ -10,7 +10,7 @@ export async function createUser(db, { username, email, password }) {
   `);
   try {
     const info = stmt.run(username, email, password_hash);
-    return this.findUserById(db, info.lastInsertRowid);
+    return findUserById(db, info.lastInsertRowid);
   } catch (error) {
     throw error;
   }
@@ -29,13 +29,13 @@ export function findUserById(db, id) {
 }
 
 export function findUserByEmail(db, email) {
-  const stmt = db.prepare('SELECT id, username, email, created_at FROM users WHERE email = ?');
+  const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
   const user = stmt.get(email);
   return user;
 }
 
 export function findUserByUsername(db, username) {
-  const stmt = db.prepare('SELECT id, username, email, created_at FROM users WHERE username = ?');
+  const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
   const user = stmt.get(username);
   return user;
 }
