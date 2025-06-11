@@ -1,22 +1,15 @@
-export default function authPlugin(fastify) {
-  fastify.decorate('verifyAuth', async function (request, reply) {
-    try {
-      const token = request.cookies.logintoken;
+import fp from 'fastify-plugin';
 
-      if (!token) {
-        return reply.code(401).send({ error: 'Missing authentication token' });
-      }
+async function authPlugin(fastify) {
+  fastify.decorate('verifyAuth', async function (req, reply) {
+    const token = req.cookies.logintoken;
+    if (!token) return reply.code(401).send({ error: 'Missing token' });
 
-      const { value, valid } = request.unsignCookie(token);
-      if (!valid) {
-        return reply.code(401).send({ error: 'Invalid cookie signature' });
-      }
+    const { value, valid } = reply.unsignCookie(token);
+    if (!valid) return reply.code(401).send({ error: 'Invalid cookie' });
 
-      const payload = await fastify.jwt.verify(value);
-      request.user = payload;
-    } catch (err) {
-      request.log.error(err);
-      return reply.code(401).send({ error: 'Unauthorized' });
-    }
+    req.user = await fastify.jwt.verify(value);
   });
 }
+
+export default fp(authPlugin);

@@ -38,6 +38,7 @@ const app = Fastify({ logger: true,
 await app.register(dbPlugin);
 await app.register(authPlugin);
 await app.register(userRoutes);
+
 app.register(fastifyStatic, {
   root: path.resolve('./public'),
   prefix: '/',

@@ -72,25 +72,26 @@ export async function logoutUser(req, reply) {
 };
 
 export async function profileUser(req, reply) {
-  try {
-    const token = req.cookies.logintoken;
-    const { value, valid } = req.unsignCookie(token);
-
-    if (!valid) {
-      return reply.code(401).send({ error: 'Invalid cookie signature' });
-    }
-
-    const payload = await req.server.jwt.verify(value);
-
-    console.log("Decoded JWT payload:", payload);
-
-    return reply.send({
-      id: payload.id,
-      username: payload.username
-    });
-
-  } catch (err) {
-    console.error(err);
-    return reply.code(401).send({ error: 'Unauthorized' });
+  const user = req.user;
+  if (!user) {
+    return reply.code(401).send('Unauthorized');
   }
+
+  return reply.type('text/html').send(`
+    <!DOCTYPE html>
+    <h1>Profile Page</h1>
+    <p>ID: ${user.id}</p>
+    <p>Username: ${user.username}</p>
+    <form action="/logout" method="POST">
+      <button type="submit">Logout</button>
+    </form>
+  `);
+};
+
+export async function authCheckUser(req, reply ) {
+
+  return {
+    loggedIn: true,
+    user: req.user,
+  };
 };
