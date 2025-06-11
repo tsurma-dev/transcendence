@@ -2,11 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Auth Test</title>
+  <title>Auth Test with JWT & Cookies</title>
+  <style>
+    #logout-section {
+      display: none;
+    }
+  </style>
 </head>
 <body>
   <h1>Register</h1>
-  <form id="registerForm">
+  <form id="register-form">
     <input name="email" placeholder="Email" required /><br />
     <input name="username" placeholder="Username" required /><br />
     <input type="password" name="password" placeholder="Password" required /><br />
@@ -14,52 +19,63 @@
   </form>
 
   <h1>Login</h1>
-  <form id="loginForm">
+  <form id="login-form">
     <input name="email" placeholder="Email" required /><br />
     <input type="password" name="password" placeholder="Password" required /><br />
     <button type="submit">Login</button>
   </form>
 
-  <button id="logoutBtn" style="display:none;">Logout</button>
+  <div id="logout-section">
+    <p>You are logged in!</p>
+    <button id="logout-button">Logout</button>
+  </div>
 
   <script>
-    const registerForm = document.getElementById('registerForm');
-    const loginForm = document.getElementById('loginForm');
-    const logoutBtn = document.getElementById('logoutBtn');
+    const registerForm = document.getElementById('register-form');
+    const loginForm = document.getElementById('login-form');
+    const logoutSection = document.getElementById('logout-section');
+    const logoutButton = document.getElementById('logout-button');
 
-    // Show logout button if token exists
-    function updateUI() {
-      if (localStorage.getItem('jwtToken')) {
-        logoutBtn.style.display = 'block';
-        registerForm.style.display = 'none';
-        loginForm.style.display = 'none';
-      } else {
-        logoutBtn.style.display = 'none';
-        registerForm.style.display = 'block';
-        loginForm.style.display = 'block';
-      }
+    // Hide logout section, show forms by default
+    function showLoggedOut() {
+      logoutSection.style.display = 'none';
+      loginForm.style.display = 'block';
+      registerForm.style.display = 'block';
     }
 
-    updateUI();
+    function showLoggedIn() {
+      logoutSection.style.display = 'block';
+      loginForm.style.display = 'none';
+      registerForm.style.display = 'none';
+    }
+
+    // Check login state by trying to fetch a protected route or use another way (simple way here: just assume logged out)
+    // You can improve this by fetching /profile or similar from server to verify token
+    showLoggedOut();
 
     registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(registerForm);
-      const data = Object.fromEntries(formData.entries());
+      const data = {
+        email: formData.get('email'),
+        username: formData.get('username'),
+        password: formData.get('password')
+      };
 
       try {
         const res = await fetch('/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
+          body: JSON.stringify(data)
         });
 
         if (!res.ok) {
-          const error = await res.json();
-          alert('Register failed: ' + (error.message || JSON.stringify(error)));
+          const err = await res.json();
+          alert('Register failed: ' + (err.error || res.statusText));
           return;
         }
-        alert('Registered successfully, please login');
+
+        alert('Registration successful! Please log in.');
         registerForm.reset();
       } catch (err) {
         alert('Register error: ' + err.message);
@@ -69,34 +85,48 @@
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(loginForm);
-      const data = Object.fromEntries(formData.entries());
+      const data = {
+        email: formData.get('email'),
+        password: formData.get('password')
+      };
 
       try {
         const res = await fetch('/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
+          credentials: 'include' // Important for cookies to be sent/received
         });
 
         if (!res.ok) {
-          const error = await res.json();
-          alert('Login failed: ' + (error.error || JSON.stringify(error)));
+          const err = await res.json();
+          alert('Login failed: ' + (err.error || res.statusText));
           return;
         }
 
-        const result = await res.json();
-        localStorage.setItem('jwtToken', result.token);
-        alert('Logged in successfully!');
-        updateUI();
+        showLoggedIn();
+        loginForm.reset();
       } catch (err) {
         alert('Login error: ' + err.message);
       }
     });
 
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('jwtToken');
-      alert('Logged out!');
-      updateUI();
+    logoutButton.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/logout', {
+          method: 'POST',
+          credentials: 'include' // send cookie to server
+        });
+
+        if (!res.ok) {
+          alert('Logout failed');
+          return;
+        }
+
+        showLoggedOut();
+      } catch (err) {
+        alert('Logout error: ' + err.message);
+      }
     });
   </script>
 </body>
