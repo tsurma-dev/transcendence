@@ -1,5 +1,5 @@
 import { findUserByEmail, findUserByUsername, createUser } from '../models/userModel.js';
-import { serializeUser } from '../serializers/userSerializer.js';
+import { serializeUser, serializeMe } from '../serializers/userSerializer.js';
 import bcrypt from 'bcrypt'
 
 export async function postUser(req, reply) {
@@ -14,6 +14,21 @@ export async function postUser(req, reply) {
       req.log.error(err);
       reply.code(500).send({ error: 'Internal Server Error' });
     }
+  }
+}
+
+
+export async function getMe(req, reply) {
+  try {
+    const { username } = req.params;
+    const user = findUserByUsername(req.server.db, username);
+    if (!user) {
+      return reply.code(404).send({ error: 'User not found' });
+    }
+    reply.send(serializeUser(user));
+  } catch (error) {
+    req.log.error(error);
+    reply.code(500).send({ error: 'Internal Server Error' });
   }
 }
 
