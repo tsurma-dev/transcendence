@@ -9,7 +9,7 @@ async function userRoutes(fastify) {
   fastify.post('/logout', logoutUser);
   fastify.get('/me', { preHandler: fastify.verifyAuth }, getMe);
   fastify.get('/', async (req, reply) => {
-    return reply.sendFile('index.html'); // Static file in /public
+    return reply.sendFile('index.html');
   });
 }
 

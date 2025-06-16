@@ -92,15 +92,16 @@ export async function profileUser(req, reply) {
     return reply.code(401).send('Unauthorized');
   }
 
-  return reply.type('text/html').send(`
-    <!DOCTYPE html>
-    <h1>Profile Page</h1>
-    <p>ID: ${user.id}</p>
-    <p>Username: ${user.username}</p>
-    <form action="/logout" method="POST">
-      <button type="submit">Logout</button>
-    </form>
-  `);
+  return reply.send(user);
+  // return reply.type('text/html').send(`
+  //   <!DOCTYPE html>
+  //   <h1>Profile Page</h1>
+  //   <p>ID: ${user.id}</p>
+  //   <p>Username: ${user.username}</p>
+  //   <form action="/logout" method="POST">
+  //     <button type="submit">Logout</button>
+  //   </form>
+  // `);
 };
 
 export async function authCheckUser(req, reply ) {

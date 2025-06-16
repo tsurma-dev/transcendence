@@ -2,18 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>SPA Auth</title>
+  <title>SPA Auth with Dashboard</title>
+  <style>
+    /* Optional basic styling */
+    #app > div { display: none; }
+    #app > div.active { display: block; }
+  </style>
 </head>
 <body>
   <div id="app">
-    <div id="profile-view" style="display:none;">
-      <h1>Welcome, <span id="username"></span>!</h1>
-      <form action="/logout" method="POST">
-        <button type="submit">Logout</button>
-      </form>
-    </div>
+    <!-- Views will be rendered here -->
+  </div>
 
-    <div id="login-view" style="display:none;">
+  <!-- Templates -->
+  <template id="login-template">
+    <div id="login-view" class="active">
       <h1>Login</h1>
       <form id="login-form">
         <input type="email" name="email" placeholder="Email" required />
@@ -22,58 +25,111 @@
       </form>
       <div id="error" style="color:red;"></div>
     </div>
-  </div>
+  </template>
+
+  <template id="profile-template">
+    <div id="profile-view" class="active">
+      <h1>Welcome, <span id="username"></span>!</h1>
+      <div id="profile-info"></div>
+      <button id="logout-button">Logout</button>
+    </div>
+  </template>
 
   <script>
+    const app = document.getElementById('app');
+
+    // Load template into #app and return the container div
+    function renderTemplate(templateId) {
+      app.innerHTML = '';
+      const tpl = document.getElementById(templateId);
+      const clone = tpl.content.cloneNode(true);
+      app.appendChild(clone);
+      return app.firstElementChild;
+    }
+
     async function checkAuth() {
       try {
-        const res = await fetch('/auth/check', {
-          credentials: 'include'
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          console.log('✅ Auth success:', data);
-          console.log('Username:', data.user.username);
-          // Try logging the DOM elements
-          console.log(document.getElementById('login-view'));
-          console.log(document.getElementById('profile-view'));
-          console.log(document.getElementById('username'));
-
-          // Update UI
-          document.getElementById('login-view').style.display = 'none';
-          document.getElementById('profile-view').style.display = 'block';
-          document.getElementById('username').textContent = data.user.username;
-          } else {
-          throw new Error("Unauthorized");
+        const res = await fetch('/auth/check', { credentials: 'include' });
+        if (!res.ok) throw new Error('Unauthorized');
+        const data = await res.json();
+        if (data.loggedIn && data.user) {
+          showProfile(data.user);
+        } else {
+          showLogin();
         }
       } catch (err) {
-        console.warn('❌ Auth failed:', err);
-        document.getElementById('profile-view').style.display = 'none';
-        document.getElementById('login-view').style.display = 'block';
+        console.warn('Auth check failed:', err);
+        showLogin();
       }
-    };
+    }
 
+    function showLogin() {
+      const loginView = renderTemplate('login-template');
 
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const body = new URLSearchParams(new FormData(form));
+      const form = loginView.querySelector('#login-form');
+      const errorDiv = loginView.querySelector('#error');
 
-      const res = await fetch('/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body,
-        credentials: 'include'
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorDiv.textContent = '';
+        const formData = new URLSearchParams(new FormData(form));
+
+        try {
+          const res = await fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData,
+            credentials: 'include'
+          });
+
+          if (res.ok) {
+            await checkAuth(); // re-check auth and switch to profile view
+          } else {
+            errorDiv.textContent = 'Invalid credentials';
+          }
+        } catch (err) {
+          errorDiv.textContent = 'Login error: ' + err.message;
+        }
       });
+    }
 
-      if (res.ok) {
-        location.reload(); // Refresh page to trigger auth check again
-      } else {
-        document.getElementById('error').textContent = 'Invalid credentials';
+    async function showProfile(user) {
+      const profileView = renderTemplate('profile-template');
+
+      profileView.querySelector('#username').textContent = user.username;
+
+      // Load additional profile info
+      try {
+        const res = await fetch('/profile', { credentials: 'include' });
+        if (!res.ok) {
+          throw new Error('Failed to load profile');
+        }
+        const profileData = await res.json();
+        const infoDiv = profileView.querySelector('#profile-info');
+        infoDiv.textContent = `ID: ${profileData.id}\nUsername: ${profileData.username}`;
+      } catch (err) {
+        alert('Profile fetch error: ' + err.message);
       }
-    });
 
+      // Logout button handler
+      profileView.querySelector('#logout-button').addEventListener('click', async () => {
+        try {
+          const res = await fetch('/logout', {
+            method: 'POST',
+            credentials: 'include'
+          });
+          if (res.ok) {
+            showLogin();
+          } else {
+            alert('Logout failed');
+          }
+        } catch (err) {
+          alert('Logout error: ' + err.message);
+        }
+      });
+    }
+
+    // Initial check
     checkAuth();
   </script>
 </body>

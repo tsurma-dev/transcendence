@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 
-const SALT_ROUNDS = 10; // Adjust as needed (higher = more secure but slower)
+const SALT_ROUNDS = 10;
 
 export async function createUser(db, { username, email, password }) {
   const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
