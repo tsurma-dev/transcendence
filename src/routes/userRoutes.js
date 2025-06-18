@@ -1,4 +1,4 @@
-import { getUser, postUser, loginUser, logoutUser, profileUser, authCheckUser, getMe } from '../controllers/userController.js';
+import { getUser, postUser, loginUser, logoutUser, profileUser, authCheckUser, getMe, listLoggedInUsers } from '../controllers/userController.js';
 
 async function userRoutes(fastify) {
   fastify.get('/users/:username', getUser);
@@ -6,11 +6,12 @@ async function userRoutes(fastify) {
   fastify.get('/profile', { preHandler: fastify.verifyAuth }, profileUser);
   fastify.post('/register', postUser);
   fastify.post('/login', loginUser);
-  fastify.post('/logout', logoutUser);
+  fastify.post('/logout', { preHandler: fastify.verifyAuth }, logoutUser);
   fastify.get('/me', { preHandler: fastify.verifyAuth }, getMe);
   fastify.get('/', async (req, reply) => {
     return reply.sendFile('index.html');
   });
+  fastify.get('/loggedinusers', listLoggedInUsers);
 }
 
 export default userRoutes;

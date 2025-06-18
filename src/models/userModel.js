@@ -16,6 +16,19 @@ export async function createUser(db, { username, email, password }) {
   }
 }
 
+export function deleteUser(db, email) {
+  const user = findUserByEmail(db, email);
+  if (!user) return { success: false, user: null };
+
+  const stmt = db.prepare('DELETE FROM users WHERE email = ?');
+  const info = stmt.run(email);
+
+  return {
+    success: info.changes > 0,
+    user
+  };
+}
+
 export function searchUsersByName(db, nameFragment) {
   const stmt = db.prepare('SELECT id, username, email, created_at FROM users WHERE username LIKE ?');
   const user = stmt.get(nameFragment);

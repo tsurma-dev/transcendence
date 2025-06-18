@@ -1,0 +1,9 @@
+export const loginCookieOptions = {
+  path: '/',
+  httpOnly: true,       // prevent JS access
+  secure: true,         // https only
+  sameSite: 'strict',   // prevent other sites access
+  signed: true,         // use sign key
+  maxAge: 60 * 60 * 24, // one day
+  // domain: 'example.com' // Optional: set if needed
+};
