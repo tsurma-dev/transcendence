@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Register</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 400px;
+      margin: 2rem auto;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    h1 {
+      text-align: center;
+    }
+    input, button {
+      width: 100%;
+      padding: 0.6rem;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+    }
+    .error {
+      color: red;
+    }
+    .success {
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h1>Register</h1>
+  <form id="register-form">
+    <input type="text" name="username" placeholder="Username" required />
+    <input type="email" name="email" placeholder="Email" required />
+    <input type="password" name="password" placeholder="Password" required />
+    <button type="submit">Register</button>
+  </form>
+  <div id="message"></div>
+
+  <script>
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+      const body = new URLSearchParams(formData);
+
+      try {
+        const res = await fetch('/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body
+        });
+
+        const messageEl = document.getElementById('message');
+        if (res.ok) {
+          messageEl.textContent = '✅ Registration successful!';
+          messageEl.className = 'success';
+          form.reset();
+        } else {
+          const data = await res.json();
+          messageEl.textContent = '❌ ' + (data.error || 'Registration failed');
+          messageEl.className = 'error';
+        }
+      } catch (err) {
+        document.getElementById('message').textContent = '❌ Network error: ' + err.message;
+        document.getElementById('message').className = 'error';
+      }
+    });
+  </script>
+</body>
+</html>

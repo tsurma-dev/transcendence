@@ -4,6 +4,7 @@ export const loginCookieOptions = {
   secure: true,         // https only
   sameSite: 'strict',   // prevent other sites access
   signed: true,         // use sign key
-  maxAge: 60 * 60 * 24, // one day
+  maxAge: 60 * 60 * 24, // one day, use of lifetime instad of session in case of
+                        // session restore
   // domain: 'example.com' // Optional: set if needed
 };
