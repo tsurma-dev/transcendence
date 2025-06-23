@@ -22,7 +22,7 @@ let rightPaddleY = HEIGHT / 2 - paddleHeight / 2
 
 let keys: Record<string, boolean> = {}
 
-function drawRect(x: number, y: number, w: number, h: number, color: string) {
+function drawRectangle(x: number, y: number, w: number, h: number, color: string) {
   ctx.fillStyle = color
   ctx.fillRect(x, y, w, h)
 }
@@ -73,11 +73,11 @@ function draw() {
   ctx.clearRect(0, 0, WIDTH, HEIGHT)
 
   // Background
-  drawRect(0, 0, WIDTH, HEIGHT, 'black')
+  drawRectangleangle(0, 0, WIDTH, HEIGHT, 'black')
 
   // Paddles
-  drawRect(0, leftPaddleY, paddleWidth, paddleHeight, 'white')
-  drawRect(WIDTH - paddleWidth, rightPaddleY, paddleWidth, paddleHeight, 'white')
+  drawRectangle(0, leftPaddleY, paddleWidth, paddleHeight, 'white')
+  drawRectangle(WIDTH - paddleWidth, rightPaddleY, paddleWidth, paddleHeight, 'white')
 
   // Ball
   drawCircle(ballX, ballY, ballRadius, 'white')
