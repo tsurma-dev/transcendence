@@ -10,6 +10,7 @@ export async function createUser(db, { username, email, password }) {
   `);
   try {
     const info = stmt.run(username, email, password_hash);
+    console.log(info);
     return findUserById(db, info.lastInsertRowid);
   } catch (error) {
     throw error;

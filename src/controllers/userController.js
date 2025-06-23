@@ -4,10 +4,10 @@ import { loginCookieOptions } from '../config/cookies.js';
 import bcrypt from 'bcrypt'
 import crypto from 'crypto';
 
-export function postUser(req, reply) {
+export async function postUser(req, reply) {
   const { username, email, password } = req.body;
   try {
-    const newUser = createUser(req.server.db, { username, email, password });
+    const newUser = await createUser(req.server.db, { username, email, password });
     reply.code(201).send(serializeUser(newUser));
   } catch (err) {
     if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
