@@ -7,38 +7,41 @@ export default fp(async function (fastify, opts) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT NOT NULL UNIQUE,
       username TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
-    CREATE TABLE IF NOT EXISTS matches (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      winner_id INTEGER,
-      score_player1 INTEGER,
-      score_player2 INTEGER,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (winner_id) REFERENCES users(id)
-    );
-    CREATE TABLE IF NOT EXISTS match_participants (
-      match_id INTEGER NOT NULL,
-      user_id INTEGER NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('player1', 'player2')),
-      PRIMARY KEY (match_id, user_id),
-      FOREIGN KEY (match_id) REFERENCES matches(id),
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    );
+
+    INSERT OR IGNORE INTO users (id, username, email, password_hash) VALUES
+    (0, '[deleted]', 'deleted@example.com', '');
+
     CREATE TABLE IF NOT EXISTS tournaments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      description TEXT,
+      start_date TIMESTAMP,
+      end_date TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
-    CREATE TABLE IF NOT EXISTS match_tournaments (
-      match_id INTEGER PRIMARY KEY,
-      tournament_id INTEGER NOT NULL,
-      round INTEGER NOT NULL,
-      FOREIGN KEY (match_id) REFERENCES matches(id),
-      FOREIGN KEY (tournament_id) REFERENCES tournaments(id)
+
+    CREATE TABLE IF NOT EXISTS matches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tournament_id INTEGER,
+      winner_id INTEGER DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'pending',
+      started_at TIMESTAMP,
+      finished_at TIMESTAMP,
+      FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE SET NULL,
+      FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET DEFAULT
+    );
+
+    CREATE TABLE IF NOT EXISTS matches_players (
+      match_id INTEGER NOT NULL,
+      player_id INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (match_id, player_id),
+      FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
+      FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE SET DEFAULT
     );
   `);
 
