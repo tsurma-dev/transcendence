@@ -21,27 +21,45 @@ transcendence/
 
 - Node.js (v16 or higher)
 - npm (comes with Node.js)
+- Redis (for backend session management)
 
 ## Installation & Setup
 
 ### Backend Setup
 
-1. Navigate to the backend directory:
+1. **Start Redis** (required for backend):
+   ```bash
+   # On macOS (using Homebrew)
+   brew install redis
+   brew services start redis
+   
+   # On Linux - Option 1: Using Docker
+   docker run -d -p 6379:6379 --name redis redis:alpine
+   
+   # On Linux - Option 2: Download and run manually
+   # Download Redis from https://redis.io/download
+   # Extract and run: ./redis-server
+   
+   # Or start manually for this session (any OS)
+   redis-server
+   ```
+
+2. Navigate to the backend directory:
    ```bash
    cd backend
    ```
 
-2. Install dependencies:
+3. Install dependencies:
    ```bash
    npm install
    ```
 
-3. Start the development server:
+4. Start the development server:
    ```bash
-   npm start
+   npm run dev
    ```
 
-   The backend server will start on `http://localhost:3000` (or the port specified in your configuration).
+   The backend server will start on `https://localhost:8443`
 
 ### Frontend Setup
 
@@ -55,55 +73,63 @@ transcendence/
    npm install
    ```
 
-3. Build the project:
+3. Start the development server:
    ```bash
-   npm run build
+   npm run dev
    ```
 
-4. Serve the built files:
-   ```bash
-   npx serve dist
-   ```
+   The frontend will build and serve on `http://localhost:3000`
 
 ## Development Commands
 
 ### Frontend Development Commands
 
+- **Development server**: `npm run dev` (builds and serves)
+- **Build only**: `npm run build`
+- **Serve existing build**: `npm run serve`
 - **Install dependencies**: `npm install`
-- **Build CSS**: `npm run build:css`
-- **Build TypeScript**: `npm run build:ts`
-- **Copy HTML files**: `npm run copy:html`
-- **Copy assets**: `npm run copy:assets`
-- **Full build**: `npm run build`
 
 ### Backend Development Commands
 
+- **Development server**: `npm run dev` (with auto-restart)
 - **Install dependencies**: `npm install`
-- **Start server**: `npm start`
-- **Development mode** (if nodemon is configured): `npm run dev`
 
 ## Quick Start
 
 To get the entire application running:
 
-1. **Setup Backend**:
+1. **Start Redis** (required):
+   ```bash
+   # On macOS
+   brew services start redis
+   
+   # On Linux - Using Docker
+   docker run -d -p 6379:6379 --name redis redis:alpine
+   
+   # On Linux - Manual start (if downloaded)
+   redis-server
+   ```
+
+2. **Setup Backend** (Terminal 1):
    ```bash
    cd backend
    npm install
-   npm start
+   npm run dev
    ```
+   Backend will be available at `https://localhost:8443`
 
-2. **Setup Frontend** (in a new terminal):
+3. **Setup Frontend** (Terminal 2):
    ```bash
    cd frontend
    npm install
-   npm run build
-   npx serve dist
+   npm run dev
    ```
+   Frontend will be available at `http://localhost:3000`
 
-3. **Access the application**:
-   - Frontend: `http://localhost:3000` (or the port shown by your serve command)
-   - Backend API: `http://localhost:3000` (or your configured backend port)
+4. **Access the application**:
+   - **Game**: Open `http://localhost:3000` in your browser
+   - **Backend API**: Available at `https://localhost:8443`
+   - **Backend Registration**: `https://localhost:8443/register`
 
 ## Technologies Used
 
@@ -120,10 +146,27 @@ To get the entire application running:
 
 ## Game Features
 
-- **Pong Game**: Classic Pong implementation using HTML5 Canvas
+- **Pong Game**: Classic Pong implementation with scalable SPA architecture
+- **Player Setup**: Enter player names before starting the game
+- **Score Tracking**: Real-time score counter for both players
+- **Online Users**: Shows count of logged-in users (backend integration)
 - **Controls**: 
-  - Left paddle: W (up) / S (down)
-  - Right paddle: Arrow keys (up/down)
+  - Player 1 (Left): W (up) / S (down)
+  - Player 2 (Right): Arrow keys (up/down)
+
+## Architecture
+
+### Frontend
+- **Component-based SPA**: Scalable single-page application structure
+- **Screen Management**: Easy navigation between different game screens
+- **Template System**: HTML templates for reusable UI components
+- **Backend Integration**: Connects to backend for user data
+
+### Backend
+- **Fastify Framework**: Fast and efficient web server
+- **Redis Integration**: Session management and user tracking
+- **CORS Enabled**: Allows frontend-backend communication
+- **Authentication**: User registration and login system
 
 ## Development Notes
 
@@ -136,16 +179,37 @@ To get the entire application running:
 
 ### Common Issues
 
-1. **Node modules not found**: Run `npm install` in the respective directory
-2. **Build errors**: Ensure all dependencies are installed and TypeScript configuration is correct
-3. **Port conflicts**: Check if the default ports are available or configure different ones
+1. **"0 users online" showing**: 
+   - Ensure Redis is running: `brew services start redis`
+   - Restart backend: `npm run dev` in backend folder
+   - Check browser console for CORS errors
 
-### TypeScript Build Issues
+2. **Backend won't start**:
+   - **Install Redis (choose one option)**:
+     - **macOS**: `brew install redis`
+     - **Linux with Docker**: `docker run -d -p 6379:6379 --name redis redis:alpine`
+     - **Linux manual install**: Download from https://redis.io/download and run `./redis-server`
+   - **Start Redis**: Use appropriate command from above
+   - Install backend dependencies: `npm install`
 
-If you encounter TypeScript compilation errors:
-1. Ensure all dependencies are installed: `npm install`
-2. Check that your `tsconfig.json` is properly configured
-3. Verify that all required type definitions are available
+3. **CORS errors in browser**:
+   - Ensure backend includes `@fastify/cors` package
+   - Backend should allow `http://localhost:3000` origin
+
+4. **Certificate warnings**:
+   - Visit `https://localhost:8443` directly and accept the certificate
+   - This allows frontend to call backend APIs
+
+5. **Port conflicts**: 
+   - Backend uses `https://localhost:8443`
+   - Frontend uses `http://localhost:3000`
+   - Change ports in configuration if needed
+
+### Development Tips
+
+- Use browser Developer Tools (F12) to debug API calls
+- Check backend logs for errors
+- Ensure both servers are running simultaneously for full functionality
 
 ## Contributing
 

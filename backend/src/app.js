@@ -7,6 +7,7 @@ import fastifyJwt from '@fastify/jwt';
 import fastifyCookie from '@fastify/cookie';
 import fastifyRedis from '@fastify/redis';
 import fastifyWebsocket from '@fastify/websocket';
+import fastifyCors from '@fastify/cors';
 import fs from 'fs';
 import dbPlugin from './plugins/db.js';
 import authPlugin from './plugins/auth.js';
@@ -29,6 +30,12 @@ await app.register(fastifyRedis, {
   host: '127.0.0.1',
   port: 6379,
   // password: 'supersecret'
+});
+
+// Register CORS to allow frontend requests
+await app.register(fastifyCors, {
+  origin: ['http://localhost:3000', 'http://localhost:5173'], // Allow frontend dev servers, 5173 is for Vite
+  credentials: true
 });
 
 await app.register(fastifyFormbody);
