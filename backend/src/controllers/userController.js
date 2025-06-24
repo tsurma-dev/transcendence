@@ -20,7 +20,7 @@ export async function postUser(req, reply) {
 }
 
 
-export async function getMe(req, reply) {
+export function getMe(req, reply) {
   try {
     const { username } = req.user;
     const user = findUserByUsername(req.server.db, username);
@@ -34,7 +34,7 @@ export async function getMe(req, reply) {
   }
 }
 
-export async function getUser(req, reply) {
+export function getUser(req, reply) {
   try {
     const { username } = req.params;
     const user = findUserByUsername(req.server.db, username);
@@ -94,11 +94,10 @@ export async function logoutUser(req, reply) {
     }
   }
 
-  // Make sure to call `send()` only once
   reply.clearCookie('logintoken', loginCookieOptions).send({ success: true });
 }
 
-export async function profileUser(req, reply) {
+export function profileUser(req, reply) {
   const user = req.user;
   if (!user) {
     return reply.code(401).send('Unauthorized');
@@ -107,7 +106,7 @@ export async function profileUser(req, reply) {
   return reply.send(user);
 };
 
-export async function authCheckUser(req, reply ) {
+export function authCheckUser(req, reply ) {
   return {
     loggedIn: true,
     user: req.user,

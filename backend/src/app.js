@@ -6,10 +6,12 @@ import fastifyFormbody from '@fastify/formbody';
 import fastifyJwt from '@fastify/jwt';
 import fastifyCookie from '@fastify/cookie';
 import fastifyRedis from '@fastify/redis';
+import fastifyWebsocket from '@fastify/websocket';
 import fs from 'fs';
 import dbPlugin from './plugins/db.js';
 import authPlugin from './plugins/auth.js';
 import userRoutes from './routes/userRoutes.js';
+import pongRoutes from './routes/pongRoutes.js';
 import { fileURLToPath } from 'url';
 
 
@@ -23,15 +25,15 @@ const app = Fastify({ logger: true,
   }
  });
 
-app.register(fastifyRedis, {
+await app.register(fastifyRedis, {
   host: '127.0.0.1',
   port: 6379,
   // password: 'supersecret'
 });
 
- app.register(fastifyFormbody);
+await app.register(fastifyFormbody);
 
- app.register(fastifyCookie, {
+await app.register(fastifyCookie, {
   secret: 'supersecret',
   });
  app.register(fastifyJwt, {
@@ -42,14 +44,28 @@ app.register(fastifyRedis, {
   }
   });
 
-
+await app.register(fastifyWebsocket);
 await app.register(dbPlugin);
 await app.register(authPlugin);
 await app.register(userRoutes);
-
-app.register(fastifyStatic, {
+await app.register(pongRoutes);
+await app.register(fastifyStatic, {
   root: path.resolve('./public'),
   prefix: '/',
+});
+
+app.get('/ws', { websocket: true }, (connection, req) => {
+  console.log('WebSocket client connected!');
+  console.log('Connection:', connection);
+  console.log('connection.socket:', connection.socket);
+  connection.on('message', message => {
+    console.log('Received from client:', message.toString());
+    connection.send(`Echo: ${message}`);
+  });
+
+  connection.on('close', () => {
+    console.log('WebSocket connection closed');
+  });
 });
 
 
