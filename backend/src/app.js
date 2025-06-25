@@ -12,7 +12,7 @@ import fs from 'fs';
 import dbPlugin from './plugins/db.js';
 import authPlugin from './plugins/auth.js';
 import userRoutes from './routes/userRoutes.js';
-import pongRoutes from './routes/pongRoutes.js';
+import pongRoutes from './routes/matchRoutes.js';
 import { fileURLToPath } from 'url';
 
 
@@ -59,7 +59,7 @@ await app.register(pongRoutes);
 await app.register(fastifyStatic, {
   root: path.resolve('./public'),
   prefix: '/',
-});
+}); // will be removed with frontend
 
 app.get('/ws', { websocket: true }, (connection, req) => {
   console.log('WebSocket client connected!');
