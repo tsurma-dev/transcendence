@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Transcendence</title>
+  <link href="output.css" rel="stylesheet">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+</head>
+<body class="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+  <!-- Main App Container -->
+  <div id="app" class="min-h-screen flex items-center justify-center p-4"></div>
+
+  <!-- Player Setup Template -->
+  <template id="playerSetupTemplate">
+    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl max-w-2xl w-full">
+      <!-- Online Users Counter -->
+      <div class="text-center mb-4">
+        <div class="inline-flex items-center bg-green-500/20 px-4 py-2 rounded-full border border-green-400/30">
+          <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+          <span id="onlineUsersCount" class="text-green-300 text-sm font-medium">
+            Loading...
+          </span>
+        </div>
+      </div>
+
+      <h1 class="text-6xl font-bold text-white text-center mb-8 drop-shadow-lg">
+        🏓 PONG
+      </h1>
+      
+      <div class="grid md:grid-cols-2 gap-8 mb-8">
+        <!-- Player 1 Input -->
+        <div class="bg-white/20 p-6 rounded-2xl border border-white/30">
+          <h3 class="text-2xl font-semibold text-white mb-4 text-center">Player 1</h3>
+          <input 
+            type="text" 
+            id="player1Name" 
+            placeholder="Enter your name" 
+            maxlength="15"
+            class="w-full p-4 rounded-xl bg-white/90 text-gray-800 text-center font-semibold text-lg border-none outline-none focus:ring-4 focus:ring-blue-400/50 transition-all"
+          >
+          <div class="text-white/80 text-center mt-3 text-sm">
+            Controls: <span class="font-semibold">W</span> (Up) / <span class="font-semibold">S</span> (Down)
+          </div>
+        </div>
+        
+        <!-- Player 2 Input -->
+        <div class="bg-white/20 p-6 rounded-2xl border border-white/30">
+          <h3 class="text-2xl font-semibold text-white mb-4 text-center">Player 2</h3>
+          <input 
+            type="text" 
+            id="player2Name" 
+            placeholder="Enter your name" 
+            maxlength="15"
+            class="w-full p-4 rounded-xl bg-white/90 text-gray-800 text-center font-semibold text-lg border-none outline-none focus:ring-4 focus:ring-blue-400/50 transition-all"
+          >
+          <div class="text-white/80 text-center mt-3 text-sm">
+            Controls: <span class="font-semibold">↑</span> (Up) / <span class="font-semibold">↓</span> (Down)
+          </div>
+        </div>
+      </div>
+      
+      <div class="text-center">
+        <button 
+          id="startGameBtn" 
+          disabled
+          class="px-8 py-4 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-bold text-xl rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:hover:scale-100 disabled:hover:shadow-none"
+        >
+          START GAME
+        </button>
+      </div>
+    </div>
+  </template>
+
+  <!-- Game Screen Template -->
+  <template id="gameScreenTemplate">
+    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl">
+      
+      <!-- Players Display with Scores -->
+      <div class="flex justify-between items-center mb-6">
+        <div class="bg-white/20 px-6 py-4 rounded-xl border border-white/30 min-w-[200px] text-center">
+          <div class="text-white/80 text-sm mb-1">Player 1</div>
+          <div id="player1Display" class="text-white font-semibold text-lg">Player 1</div>
+          <div id="player1Score" class="text-white text-4xl font-bold mt-2">0</div>
+        </div>
+        
+        <div class="text-white text-2xl font-bold px-4">VS</div>
+        
+        <div class="bg-white/20 px-6 py-4 rounded-xl border border-white/30 min-w-[200px] text-center">
+          <div class="text-white/80 text-sm mb-1">Player 2</div>
+          <div id="player2Display" class="text-white font-semibold text-lg">Player 2</div>
+          <div id="player2Score" class="text-white text-4xl font-bold mt-2">0</div>
+        </div>
+      </div>
+
+      <!-- Game Canvas -->
+      <div class="relative">
+        <canvas 
+          id="pongCanvas" 
+          width="800" 
+          height="400" 
+          class="bg-black border-4 border-white rounded-lg shadow-2xl"
+        ></canvas>
+      </div>
+
+      <!-- Controls Info -->
+      <div class="text-white/80 text-center mt-4 text-sm space-y-1">
+        <div><strong id="player1Controls">Player 1:</strong> W (Up) / S (Down)</div>
+        <div><strong id="player2Controls">Player 2:</strong> ↑ (Up) / ↓ (Down)</div>
+      </div>
+    </div>
+  </template>
+
+  <script type="module" src="index.js"></script>
+</body>
+</html>
