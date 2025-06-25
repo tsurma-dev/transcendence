@@ -2,7 +2,7 @@ import fp from 'fastify-plugin';
 import Database from 'better-sqlite3';
 
 export default fp(async function (fastify, opts) {
-  const db = new Database('../database/database.sqlite');
+  const db = new Database('./database/database.sqlite');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (

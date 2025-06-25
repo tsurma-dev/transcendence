@@ -21,8 +21,8 @@ const __dirname = path.dirname(__filename);
 
 const app = Fastify({ logger: true,
   https: {
-    key: fs.readFileSync(path.join(__dirname, '../../.env/key.pem')),
-    cert: fs.readFileSync(path.join(__dirname, '../../.env/cert.pem')),
+    key: fs.readFileSync(path.join(__dirname, '../.env/key.pem')),
+    cert: fs.readFileSync(path.join(__dirname, '../.env/cert.pem')),
   }
  });
 

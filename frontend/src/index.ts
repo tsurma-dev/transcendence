@@ -1,4 +1,3 @@
-
 // ===========================
 // SCALABLE SPA ARCHITECTURE
 // ===========================
@@ -300,6 +299,73 @@ class PongGame {
 // ===================
 
 /**
+ * Login Screen
+ */
+class LoginScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+  private apiService = new ApiService()
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('loginTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+    }
+    return div
+  }
+
+  setupEvents(): void {
+    const form = this.element?.querySelector('#loginForm') as HTMLFormElement
+    const errorDiv = this.element?.querySelector('#loginError') as HTMLElement
+
+    if (!form || !errorDiv) return
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      errorDiv.classList.add('hidden')
+      errorDiv.textContent = ''
+
+      const formData = new FormData(form)
+      const loginData = {
+        username: formData.get('username') as string,
+        email: formData.get('email') as string,
+        password: formData.get('password') as string
+      }
+
+      try {
+        // Replace with your actual login endpoint
+        const response = await fetch(`${this.apiService['baseUrl']}/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(loginData),
+          credentials: 'include'
+        })
+
+        if (response.ok) {
+          // Login successful, navigate to player setup
+          this.router.navigateTo(PlayerSetupScreen)
+        } else {
+          const error = await response.text()
+          errorDiv.textContent = error || 'Login failed'
+          errorDiv.classList.remove('hidden')
+        }
+      } catch (error) {
+        console.error('Login error:', error)
+        errorDiv.textContent = 'Network error. Please try again.'
+        errorDiv.classList.remove('hidden')
+      }
+    })
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
+  }
+}
+
+/**
  * Player Setup Screen
  */
 class PlayerSetupScreen extends Component {
@@ -454,7 +520,7 @@ class App {
   private router = AppRouter.getInstance()
 
   init(): void {
-    this.router.navigateTo(PlayerSetupScreen)
+    this.router.navigateTo(LoginScreen)
   }
 }
 
