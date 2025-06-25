@@ -21,8 +21,8 @@ const __dirname = path.dirname(__filename);
 
 const app = Fastify({ logger: true,
   https: {
-    key: fs.readFileSync(path.join(__dirname, '../.env/key.pem')),
-    cert: fs.readFileSync(path.join(__dirname, '../.env/cert.pem')),
+    key: fs.readFileSync(path.join(__dirname, '../../.env/key.pem')),
+    cert: fs.readFileSync(path.join(__dirname, '../../.env/cert.pem')),
   }
  });
 
@@ -34,7 +34,7 @@ await app.register(fastifyRedis, {
 
 // Register CORS to allow frontend requests
 await app.register(fastifyCors, {
-  origin: ['http://localhost:3000', 'http://localhost:5173'], // Allow frontend dev servers, 5173 is for Vite
+  origin: ['http://127.0.0.1:3000', 'http://localhost:3000', 'http://localhost:5173'], // Allow frontend dev servers, 5173 is for Vite
   credentials: true
 });
 
