@@ -17,4 +17,5 @@ async function userRoutes(fastify) {
   fastify.get('/api/loggedinusers', listLoggedInUsers); // API wll be secured later
 }
 
+
 export default userRoutes;
