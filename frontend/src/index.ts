@@ -16,14 +16,14 @@ class ApiService {
 
   async getOnlineUsersCount(): Promise<number> {
     try {
-      console.log('Fetching online users from:', `${this.baseUrl}/loggedinusers`)
-      const response = await fetch(`${this.baseUrl}/loggedinusers`, {
+      console.log('Fetching online users from:', `${this.baseUrl}/api/loggedinusers`)
+      const response = await fetch(`${this.baseUrl}/api/loggedinusers`, {
         method: 'GET',
         mode: 'cors',
         credentials: 'include'
       })
       console.log('Response status:', response.status)
-      
+
       if (response.ok) {
         const users = await response.json()
         console.log('Users data:', users)
@@ -55,7 +55,7 @@ abstract class Component {
     if (this.element) {
       this.unmount()
     }
-    
+
     this.element = this.render()
     parent.appendChild(this.element)
     this.setupEvents()
@@ -151,7 +151,7 @@ class PongGame {
   private readonly paddleWidth = 10
   private readonly paddleHeight = 100
   private readonly paddleSpeed = 6
-  
+
   private leftPaddleY: number = this.HEIGHT / 2 - this.paddleHeight / 2
   private rightPaddleY: number = this.HEIGHT / 2 - this.paddleHeight / 2
 
@@ -285,7 +285,7 @@ class PongGame {
 
   cleanup(): void {
     this.stop()
-    
+
     // Remove event listeners
     const canvas = this.canvas as any
     if (canvas.keydownHandler) {
@@ -338,7 +338,7 @@ class PlayerSetupScreen extends Component {
     const handleSubmit = () => {
       const player1Name = player1Input.value.trim()
       const player2Name = player2Input.value.trim()
-      
+
       if (player1Name && player2Name) {
         this.router.navigateTo(GameScreen, player1Name, player2Name)
       }
@@ -425,13 +425,13 @@ class GameScreen extends Component {
     const canvas = this.element?.querySelector('#pongCanvas') as HTMLCanvasElement
     if (canvas) {
       this.pongGame = new PongGame(canvas)
-      
+
       // Set up score update callback
       this.pongGame.setScoreCallback((p1Score: number, p2Score: number) => {
         if (player1Score) player1Score.textContent = p1Score.toString()
         if (player2Score) player2Score.textContent = p2Score.toString()
       })
-      
+
       this.pongGame.start()
     }
   }

@@ -12,7 +12,7 @@
   <script>
     async function loadProfile() {
       try {
-        const res = await fetch('/profile', {
+        const res = await fetch('/api/profile', {
           credentials: 'include'
         });
         if (res.status === 401) {
@@ -30,7 +30,7 @@
 
     document.getElementById('logout-button').addEventListener('click', async () => {
       try {
-        const res = await fetch('/logout', {
+        const res = await fetch('/api/logout', {
           method: 'POST',
           credentials: 'include'
         });

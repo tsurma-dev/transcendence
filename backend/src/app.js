@@ -12,14 +12,24 @@ import fs from 'fs';
 import dbPlugin from './plugins/db.js';
 import authPlugin from './plugins/auth.js';
 import userRoutes from './routes/userRoutes.js';
-import pongRoutes from './routes/matchRoutes.js';
+// import pongRoutes from './routes/matchRoutes.js';
 import { fileURLToPath } from 'url';
 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = Fastify({ logger: true,
+const app = Fastify({
+  logger: {
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: 'SYS:standard',
+        ignore: 'pid,hostname'
+      }
+    }
+  },
   https: {
     key: fs.readFileSync(path.join(__dirname, '../../.env/key.pem')),
     cert: fs.readFileSync(path.join(__dirname, '../../.env/cert.pem')),
@@ -55,7 +65,7 @@ await app.register(fastifyWebsocket);
 await app.register(dbPlugin);
 await app.register(authPlugin);
 await app.register(userRoutes);
-await app.register(pongRoutes);
+// await app.register(pongRoutes);
 await app.register(fastifyStatic, {
   root: path.resolve('./public'),
   prefix: '/',

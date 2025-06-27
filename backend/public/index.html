@@ -49,7 +49,7 @@
 
     async function checkAuth() {
       try {
-        const res = await fetch('/auth/check', { credentials: 'include' });
+        const res = await fetch('/api/auth/check', { credentials: 'include' });
         if (!res.ok) throw new Error('Unauthorized');
         const data = await res.json();
         if (data.loggedIn && data.user) {
@@ -75,7 +75,7 @@
         const formData = new URLSearchParams(new FormData(form));
 
         try {
-          const res = await fetch('/login', {
+          const res = await fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formData,
@@ -100,7 +100,7 @@
 
       // Load additional profile info
       try {
-        const res = await fetch('/profile', { credentials: 'include' });
+        const res = await fetch('/api/profile', { credentials: 'include' });
         if (!res.ok) {
           throw new Error('Failed to load profile');
         }
@@ -114,7 +114,7 @@
       // Logout button handler
       profileView.querySelector('#logout-button').addEventListener('click', async () => {
         try {
-          const res = await fetch('/logout', {
+          const res = await fetch('/api/logout', {
             method: 'POST',
             credentials: 'include'
           });
