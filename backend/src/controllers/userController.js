@@ -11,10 +11,10 @@ export async function postUser(req, reply) {
     reply.code(201).send(serializeUser(newUser));
   } catch (err) {
     if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-      reply.code(409).send({ error: 'Username or email already exists' });
+      reply.code(409).send({ message: 'Username or email already exists' });
     } else {
       req.log.error(err);
-      reply.code(500).send({ error: 'Internal Server Error' });
+      reply.code(500).send({ message: 'Internal Server Error' });
     }
   }
 }
@@ -25,12 +25,12 @@ export function getMe(req, reply) {
     const { username } = req.user;
     const user = findUserByUsername(req.server.db, username);
     if (!user) {
-      return reply.code(404).send({ error: 'User not found' });
+      return reply.code(404).send({ message: 'User not found' });
     }
     reply.send(serializeUser(user));
   } catch (error) {
     req.log.error(error);
-    reply.code(500).send({ error: 'Internal Server Error' });
+    reply.code(500).send({ message: 'Internal Server Error' });
   }
 }
 
@@ -39,12 +39,12 @@ export function getUser(req, reply) {
     const { username } = req.params;
     const user = findUserByUsername(req.server.db, username);
     if (!user) {
-      return reply.code(404).send({ error: 'User not found' });
+      return reply.code(404).send({ message: 'User not found' });
     }
     reply.send(serializeUser(user));
   } catch (error) {
     req.log.error(error);
-    reply.code(500).send({ error: 'Internal Server Error' });
+    reply.code(500).send({ message: 'Internal Server Error' });
   }
 }
 
@@ -52,12 +52,12 @@ export async function loginUser(req, reply) {
   const { email, password } = req.body;
   const user = findUserByEmail(req.server.db, email);
   if (!user) {
-    return reply.code(401).send({ error: 'Invalid credentials' });
+    return reply.code(401).send({ message: 'Invalid credentials' });
   }
 
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) {
-    return reply.code(401).send({ error: 'Invalid credentials' });
+    return reply.code(401).send({ message: 'Invalid credentials' });
   }
 
   const sessionId = crypto.randomUUID();

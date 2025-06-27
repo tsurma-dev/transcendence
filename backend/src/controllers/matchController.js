@@ -8,7 +8,7 @@ export function handlePongWebSocket(connection) {
     try {
       data = JSON.parse(msg.toString());
     } catch {
-      connection.socket.send(JSON.stringify({ error: 'Invalid JSON' }));
+      connection.socket.send(JSON.stringify({ message: 'Invalid JSON' }));
       connection.socket.close();
       return;
     }
@@ -21,7 +21,7 @@ export function handlePongWebSocket(connection) {
         joinRoom(connection.socket, data.roomId);
         break;
       default:
-        connection.socket.send(JSON.stringify({ error: 'Unknown action' }));
+        connection.socket.send(JSON.stringify({ message: 'Unknown action' }));
         connection.socket.close();
     }
   });
@@ -37,12 +37,12 @@ function createRoom(socket) {
 function joinRoom(socket, roomId) {
   const room = rooms.get(roomId);
   if (!room) {
-    socket.send(JSON.stringify({ error: 'Room not found' }));
+    socket.send(JSON.stringify({ message: 'Room not found' }));
     socket.close();
     return;
   }
   if (room.players.length >= 2) {
-    socket.send(JSON.stringify({ error: 'Room full' }));
+    socket.send(JSON.stringify({ message: 'Room full' }));
     socket.close();
     return;
   }
