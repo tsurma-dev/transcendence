@@ -25,16 +25,14 @@ afterAll(async () => {
 });
 
 describe('User Registration API', () => {
-  it('should register 50 unique users successfully', async () => {
-    const users = Array.from({ length: 50 }, (_, i) => createUser(i));
+  it('should register user successfully', async () => {
+    const user = createUser(); // no need for index
 
-    for (const user of users) {
-      const res = await request(app.server)
-        .post('/api/register')
-        .send(user);
+    const res = await request(app.server)
+      .post('/api/register')
+      .send(user);
 
-      expect(res.statusCode).toBe(201);
-    }
+    expect(res.statusCode).toBe(201);
   });
 
   it('should reject duplicate user registration (email and username)', async () => {

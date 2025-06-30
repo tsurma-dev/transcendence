@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Update User Profile</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+    }
+    form {
+      margin-bottom: 2rem;
+    }
+    input {
+      display: block;
+      width: 100%;
+      margin: 0.5rem 0 1rem;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .response {
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Update Your Account</h1>
+
+  <form id="username-form">
+    <h2>Change Username</h2>
+    <input type="text" id="new-username" placeholder="New Username" required />
+    <button type="submit">Update Username</button>
+    <div id="username-response" class="response"></div>
+  </form>
+
+  <form id="password-form">
+    <h2>Change Password</h2>
+    <input type="password" id="new-password" placeholder="New Password" required />
+    <button type="submit">Update Password</button>
+    <div id="password-response" class="response"></div>
+  </form>
+
+  <script>
+    document.getElementById('username-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('new-username').value;
+      const resEl = document.getElementById('username-response');
+
+      try {
+        const res = await fetch('/api/me/username', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username }),
+          credentials: 'include'
+        });
+
+        const data = await res.json();
+        resEl.textContent = res.ok ? 'Username updated successfully.' : data.message || 'Error updating username';
+        resEl.style.color = res.ok ? 'green' : 'red';
+      } catch (err) {
+        resEl.textContent = 'Request failed.';
+        resEl.style.color = 'red';
+      }
+    });
+
+    document.getElementById('password-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('new-password').value;
+      const resEl = document.getElementById('password-response');
+
+      try {
+        const res = await fetch('/api/me/password', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ password }),
+          credentials: 'include'
+        });
+
+        const data = await res.json();
+        resEl.textContent = res.ok ? 'Password updated. You may need to log in again.' : data.message || 'Error updating password';
+        resEl.style.color = res.ok ? 'green' : 'red';
+      } catch (err) {
+        resEl.textContent = 'Request failed.';
+        resEl.style.color = 'red';
+      }
+    });
+  </script>
+</body>
+</html>
