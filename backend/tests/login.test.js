@@ -40,6 +40,11 @@ describe('Login API', () => {
     const cookie = loginRes.headers['set-cookie'];
     expect(cookie).toBeDefined();
     expect(cookie[0]).toMatch(/logintoken=/);
+    // logout
+    const logoutRes = await request(app.server)
+      .post('/api/logout')
+      .set('Cookie', cookie);
+    expect(logoutRes.statusCode).toBe(200);
   });
 
   it('should fail to login with wrong password', async () => {

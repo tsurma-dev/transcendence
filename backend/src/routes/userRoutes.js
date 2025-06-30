@@ -1,4 +1,4 @@
-import { getUser, postUser, loginUser, logoutUser, profileUser, authCheckUser, getMe, listLoggedInUsers } from '../controllers/userController.js';
+import { getUser, postUser, loginUser, logoutUser, patchMePassword, profileUser, authCheckUser, getMe, listLoggedInUsers } from '../controllers/userController.js';
 
 async function userRoutes(fastify) {
   fastify.get('/api/users/:username', getUser); // API change later to better serialize data
@@ -11,6 +11,7 @@ async function userRoutes(fastify) {
   fastify.post('/api/login', loginUser); // API
   fastify.post('/api/logout', { preHandler: fastify.verifyAuth }, logoutUser); // API
   fastify.get('/api/me', { preHandler: fastify.verifyAuth }, getMe); // API change later to better serialize data
+  fastify.patch('/api/me/password', { preHandler: fastify.verifyAuth }, patchMePassword); // API
   fastify.get('/', async (req, reply) => {
     return reply.sendFile('index.html');
   }); // will be folded into frontend

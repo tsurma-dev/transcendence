@@ -1,4 +1,4 @@
-import { findUserByEmail, findUserByUsername, createUser } from '../models/userModel.js';
+import { findUserByEmail, findUserByUsername, createUser, findUserById, updateUserPassword } from '../models/userModel.js';
 import { serializeUser, serializeMe } from '../serializers/userSerializer.js';
 import { loginCookieOptions } from '../config/cookies.js';
 import bcrypt from 'bcrypt'
@@ -22,8 +22,8 @@ export async function postUser(req, reply) {
 
 export function getMe(req, reply) {
   try {
-    const { username } = req.user;
-    const user = findUserByUsername(req.server.db, username);
+    const { id } = req.user;
+    const user = findUserById(req.server.db, username);
     if (!user) {
       return reply.code(404).send({ message: 'User not found' });
     }
@@ -33,6 +33,33 @@ export function getMe(req, reply) {
     reply.code(500).send({ message: 'Internal Server Error' });
   }
 }
+
+export async function patchMePassword(req, reply) {
+  try {
+    const { id } = req.user;
+    const { password } = req.body;
+
+    if (!password) {
+      return reply.code(400).send({ message: 'Password is required' });
+    }
+
+    const user = findUserById(req.server.db, id);
+    if (!user) {
+      return reply.code(404).send({ message: 'User not found' });
+    }
+
+    const changes = await updateUserPassword(req.server.db, id, password);
+    if (changes === 1) {
+      return logoutUser(req, reply);
+    }
+    return reply.code(304).send({ message: 'No changes made' });
+  } catch (error) {
+    req.log.error(error);
+    reply.code(500).send({ message: 'Internal Server Error' });
+  }
+}
+
+
 
 export function getUser(req, reply) {
   try {

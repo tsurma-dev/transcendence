@@ -53,3 +53,14 @@ export function findUserByUsername(db, username) {
   const user = stmt.get(username);
   return user;
 }
+
+export async function updateUserPassword(db, id, password) {
+  const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
+  const stmt = db.prepare('UPDATE users SET password_hash = ? WHERE id = ?');
+  try {
+    const info = stmt.run(password_hash, id);
+    return info.changes;
+  } catch (error) {
+    throw error;
+  }
+}
