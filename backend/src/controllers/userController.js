@@ -1,8 +1,8 @@
-import { findUserByEmail, findUserByUsername, createUser, findUserById, updateUserPassword } from '../models/userModel.js';
+import { updateUserName, findUserByEmail, findUserByUsername, createUser, findUserById, updateUserPassword } from '../models/userModel.js';
 import { serializeUser, serializeMe } from '../serializers/userSerializer.js';
 import { loginCookieOptions } from '../config/cookies.js';
+import { reissueJwtAndSetCookie } from '../utils/authUtils.js';
 import bcrypt from 'bcrypt'
-import crypto from 'crypto';
 
 export async function postUser(req, reply) {
   const { username, email, password } = req.body;
@@ -33,6 +33,38 @@ export function getMe(req, reply) {
     reply.code(500).send({ message: 'Internal Server Error' });
   }
 }
+
+export async function patchMeName(req, reply) {
+    const { id } = req.user;
+    const { username } = req.body;
+    if (!username) {
+      return reply.code(400).send({ message: 'Username is required' });
+    }
+    try {
+      const result = updateUserName(db, id, username);
+
+      if (!result.success) {
+        if (result.error === 'User not found') {
+          return reply.code(404).send({ message: 'User not found' });
+        }
+        return reply.code(400).send({ message: result.error });
+      }
+      await reissueJwtAndSetCookie({
+        user: result.user,
+        req,
+        reply,
+        cookieOptions: loginCookieOptions,
+      });
+      return reply.code(200).send({ user: result.user });
+    } catch (error) {
+      if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        return reply.code(409).send({ message: 'Username already exists' });
+      }
+      request.log.error(error);
+      return reply.code(500).send({ message: 'Internal server error' });
+    }
+};
+
 
 export async function patchMePassword(req, reply) {
   try {
@@ -87,25 +119,14 @@ export async function loginUser(req, reply) {
     return reply.code(401).send({ message: 'Invalid credentials' });
   }
 
-  const sessionId = crypto.randomUUID();
-  const token = req.server.jwt.sign({
-    id: user.id,
-    username: user.username,
-    sessionId,
+  await reissueJwtAndSetCookie({
+    user,
+    req,
+    reply,
+    cookieOptions: loginCookieOptions,
   });
 
-  await req.server.redis.set(
-    user.id,
-    JSON.stringify({
-      username: user.username,
-      loginTime: Date.now(),
-      sessionId,
-    })
-  );
-
-  reply
-    .setCookie('logintoken', token, loginCookieOptions)
-    .send({ success: true });
+  reply.send({ success: true });
 }
 
 

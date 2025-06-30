@@ -10,13 +10,9 @@ export default fp(async function (fastify, opts) {
   const dbPath = path.join(__dirname, '..', '..', '..', 'database', 'database.sqlite');
   const db = new Database(dbPath);
 
-
-
-
-
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id TEXT PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,

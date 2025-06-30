@@ -1,29 +1,26 @@
 import bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 
 const SALT_ROUNDS = 10;
 
 export async function createUser(db, { username, email, password }) {
-  const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
+  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+  const id = randomUUID();
+
   const stmt = db.prepare(`
-    INSERT INTO users (username, email, password_hash)
-    VALUES (?, ?, ?)
+    INSERT INTO users (id, username, email, password_hash)
+    VALUES (?, ?, ?, ?)
   `);
-  try {
-    const info = stmt.run(username, email, password_hash);
-    console.log(info);
-    return findUserById(db, info.lastInsertRowid);
-  } catch (error) {
-    throw error;
-  }
+
+  const info = stmt.run(id, username, email, passwordHash);
+  return findUserById(db, id);
 }
 
-export function deleteUser(db, email) {
-  const user = findUserByEmail(db, email);
+export function deleteUser(db, id) {
+  const user = findUserById(db, id);
   if (!user) return { success: false, user: null };
-
   const stmt = db.prepare('DELETE FROM users WHERE email = ?');
   const info = stmt.run(email);
-
   return {
     success: info.changes > 0,
     user
@@ -32,8 +29,7 @@ export function deleteUser(db, email) {
 
 export function searchUsersByName(db, nameFragment) {
   const stmt = db.prepare('SELECT id, username, email, created_at FROM users WHERE username LIKE ?');
-  const user = stmt.get(nameFragment);
-  return user;
+  return stmt.all(`%${nameFragment}%`);
 }
 
 export function findUserById(db, id) {
@@ -55,12 +51,17 @@ export function findUserByUsername(db, username) {
 }
 
 export async function updateUserPassword(db, id, password) {
-  const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
+  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   const stmt = db.prepare('UPDATE users SET password_hash = ? WHERE id = ?');
-  try {
-    const info = stmt.run(password_hash, id);
-    return info.changes;
-  } catch (error) {
-    throw error;
-  }
+  const info = stmt.run(passwordHash, id);
+  return info.changes;
+}
+
+export function updateUserName(db, id, username) {
+  const stmt = db.prepare('UPDATE users SET username = ? WHERE id = ?');
+  const info = stmt.run(username, id);
+  return {
+    success: info.changes > 0,
+    user: findUserById(db, id),
+  };
 }
