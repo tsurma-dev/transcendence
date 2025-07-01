@@ -38,6 +38,33 @@ class ApiService {
       return 0
     }
   }
+
+  async getCurrentUser(): Promise<{username: string} | null> {
+    try {
+      console.log('Fetching current user from:', `${this.baseUrl}/api/me`)
+      const response = await fetch(`${this.baseUrl}/api/me`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      console.log('getCurrentUser response status:', response.status)
+      
+      if (response.ok) {
+        const user = await response.json()
+        console.log('getCurrentUser response data:', user)
+        return user
+      } else {
+        console.error('Failed to get current user:', response.status, response.statusText)
+        const errorText = await response.text()
+        console.error('Error response:', errorText)
+        return null
+      }
+    } catch (error) {
+      console.error('Failed to fetch current user:', error)
+      return null
+    }
+  }
 }
 
 /**
@@ -490,6 +517,9 @@ class PlayerSetupScreen extends Component {
     // Load online users count
     this.loadOnlineUsersCount()
 
+    // Load current user and set as Player 1 default
+    this.loadCurrentUser()
+
     const updateStartButton = () => {
       const hasPlayer1 = player1Input.value.trim().length > 0
       const hasPlayer2 = player2Input.value.trim().length > 0
@@ -539,6 +569,34 @@ class PlayerSetupScreen extends Component {
     } catch (error) {
       console.error('Error loading online users count:', error)
       onlineUsersElement.textContent = 'Offline mode'
+    }
+  }
+
+  private async loadCurrentUser(): Promise<void> {
+    const player1Input = this.element?.querySelector('#player1Name') as HTMLInputElement
+    if (!player1Input) {
+      console.error('Player 1 input not found')
+      return
+    }
+
+    console.log('Loading current user...')
+    try {
+      const user = await this.apiService.getCurrentUser()
+      console.log('API response:', user)
+      
+      if (user && user.username) {
+        console.log('Setting Player 1 name to:', user.username)
+        player1Input.value = user.username
+        // Trigger the update button check since we've set a value
+        const updateEvent = new Event('input')
+        player1Input.dispatchEvent(updateEvent)
+        console.log('Player 1 input value set to:', player1Input.value)
+      } else {
+        console.log('No user data or username found')
+      }
+    } catch (error) {
+      console.error('Error loading current user:', error)
+      // Silently fail - user can still enter name manually
     }
   }
 
