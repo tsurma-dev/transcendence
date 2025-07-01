@@ -63,7 +63,15 @@
 
   <!-- Player Setup Template -->
   <template id="playerSetupTemplate">
-    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl max-w-2xl w-full">
+    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl max-w-2xl w-full relative">
+      <!-- Logout Button -->
+      <button 
+        id="logoutBtn" 
+        class="absolute top-4 right-4 px-4 py-2 bg-red-500/80 hover:bg-red-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105"
+      >
+        Log out
+      </button>
+
       <!-- Online Users Counter -->
       <div class="text-center mb-4">
         <div class="inline-flex items-center bg-green-500/20 px-4 py-2 rounded-full border border-green-400/30">
@@ -124,7 +132,14 @@
 
   <!-- Game Screen Template -->
   <template id="gameScreenTemplate">
-    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl">
+    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl relative">
+      <!-- Logout Button -->
+      <button 
+        id="logoutBtn" 
+        class="absolute top-4 right-4 px-4 py-2 bg-red-500/80 hover:bg-red-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105"
+      >
+        Log out
+      </button>
       
       <!-- Players Display with Scores -->
       <div class="flex justify-between items-center mb-6">

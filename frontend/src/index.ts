@@ -65,6 +65,30 @@ class ApiService {
       return null
     }
   }
+
+  async logout(): Promise<boolean> {
+    try {
+      console.log('Logging out from:', `${this.baseUrl}/api/logout`)
+      const response = await fetch(`${this.baseUrl}/api/logout`, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      console.log('Logout response status:', response.status)
+      
+      if (response.ok) {
+        console.log('Logout successful')
+        return true
+      } else {
+        console.error('Failed to logout:', response.status, response.statusText)
+        return false
+      }
+    } catch (error) {
+      console.error('Logout error:', error)
+      return false
+    }
+  }
 }
 
 /**
@@ -511,8 +535,22 @@ class PlayerSetupScreen extends Component {
     const player1Input = this.element?.querySelector('#player1Name') as HTMLInputElement
     const player2Input = this.element?.querySelector('#player2Name') as HTMLInputElement
     const startBtn = this.element?.querySelector('#startGameBtn') as HTMLButtonElement
+    const logoutBtn = this.element?.querySelector('#logoutBtn') as HTMLButtonElement
 
     if (!player1Input || !player2Input || !startBtn) return
+
+    // Set up logout button
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        const success = await this.apiService.logout()
+        if (success) {
+          this.router.navigateTo(LoginScreen)
+        } else {
+          console.error('Logout failed, but redirecting to login anyway')
+          this.router.navigateTo(LoginScreen)
+        }
+      })
+    }
 
     // Load online users count
     this.loadOnlineUsersCount()
@@ -610,6 +648,8 @@ class PlayerSetupScreen extends Component {
  */
 class GameScreen extends Component {
   private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+  private apiService = new ApiService()
   private pongGame: PongGame | null = null
   private player1Name: string
   private player2Name: string
@@ -630,6 +670,20 @@ class GameScreen extends Component {
   }
 
   setupEvents(): void {
+    // Set up logout button
+    const logoutBtn = this.element?.querySelector('#logoutBtn') as HTMLButtonElement
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        const success = await this.apiService.logout()
+        if (success) {
+          this.router.navigateTo(LoginScreen)
+        } else {
+          console.error('Logout failed, but redirecting to login anyway')
+          this.router.navigateTo(LoginScreen)
+        }
+      })
+    }
+
     // Update player names display
     const player1Display = this.element?.querySelector('#player1Display')
     const player2Display = this.element?.querySelector('#player2Display')
