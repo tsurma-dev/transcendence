@@ -343,7 +343,7 @@ class LoginScreen extends Component {
 
       try {
         // Replace with your actual login endpoint
-        const response = await fetch(`${this.apiService['baseUrl']}/login`, {
+        const response = await fetch(`${this.apiService['baseUrl']}/api/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -418,7 +418,7 @@ class RegisterScreen extends Component {
       }
 
       try {
-        const response = await fetch(`${this.apiService['baseUrl']}/register`, {
+        const response = await fetch(`${this.apiService['baseUrl']}/api/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -428,8 +428,23 @@ class RegisterScreen extends Component {
         })
 
         if (response.ok) {
-          // Registration successful, navigate to player setup
-          this.router.navigateTo(PlayerSetupScreen)
+          // Registration successful, showing success message with login link
+          errorDiv.className = 'text-green-500 text-center mt-4'
+          errorDiv.innerHTML = `
+            <div class="mb-2">✅ New user registered successfully!</div>
+            <button class="text-blue-300 hover:text-blue-200 underline cursor-pointer" id="goToLoginBtn">
+              Click here to login
+            </button>
+          `
+          errorDiv.classList.remove('hidden')
+          
+          // Add click handler for login link
+          const goToLoginBtn = errorDiv.querySelector('#goToLoginBtn')
+          if (goToLoginBtn) {
+            goToLoginBtn.addEventListener('click', () => {
+              this.router.navigateTo(LoginScreen)
+            })
+          }
         } else {
           const error = await response.text()
           errorDiv.textContent = error || 'Registration failed'
