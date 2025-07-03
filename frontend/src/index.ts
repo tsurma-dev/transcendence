@@ -38,6 +38,57 @@ class ApiService {
       return 0
     }
   }
+
+  async getCurrentUser(): Promise<{username: string} | null> {
+    try {
+      console.log('Fetching current user from:', `${this.baseUrl}/api/me`)
+      const response = await fetch(`${this.baseUrl}/api/me`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      console.log('getCurrentUser response status:', response.status)
+      
+      if (response.ok) {
+        const user = await response.json()
+        console.log('getCurrentUser response data:', user)
+        return user
+      } else {
+        console.error('Failed to get current user:', response.status, response.statusText)
+        const errorText = await response.text()
+        console.error('Error response:', errorText)
+        return null
+      }
+    } catch (error) {
+      console.error('Failed to fetch current user:', error)
+      return null
+    }
+  }
+
+  async logout(): Promise<boolean> {
+    try {
+      console.log('Logging out from:', `${this.baseUrl}/api/logout`)
+      const response = await fetch(`${this.baseUrl}/api/logout`, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      console.log('Logout response status:', response.status)
+      
+      if (response.ok) {
+        console.log('Logout successful')
+        return true
+      } else {
+        console.error('Failed to logout:', response.status, response.statusText)
+        return false
+      }
+    } catch (error) {
+      console.error('Logout error:', error)
+      return false
+    }
+  }
 }
 
 /**
@@ -343,7 +394,7 @@ class LoginScreen extends Component {
 
       try {
         // Replace with your actual login endpoint
-        const response = await fetch(`${this.apiService['baseUrl']}/login`, {
+        const response = await fetch(`${this.apiService['baseUrl']}/api/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -418,7 +469,7 @@ class RegisterScreen extends Component {
       }
 
       try {
-        const response = await fetch(`${this.apiService['baseUrl']}/register`, {
+        const response = await fetch(`${this.apiService['baseUrl']}/api/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -428,8 +479,23 @@ class RegisterScreen extends Component {
         })
 
         if (response.ok) {
-          // Registration successful, navigate to player setup
-          this.router.navigateTo(PlayerSetupScreen)
+          // Registration successful, showing success message with login link
+          errorDiv.className = 'text-green-500 text-center mt-4'
+          errorDiv.innerHTML = `
+            <div class="mb-2">✅ New user registered successfully!</div>
+            <button class="text-blue-300 hover:text-blue-200 underline cursor-pointer" id="goToLoginBtn">
+              Click here to login
+            </button>
+          `
+          errorDiv.classList.remove('hidden')
+          
+          // Add click handler for login link
+          const goToLoginBtn = errorDiv.querySelector('#goToLoginBtn')
+          if (goToLoginBtn) {
+            goToLoginBtn.addEventListener('click', () => {
+              this.router.navigateTo(LoginScreen)
+            })
+          }
         } else {
           const error = await response.text()
           errorDiv.textContent = error || 'Registration failed'
@@ -469,11 +535,28 @@ class PlayerSetupScreen extends Component {
     const player1Input = this.element?.querySelector('#player1Name') as HTMLInputElement
     const player2Input = this.element?.querySelector('#player2Name') as HTMLInputElement
     const startBtn = this.element?.querySelector('#startGameBtn') as HTMLButtonElement
+    const logoutBtn = this.element?.querySelector('#logoutBtn') as HTMLButtonElement
 
     if (!player1Input || !player2Input || !startBtn) return
 
+    // Set up logout button
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        const success = await this.apiService.logout()
+        if (success) {
+          this.router.navigateTo(LoginScreen)
+        } else {
+          console.error('Logout failed, but redirecting to login anyway')
+          this.router.navigateTo(LoginScreen)
+        }
+      })
+    }
+
     // Load online users count
     this.loadOnlineUsersCount()
+
+    // Load current user and set as Player 1 default
+    this.loadCurrentUser()
 
     const updateStartButton = () => {
       const hasPlayer1 = player1Input.value.trim().length > 0
@@ -527,6 +610,34 @@ class PlayerSetupScreen extends Component {
     }
   }
 
+  private async loadCurrentUser(): Promise<void> {
+    const player1Input = this.element?.querySelector('#player1Name') as HTMLInputElement
+    if (!player1Input) {
+      console.error('Player 1 input not found')
+      return
+    }
+
+    console.log('Loading current user...')
+    try {
+      const user = await this.apiService.getCurrentUser()
+      console.log('API response:', user)
+      
+      if (user && user.username) {
+        console.log('Setting Player 1 name to:', user.username)
+        player1Input.value = user.username
+        // Trigger the update button check since we've set a value
+        const updateEvent = new Event('input')
+        player1Input.dispatchEvent(updateEvent)
+        console.log('Player 1 input value set to:', player1Input.value)
+      } else {
+        console.log('No user data or username found')
+      }
+    } catch (error) {
+      console.error('Error loading current user:', error)
+      // Silently fail - user can still enter name manually
+    }
+  }
+
   cleanup(): void {
     // Cleanup will be handled automatically by unmount
   }
@@ -537,6 +648,8 @@ class PlayerSetupScreen extends Component {
  */
 class GameScreen extends Component {
   private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+  private apiService = new ApiService()
   private pongGame: PongGame | null = null
   private player1Name: string
   private player2Name: string
@@ -557,6 +670,20 @@ class GameScreen extends Component {
   }
 
   setupEvents(): void {
+    // Set up logout button
+    const logoutBtn = this.element?.querySelector('#logoutBtn') as HTMLButtonElement
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        const success = await this.apiService.logout()
+        if (success) {
+          this.router.navigateTo(LoginScreen)
+        } else {
+          console.error('Logout failed, but redirecting to login anyway')
+          this.router.navigateTo(LoginScreen)
+        }
+      })
+    }
+
     // Update player names display
     const player1Display = this.element?.querySelector('#player1Display')
     const player2Display = this.element?.querySelector('#player2Display')

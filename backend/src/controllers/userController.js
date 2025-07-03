@@ -33,7 +33,7 @@ export async function postUser(req, reply) {
 export function getMe(req, reply) {
   try {
     const { id } = req.user;
-    const user = findUserById(req.server.db, username);
+    const user = findUserById(req.server.db, id);
     if (!user) {
       return reply.code(404).send({ message: "User not found" });
     }
