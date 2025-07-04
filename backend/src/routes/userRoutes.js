@@ -2,6 +2,7 @@ import * as userController from '../controllers/userController.js';
 
 async function userRoutes(fastify) {
   fastify.get('/api/users/:username', userController.getUser); // API change later to better serialize data
+  fastify.get('/users/:username/avatar', userController.getUserAvatar);
   fastify.get('/api/auth/check', { preHandler: fastify.verifyAuth }, userController.authCheckUser); // API
   fastify.get('/api/profile', { preHandler: fastify.verifyAuth }, userController.profileUser); // API will be folded into frontend
   fastify.post('/api/register', userController.postUser); // API

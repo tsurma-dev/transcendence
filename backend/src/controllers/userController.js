@@ -10,6 +10,9 @@ import { serializeUser, serializeMe } from "../serializers/userSerializer.js";
 import { loginCookieOptions } from "../config/cookies.js";
 import { reissueJwtAndSetCookie } from "../utils/authUtils.js";
 import bcrypt from "bcrypt";
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 export async function postUser(req, reply) {
   const { username, email, password } = req.body;
@@ -190,4 +193,29 @@ export async function listLoggedInUsers(req, reply) {
   }
 
   return users;
+}
+
+export function getUserAvatar(req, reply) {
+  try {
+    const { username } = req.params;
+    const user = findUserByUsername(req.server.db, username);
+    if (!user) {
+      return reply.code(404).send({ message: 'User not found' });
+    }
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const avatarFile = `${user.id}.png`;
+    const avatarRelativePath = `uploads/avatars/${avatarFile}`;
+    const avatarAbsolutePath = path.join(__dirname, '../../public', avatarRelativePath);
+    const defaultAvatarRelativePath = 'uploads/avatars/default.jpg';
+
+    if (fs.existsSync(avatarAbsolutePath)) {
+      return reply.sendFile(avatarRelativePath);
+    } else {
+      return reply.sendFile(defaultAvatarRelativePath);
+    }
+  } catch (error) {
+    req.log.error(error);
+    reply.code(500).send({ message: 'Internal Server Error' });
+  }
 }

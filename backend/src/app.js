@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 
 import path from 'path';
+import { fileURLToPath } from 'url';
 import fastifyStatic from '@fastify/static';
 import fastifyFormbody from '@fastify/formbody';
 import fastifyJwt from '@fastify/jwt';
@@ -13,7 +14,6 @@ import dbPlugin from './plugins/db.js';
 import authPlugin from './plugins/auth.js';
 import userRoutes from './routes/userRoutes.js';
 // import pongRoutes from './routes/matchRoutes.js';
-import { fileURLToPath } from 'url';
 
 
 const __filename = fileURLToPath(import.meta.url);

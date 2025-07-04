@@ -65,3 +65,13 @@ export function updateUserName(db, id, username) {
     user: findUserById(db, id),
   };
 }
+
+export function updateUserEmail(db, id, email) {
+  const stmt = db.prepare('UPDATE users SET email = ? WHERE id = ?');
+  const info = stmt.run(email, id);
+  return {
+    success: info.changes > 0,
+    user: findUserById(db, id),
+  };
+}
+

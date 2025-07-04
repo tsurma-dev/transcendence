@@ -5,7 +5,7 @@ export function serializeUser(user) {
     email: user.email,
     createdAt: user.created_at ? user.created_at.split(' ')[0] : null,
     links: {
-      self: `/users/${encodeURIComponent(user.username)}`
+      self: `/api/users/${encodeURIComponent(user.username)}`
     }
   };
 };
@@ -17,7 +17,7 @@ export function serializeMe(user) {
     email: user.email,
     createdAt: user.created_at ? user.created_at.split(' ')[0] : null,
     links: {
-      self: `/users/${encodeURIComponent(user.username)}`
+      self: `/api/users/${encodeURIComponent(user.username)}`
     }
   };
 };
