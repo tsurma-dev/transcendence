@@ -1,20 +1,21 @@
-import Fastify from 'fastify';
+import Fastify from "fastify";
 
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fastifyStatic from '@fastify/static';
-import fastifyFormbody from '@fastify/formbody';
-import fastifyJwt from '@fastify/jwt';
-import fastifyCookie from '@fastify/cookie';
-import fastifyRedis from '@fastify/redis';
-import fastifyWebsocket from '@fastify/websocket';
-import fastifyCors from '@fastify/cors';
-import fs from 'fs';
-import dbPlugin from './plugins/db.js';
-import authPlugin from './plugins/auth.js';
-import userRoutes from './routes/userRoutes.js';
+import path from "path";
+import { fileURLToPath } from "url";
+import fastifyStatic from "@fastify/static";
+import fastifyFormbody from "@fastify/formbody";
+import fastifyJwt from "@fastify/jwt";
+import fastifyCookie from "@fastify/cookie";
+import fastifyRedis from "@fastify/redis";
+import fastifyWebsocket from "@fastify/websocket";
+import fastifyCors from "@fastify/cors";
+import fs from "fs";
+import dbPlugin from "./plugins/db.js";
+import authPlugin from "./plugins/auth.js";
+import userRoutes from "./routes/userRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
 // import pongRoutes from './routes/matchRoutes.js';
-
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,68 +23,74 @@ const __dirname = path.dirname(__filename);
 const app = Fastify({
   logger: {
     transport: {
-      target: 'pino-pretty',
+      target: "pino-pretty",
       options: {
         colorize: true,
-        translateTime: 'SYS:standard',
-        ignore: 'pid,hostname'
-      }
-    }
+        translateTime: "SYS:standard",
+        ignore: "pid,hostname",
+      },
+    },
   },
   https: {
-    key: fs.readFileSync(path.join(__dirname, '../../.env/key.pem')),
-    cert: fs.readFileSync(path.join(__dirname, '../../.env/cert.pem')),
-  }
- });
+    key: fs.readFileSync(path.join(__dirname, "../../.env/key.pem")),
+    cert: fs.readFileSync(path.join(__dirname, "../../.env/cert.pem")),
+  },
+});
 
 await app.register(fastifyRedis, {
-  host: '127.0.0.1',
+  host: "127.0.0.1",
   port: 6379,
   // password: 'supersecret'
 });
 
 // Register CORS to allow frontend requests
 await app.register(fastifyCors, {
-  origin: ['http://127.0.0.1:3000', 'http://localhost:3000', 'http://localhost:5173'], // Allow frontend dev servers, 5173 is for Vite
-  credentials: true
+  origin: [
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+    "http://localhost:5173",
+  ], // Allow frontend dev servers, 5173 is for Vite
+  credentials: true,
 });
 
 await app.register(fastifyFormbody);
 
 await app.register(fastifyCookie, {
-  secret: 'supersecret',
-  });
- app.register(fastifyJwt, {
-  secret: process.env.JWT_SECRET || 'supersecret',
+  secret: "supersecret",
+});
+app.register(fastifyJwt, {
+  secret: process.env.JWT_SECRET || "supersecret",
   cookie: {
-    cookieName: 'logintoken',
-    signed: true
-  }
-  });
+    cookieName: "logintoken",
+    signed: true,
+  },
+});
 
 await app.register(fastifyWebsocket);
 await app.register(dbPlugin);
 await app.register(authPlugin);
 await app.register(userRoutes);
+await app.register(profileRoutes);
+await app.register(authRoutes);
+
 // await app.register(pongRoutes);
 await app.register(fastifyStatic, {
-  root: path.resolve('./public'),
-  prefix: '/',
+  root: path.resolve("./public"),
+  prefix: "/",
 }); // will be removed with frontend
 
-app.get('/ws', { websocket: true }, (connection, req) => {
-  console.log('WebSocket client connected!');
-  console.log('Connection:', connection);
-  console.log('connection.socket:', connection.socket);
-  connection.on('message', message => {
-    console.log('Received from client:', message.toString());
+app.get("/ws", { websocket: true }, (connection, req) => {
+  console.log("WebSocket client connected!");
+  console.log("Connection:", connection);
+  console.log("connection.socket:", connection.socket);
+  connection.on("message", (message) => {
+    console.log("Received from client:", message.toString());
     connection.send(`Echo: ${message}`);
   });
 
-  connection.on('close', () => {
-    console.log('WebSocket connection closed');
+  connection.on("close", () => {
+    console.log("WebSocket connection closed");
   });
 });
-
 
 export default app;

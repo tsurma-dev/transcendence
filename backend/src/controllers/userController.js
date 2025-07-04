@@ -1,112 +1,16 @@
-import {
-  updateUserName,
-  findUserByEmail,
-  findUserByUsername,
-  createUser,
-  findUserById,
-  updateUserPassword,
-} from "../models/userModel.js";
-import { serializeUser, serializeMe } from "../serializers/userSerializer.js";
-import { loginCookieOptions } from "../config/cookies.js";
-import { reissueJwtAndSetCookie } from "../utils/authUtils.js";
-import bcrypt from "bcrypt";
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
+import { findUserByUsername } from "../models/userModel.js";
+import { serializeUser } from "../serializers/userSerializer.js";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
 
-export async function postUser(req, reply) {
-  const { username, email, password } = req.body;
-  try {
-    const newUser = await createUser(req.server.db, {
-      username,
-      email,
-      password,
-    });
-    reply.code(201).send(serializeUser(newUser));
-  } catch (err) {
-    if (err.code === "SQLITE_CONSTRAINT_UNIQUE") {
-      reply.code(409).send({ message: "Username or email already exists" });
-    } else {
-      req.log.error(err);
-      reply.code(500).send({ message: "Internal Server Error" });
-    }
-  }
-}
-
-export function getMe(req, reply) {
-  try {
-    const { id } = req.user;
-    const user = findUserById(req.server.db, id);
-    if (!user) {
-      return reply.code(404).send({ message: "User not found" });
-    }
-    reply.send(serializeUser(user));
-  } catch (error) {
-    req.log.error(error);
-    reply.code(500).send({ message: "Internal Server Error" });
-  }
-}
-
-export async function patchMeName(req, reply) {
-  const { id } = req.user;
-  const { username } = req.body;
-
-  if (!username) {
-    return reply.code(400).send({ message: "Username is required" });
-  }
-  const user = findUserById(req.server.db, id);
+export function profileUser(req, reply) {
+  const user = req.user;
   if (!user) {
-    return reply.code(404).send({ message: "User not found" });
+    return reply.code(401).send("Unauthorized");
   }
-  try {
-    const result = updateUserName(req.server.db, id, username);
-    if (!result.success) {
-      return reply.code(304).send({ message: "No changes made" });
-    }
-    const updatedUser = findUserById(req.server.db, id);
-    if (!updatedUser) {
-      req.log.error(error);
-      return reply.code(500).send({ message: "Internal server error" });
-    }
-    await reissueJwtAndSetCookie({
-      user: updatedUser,
-      req,
-      reply,
-      cookieOptions: loginCookieOptions,
-    });
-    return reply.code(200).send({ user: serializeUser(updatedUser) });
-  } catch (error) {
-    if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
-      return reply.code(409).send({ message: "Username already exists" });
-    }
-    req.log.error(error);
-    return reply.code(500).send({ message: "Internal server error" });
-  }
-}
 
-export async function patchMePassword(req, reply) {
-  try {
-    const { id } = req.user;
-    const { password } = req.body;
-
-    if (!password) {
-      return reply.code(400).send({ message: "Password is required" });
-    }
-
-    const user = findUserById(req.server.db, id);
-    if (!user) {
-      return reply.code(404).send({ message: "User not found" });
-    }
-
-    const changes = await updateUserPassword(req.server.db, id, password);
-    if (changes === 1) {
-      return logoutUser(req, reply);
-    }
-    return reply.code(304).send({ message: "No changes made" });
-  } catch (error) {
-    req.log.error(error);
-    reply.code(500).send({ message: "Internal Server Error" });
-  }
+  return reply.send(serializeUser(user));
 }
 
 export function getUser(req, reply) {
@@ -121,59 +25,6 @@ export function getUser(req, reply) {
     req.log.error(error);
     reply.code(500).send({ message: "Internal Server Error" });
   }
-}
-
-export async function loginUser(req, reply) {
-  const { email, password } = req.body;
-  const user = findUserByEmail(req.server.db, email);
-  if (!user) {
-    return reply.code(401).send({ message: "Invalid credentials" });
-  }
-
-  const match = await bcrypt.compare(password, user.password_hash);
-  if (!match) {
-    return reply.code(401).send({ message: "Invalid credentials" });
-  }
-
-  await reissueJwtAndSetCookie({
-    user,
-    req,
-    reply,
-    cookieOptions: loginCookieOptions,
-  });
-
-  reply.send({ success: true });
-}
-
-export async function logoutUser(req, reply) {
-  const { redis } = req.server;
-  const user = req.user;
-
-  if (user?.id) {
-    try {
-      await redis.del(user.id);
-    } catch (err) {
-      req.log.warn(`Failed to delete Redis session for user ${user.id}:`, err);
-    }
-  }
-
-  reply.clearCookie("logintoken", loginCookieOptions).send({ success: true });
-}
-
-export function profileUser(req, reply) {
-  const user = req.user;
-  if (!user) {
-    return reply.code(401).send("Unauthorized");
-  }
-
-  return reply.send(serializeUser(user));
-}
-
-export function authCheckUser(req, reply) {
-  return {
-    loggedIn: true,
-    user: req.user,
-  };
 }
 
 export async function listLoggedInUsers(req, reply) {
@@ -200,14 +51,18 @@ export function getUserAvatar(req, reply) {
     const { username } = req.params;
     const user = findUserByUsername(req.server.db, username);
     if (!user) {
-      return reply.code(404).send({ message: 'User not found' });
+      return reply.code(404).send({ message: "User not found" });
     }
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     const avatarFile = `${user.id}.png`;
     const avatarRelativePath = `uploads/avatars/${avatarFile}`;
-    const avatarAbsolutePath = path.join(__dirname, '../../public', avatarRelativePath);
-    const defaultAvatarRelativePath = 'uploads/avatars/default.jpg';
+    const avatarAbsolutePath = path.join(
+      __dirname,
+      "../../public",
+      avatarRelativePath
+    );
+    const defaultAvatarRelativePath = "uploads/avatars/default.jpg";
 
     if (fs.existsSync(avatarAbsolutePath)) {
       return reply.sendFile(avatarRelativePath);
@@ -216,6 +71,6 @@ export function getUserAvatar(req, reply) {
     }
   } catch (error) {
     req.log.error(error);
-    reply.code(500).send({ message: 'Internal Server Error' });
+    reply.code(500).send({ message: "Internal Server Error" });
   }
 }
