@@ -1,6 +1,11 @@
-import crypto from 'crypto';
+import crypto from "crypto";
 
-export async function reissueJwtAndSetCookie({ user, req, reply, cookieOptions }) {
+export async function reissueJwtAndSetCookie({
+  user,
+  req,
+  reply,
+  cookieOptions,
+}) {
   const sessionId = crypto.randomUUID();
 
   const token = req.server.jwt.sign({
@@ -15,8 +20,10 @@ export async function reissueJwtAndSetCookie({ user, req, reply, cookieOptions }
       username: user.username,
       loginTime: Date.now(),
       sessionId,
-    })
+    }),
+    "EX",
+    86400
   );
 
-  reply.setCookie('logintoken', token, cookieOptions);
+  reply.setCookie("logintoken", token, cookieOptions);
 }
