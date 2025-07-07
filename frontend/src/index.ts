@@ -456,7 +456,7 @@ class QuickPlaySetupScreen extends Component {
       const player2Name = player2Input.value.trim()
 
       if (player1Name && player2Name) {
-        this.router.navigateTo(GameScreen, player1Name, player2Name)
+        this.router.navigateTo(GameScreen, player1Name, player2Name, true) // true = isQuickPlay
       }
     }
 
@@ -796,11 +796,13 @@ class GameScreen extends Component {
   private pongGame: PongGame | null = null
   private player1Name: string
   private player2Name: string
+  private isQuickPlay: boolean
 
-  constructor(player1Name: string, player2Name: string) {
+  constructor(player1Name: string, player2Name: string, isQuickPlay: boolean = false) {
     super()
     this.player1Name = player1Name
     this.player2Name = player2Name
+    this.isQuickPlay = isQuickPlay
   }
 
   render(): HTMLElement {
@@ -808,23 +810,42 @@ class GameScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
+      
+      // If this is quick play, modify the logout button to be a back to start button
+      if (this.isQuickPlay) {
+        const logoutBtn = div.querySelector('#logoutBtn')
+        if (logoutBtn) {
+          logoutBtn.textContent = '← Back to Start'
+          logoutBtn.id = 'backToStartBtn'
+        }
+      }
     }
     return div
   }
 
   setupEvents(): void {
-    // Set up logout button
-    const logoutBtn = this.element?.querySelector('#logoutBtn') as HTMLButtonElement
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', async () => {
-        const success = await this.apiService.logout()
-        if (success) {
-          this.router.navigateTo(LoginScreen)
-        } else {
-          console.error('Logout failed, but redirecting to login anyway')
-          this.router.navigateTo(LoginScreen)
-        }
-      })
+    if (this.isQuickPlay) {
+      // Set up back to start button for quick play
+      const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
+      if (backToStartBtn) {
+        backToStartBtn.addEventListener('click', () => {
+          this.router.navigateTo(StartPageScreen)
+        })
+      }
+    } else {
+      // Set up logout button for authenticated users
+      const logoutBtn = this.element?.querySelector('#logoutBtn') as HTMLButtonElement
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+          const success = await this.apiService.logout()
+          if (success) {
+            this.router.navigateTo(StartPageScreen)
+          } else {
+            console.error('Logout failed, but redirecting to start page anyway')
+            this.router.navigateTo(StartPageScreen)
+          }
+        })
+      }
     }
 
     // Update player names display
