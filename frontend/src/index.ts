@@ -408,11 +408,15 @@ class QuickPlaySetupScreen extends Component {
       div.appendChild(fragment)
       
       // Remove logout button and online users counter for quick play
+      // Show back button, hide logout button
       const logoutBtn = div.querySelector('#logoutBtn')
+      const backToStartBtn = div.querySelector('#backToStartBtn') as HTMLElement
       const onlineUsersDiv = div.querySelector('#onlineUsersCount')?.closest('.text-center')
       
       if (logoutBtn) logoutBtn.remove()
       if (onlineUsersDiv) onlineUsersDiv.remove()
+      if (backToStartBtn) backToStartBtn.style.display = 'block'
+      
     }
     return div
   }
@@ -660,6 +664,10 @@ class PlayerSetupScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
+      
+      // Hide back button for authenticated users (they should use logout)
+      const backToStartBtn = div.querySelector('#backToStartBtn') as HTMLElement
+      if (backToStartBtn) backToStartBtn.style.display = 'none'
     }
     return div
   }
@@ -808,6 +816,7 @@ class GameScreen extends Component {
           logoutBtn.textContent = '← Back to Start'
           logoutBtn.id = 'backToStartBtn'
         }
+
       }
     }
     return div
