@@ -413,16 +413,6 @@ class QuickPlaySetupScreen extends Component {
       
       if (logoutBtn) logoutBtn.remove()
       if (onlineUsersDiv) onlineUsersDiv.remove()
-      
-      // Add back button instead
-      const container = div.querySelector('.backdrop-blur-lg')
-      if (container) {
-        const backToStartBtn = document.createElement('button')
-        backToStartBtn.id = 'backToStartBtn'
-        backToStartBtn.className = 'absolute top-4 left-4 px-4 py-2 bg-gray-500/80 hover:bg-gray-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105'
-        backToStartBtn.textContent = '← Back'
-        container.appendChild(backToStartBtn)
-      }
     }
     return div
   }
