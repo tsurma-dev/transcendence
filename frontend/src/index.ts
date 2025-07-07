@@ -387,13 +387,12 @@ class LoginScreen extends Component {
 
       const formData = new FormData(form)
       const loginData = {
-        username: formData.get('username') as string,
+        //username: formData.get('username') as string, 
         email: formData.get('email') as string,
         password: formData.get('password') as string
       }
 
       try {
-        // Replace with your actual login endpoint
         const response = await fetch(`${this.apiService['baseUrl']}/api/login`, {
           method: 'POST',
           headers: {
