@@ -3,11 +3,13 @@ import {
   patchMeEmail,
   patchMeName,
   patchMePassword,
+  deleteMe,
 } from "../controllers/profileController.js";
 import {
   changeEmailSchema,
   changePasswordSchema,
   changeUsernameSchema,
+  deleteUserSchema,
 } from "../schemas/userSchemas.js";
 
 async function profileRoutes(fastify) {
@@ -30,6 +32,18 @@ async function profileRoutes(fastify) {
     schema: changeEmailSchema,
     handler: patchMeEmail,
   });
+
+  fastify.post("/api/me/delete", {
+    preHandler: fastify.verifyAuth,
+    schema: deleteUserSchema,
+    handler: deleteMe,
+  });
+
+  // fastify.post("/api/me/avatar", {
+  //   preHandler: fastify.verifyAuth,
+  //   schema: deleteUserSchema,
+  //   handler: deleteMe,
+  // });
 }
 
 export default profileRoutes;

@@ -11,16 +11,19 @@ async function authRoutes(fastify) {
     schema: registerUserSchema,
     handler: postUser,
   });
+
   fastify.post("/api/login", {
     schema: loginUserSchema,
     handler: loginUser,
   });
-  fastify.post("/api/logout", { preHandler: fastify.verifyAuth }, logoutUser); // API
+
+  fastify.post("/api/logout", { preHandler: fastify.verifyAuth }, logoutUser);
+
   fastify.get(
     "/api/auth/check",
     { preHandler: fastify.verifyAuth },
     authCheckUser
-  ); // API
+  );
 }
 
 export default authRoutes;

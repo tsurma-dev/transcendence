@@ -3,11 +3,13 @@ import {
   updateUserName,
   updateUserPassword,
   updateUserEmail,
+  deleteUser,
 } from "../models/userModel.js";
 import { logoutUser } from "./authController.js";
 import { serializeUser } from "../serializers/userSerializer.js";
 import { loginCookieOptions } from "../config/cookies.js";
 import { reissueJwtAndSetCookie } from "../utils/authUtils.js";
+import bcrypt from "bcrypt";
 
 export function getMe(req, reply) {
   try {
@@ -113,6 +115,34 @@ export async function patchMePassword(req, reply) {
 
     const changes = await updateUserPassword(req.server.db, id, password);
     if (changes === 1) {
+      return logoutUser(req, reply);
+    }
+    return reply.code(304).send({ message: "No changes made" });
+  } catch (error) {
+    req.log.error(error);
+    reply.code(500).send({ message: "Internal Server Error" });
+  }
+}
+
+export async function deleteMe(req, reply) {
+  try {
+    const { id } = req.user;
+    const { password } = req.body;
+
+    if (!password) {
+      return reply.code(400).send({ message: "Password is required" });
+    }
+    const user = findUserById(req.server.db, id);
+    if (!user) {
+      return reply.code(404).send({ message: "User not found" });
+    }
+
+    const match = await bcrypt.compare(password, user.password_hash);
+    if (!match) {
+      return reply.code(401).send({ message: "Invalid credentials" });
+    }
+    const { success } = deleteUser(req.server.db, id);
+    if (success) {
       return logoutUser(req, reply);
     }
     return reply.code(304).send({ message: "No changes made" });
