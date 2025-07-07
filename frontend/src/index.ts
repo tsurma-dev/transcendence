@@ -387,7 +387,6 @@ class LoginScreen extends Component {
 
       const formData = new FormData(form)
       const loginData = {
-        //username: formData.get('username') as string, 
         email: formData.get('email') as string,
         password: formData.get('password') as string
       }
