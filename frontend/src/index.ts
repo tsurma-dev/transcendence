@@ -350,6 +350,135 @@ class PongGame {
 // ===================
 
 /**
+ * Start Page Screen
+ */
+class StartPageScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('startPageTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+    }
+    return div
+  }
+
+  setupEvents(): void {
+    const quickPlayBtn = this.element?.querySelector('#quickPlayBtn') as HTMLButtonElement
+    const loginBtn = this.element?.querySelector('#loginBtn') as HTMLButtonElement
+    const registerBtn = this.element?.querySelector('#registerBtn') as HTMLButtonElement
+
+    if (quickPlayBtn) {
+      quickPlayBtn.addEventListener('click', () => {
+        this.router.navigateTo(QuickPlaySetupScreen)
+      })
+    }
+
+    if (loginBtn) {
+      loginBtn.addEventListener('click', () => {
+        this.router.navigateTo(LoginScreen)
+      })
+    }
+
+    if (registerBtn) {
+      registerBtn.addEventListener('click', () => {
+        this.router.navigateTo(RegisterScreen)
+      })
+    }
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
+  }
+}
+
+/**
+ * Quick Play Setup Screen (no authentication required)
+ */
+class QuickPlaySetupScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('playerSetupTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+      
+      // Remove logout button and online users counter for quick play
+      const logoutBtn = div.querySelector('#logoutBtn')
+      const onlineUsersDiv = div.querySelector('#onlineUsersCount')?.closest('.text-center')
+      
+      if (logoutBtn) logoutBtn.remove()
+      if (onlineUsersDiv) onlineUsersDiv.remove()
+      
+      // Add back button instead
+      const container = div.querySelector('.backdrop-blur-lg')
+      if (container) {
+        const backToStartBtn = document.createElement('button')
+        backToStartBtn.id = 'backToStartBtn'
+        backToStartBtn.className = 'absolute top-4 left-4 px-4 py-2 bg-gray-500/80 hover:bg-gray-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105'
+        backToStartBtn.textContent = '← Back'
+        container.appendChild(backToStartBtn)
+      }
+    }
+    return div
+  }
+
+  setupEvents(): void {
+    const player1Input = this.element?.querySelector('#player1Name') as HTMLInputElement
+    const player2Input = this.element?.querySelector('#player2Name') as HTMLInputElement
+    const startBtn = this.element?.querySelector('#startGameBtn') as HTMLButtonElement
+    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
+
+    if (!player1Input || !player2Input || !startBtn) return
+
+    // Set up back button
+    if (backToStartBtn) {
+      backToStartBtn.addEventListener('click', () => {
+        this.router.navigateTo(StartPageScreen)
+      })
+    }
+
+    const updateStartButton = () => {
+      const hasPlayer1 = player1Input.value.trim().length > 0
+      const hasPlayer2 = player2Input.value.trim().length > 0
+      startBtn.disabled = !(hasPlayer1 && hasPlayer2)
+    }
+
+    player1Input.addEventListener('input', updateStartButton)
+    player2Input.addEventListener('input', updateStartButton)
+
+    const handleSubmit = () => {
+      const player1Name = player1Input.value.trim()
+      const player2Name = player2Input.value.trim()
+
+      if (player1Name && player2Name) {
+        this.router.navigateTo(GameScreen, player1Name, player2Name)
+      }
+    }
+
+    startBtn.addEventListener('click', handleSubmit)
+
+    // Enter key support
+    const handleEnter = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !startBtn.disabled) {
+        handleSubmit()
+      }
+    }
+
+    player1Input.addEventListener('keypress', handleEnter)
+    player2Input.addEventListener('keypress', handleEnter)
+  }
+
+  cleanup(): void {
+    // Cleanup will be handled automatically by unmount
+  }
+}
+
+/**
  * Login Screen
  */
 class LoginScreen extends Component {
@@ -370,8 +499,16 @@ class LoginScreen extends Component {
     const form = this.element?.querySelector('#loginForm') as HTMLFormElement
     const errorDiv = this.element?.querySelector('#loginError') as HTMLElement
     const showRegisterBtn = this.element?.querySelector('#showRegisterBtn') as HTMLButtonElement
+    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
 
     if (!form || !errorDiv) return
+
+    // Navigate back to start page
+    if (backToStartBtn) {
+      backToStartBtn.addEventListener('click', () => {
+        this.router.navigateTo(StartPageScreen)
+      })
+    }
 
     // Navigate to register screen
     if (showRegisterBtn) {
@@ -444,8 +581,16 @@ class RegisterScreen extends Component {
     const form = this.element?.querySelector('#registerForm') as HTMLFormElement
     const errorDiv = this.element?.querySelector('#registerError') as HTMLElement
     const showLoginBtn = this.element?.querySelector('#showLoginBtn') as HTMLButtonElement
+    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
 
     if (!form || !errorDiv) return
+
+    // Navigate back to start page
+    if (backToStartBtn) {
+      backToStartBtn.addEventListener('click', () => {
+        this.router.navigateTo(StartPageScreen)
+      })
+    }
 
     // Navigate to login screen
     if (showLoginBtn) {
@@ -728,7 +873,7 @@ class App {
   private router = AppRouter.getInstance()
 
   init(): void {
-    this.router.navigateTo(LoginScreen)
+    this.router.navigateTo(StartPageScreen)
   }
 }
 
