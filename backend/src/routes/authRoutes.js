@@ -8,22 +8,27 @@ import { loginUserSchema, registerUserSchema } from "../schemas/userSchemas.js";
 
 async function authRoutes(fastify) {
   fastify.post("/api/register", {
+    csrf: false,
     schema: registerUserSchema,
     handler: postUser,
   });
 
   fastify.post("/api/login", {
+    csrf: false,
     schema: loginUserSchema,
     handler: loginUser,
   });
 
-  fastify.post("/api/logout", { preHandler: fastify.verifyAuth }, logoutUser);
+  fastify.post("/api/logout", {
+    csrf: false,
+    preHandler: fastify.verifyAuth,
+    handler: logoutUser,
+  });
 
-  fastify.get(
-    "/api/auth/check",
-    { preHandler: fastify.verifyAuth },
-    authCheckUser
-  );
+  fastify.get("/api/auth/check", {
+    preHandler: fastify.verifyAuth,
+    handler: authCheckUser,
+  });
 }
 
 export default authRoutes;

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CSRF Test Page</title>
+</head>
+<body>
+  <h1>CSRF Test</h1>
+  <button id="send">Send Protected Request</button>
+
+  <script>
+    async function getCSRFToken() {
+      const res = await fetch('/api/csrf-token', {
+        credentials: 'include' // send cookies
+      });
+      const data = await res.json();
+      return data.csrfToken;
+    }
+
+    async function sendProtectedRequest() {
+      const csrfToken = await getCSRFToken();
+
+      const response = await fetch('/api/protected-action', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'csrf-token': csrfToken // REQUIRED HEADER
+        },
+        credentials: 'include',
+        body: JSON.stringify({ message: 'Hello, world!' })
+      });
+
+      const result = await response.json();
+      alert('Response: ' + JSON.stringify(result));
+    }
+
+    document.getElementById('send').addEventListener('click', sendProtectedRequest);
+  </script>
+</body>
+</html>

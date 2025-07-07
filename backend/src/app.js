@@ -6,6 +6,8 @@ import fastifyStatic from "@fastify/static";
 import fastifyFormbody from "@fastify/formbody";
 import fastifyJwt from "@fastify/jwt";
 import fastifyCookie from "@fastify/cookie";
+import fastifyHelmet from "@fastify/helmet";
+import fastifyCsrf from "@fastify/csrf-protection";
 import fastifyRedis from "@fastify/redis";
 import fastifyWebsocket from "@fastify/websocket";
 import fastifyCors from "@fastify/cors";
@@ -58,11 +60,27 @@ await app.register(fastifyFormbody);
 await app.register(fastifyCookie, {
   secret: "supersecret",
 });
+
 app.register(fastifyJwt, {
   secret: process.env.JWT_SECRET || "supersecret",
   cookie: {
     cookieName: "logintoken",
     signed: true,
+  },
+});
+
+await app.register(fastifyHelmet, {
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "https:"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
   },
 });
 
@@ -78,19 +96,5 @@ await app.register(fastifyStatic, {
   root: path.resolve("./public"),
   prefix: "/",
 }); // will be removed with frontend
-
-app.get("/ws", { websocket: true }, (connection, req) => {
-  console.log("WebSocket client connected!");
-  console.log("Connection:", connection);
-  console.log("connection.socket:", connection.socket);
-  connection.on("message", (message) => {
-    console.log("Received from client:", message.toString());
-    connection.send(`Echo: ${message}`);
-  });
-
-  connection.on("close", () => {
-    console.log("WebSocket connection closed");
-  });
-});
 
 export default app;
