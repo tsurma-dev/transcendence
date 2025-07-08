@@ -1,3 +1,29 @@
+/**
+* =================================
+* FILE STRUCTURE AND EXECUTION FLOW
+* =================================
+* This file is structured to support a scalable Single Page Application (SPA) architecture
+* and follows the common Js/Ts module pattern where:
+* - Imports at to the top of the file
+* - Classes and functions in the middle
+* - Initialization/execution code at the bottom
+*
+* "What" (class definitions, function declarations, etc.)is separated from "How" (execution logic).
+* When the browser loads the script, it needs all classes and functions to be defined before it
+* can execute the initialization code.
+* 
+* Current file structure:
+* 1. ApiService: Handles backend communication
+* 2. Component: Base abstract class for all components
+* 3. TemplateManager: Infrastructure singleton, manages HTML templates
+* 4. AppRouter: Infrastructure singleton, manages navigation between screens
+* 5. PongGame: Game logic and rendering (placeholder for now)
+* 6. Screen Components: UI components - Individual screens for the app (StartPage, QuickPlaySetup, Login, Register, PlayerSetup, GameScreen etc)
+* 7. App: Main application class that initializes everything and manages the global state
+* 8. Initialization code: Sets up the app when the DOM (Document Object Model) is ready
+*/
+
+
 // ===========================
 // SCALABLE SPA ARCHITECTURE
 // ===========================
