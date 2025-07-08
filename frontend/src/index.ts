@@ -690,20 +690,32 @@ class RegisterScreen extends Component {
 /**
  * Logged out Screen
  * This screen is shown when the user logs out
- * It simply redirects to the start page
+ * It displays the username and redirects to the start page
  */
 class LoggedOutScreen extends Component {
   private templateManager = TemplateManager.getInstance()
   private router = AppRouter.getInstance()
   private apiService = new ApiService()
+  private username: string
+
+  constructor(username: string = 'User') {
+    super()
+    this.username = username
+  }
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('loggedOutTemplate')
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
+      
+      // Update the message to include the username
+      const heading = div.querySelector('h1')
+      if (heading) {
+        heading.textContent = `${this.username} successfully logged out`
+      }
     }
-    // Show the global button as back button for register screen
+    // Show the global button as back button for logout screen
     App.getInstance().setUserLoggedIn(false)
     App.getInstance().toggleGlobalButton(true)
     return div
@@ -954,11 +966,15 @@ class App {
 
   private async handleGlobalButtonClick(): Promise<void> {
     if (this.isUserLoggedIn) {
+      // Get current user before logout to display username
+      const currentUser = await this.apiService.getCurrentUser()
+      const username = currentUser?.username || 'User'
+      
       // Handle logout
       const success = await this.apiService.logout()
       if (success) {
         this.setUserLoggedIn(false)
-        this.router.navigateTo(LoggedOutScreen)
+        this.router.navigateTo(LoggedOutScreen, username)
       } else {
         console.error('Logout failed, redirecting to start page')
         this.setUserLoggedIn(false)
