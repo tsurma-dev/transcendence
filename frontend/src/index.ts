@@ -361,6 +361,9 @@ class StartPageScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
+      
+      // Hide the global back button on the start page
+      App.getInstance().toggleGlobalBackButton(false)
     }
     return div
   }
@@ -408,15 +411,14 @@ class QuickPlaySetupScreen extends Component {
       div.appendChild(fragment)
       
       // Remove logout button and online users counter for quick play
-      // Show back button, hide logout button
       const logoutBtn = div.querySelector('#logoutBtn')
-      const backToStartBtn = div.querySelector('#backToStartBtn') as HTMLElement
       const onlineUsersDiv = div.querySelector('#onlineUsersCount')?.closest('.text-center')
       
       if (logoutBtn) logoutBtn.remove()
       if (onlineUsersDiv) onlineUsersDiv.remove()
-      if (backToStartBtn) backToStartBtn.style.display = 'block'
       
+      // Show the global back button for quick play
+      App.getInstance().toggleGlobalBackButton(true)
     }
     return div
   }
@@ -425,16 +427,8 @@ class QuickPlaySetupScreen extends Component {
     const player1Input = this.element?.querySelector('#player1Name') as HTMLInputElement
     const player2Input = this.element?.querySelector('#player2Name') as HTMLInputElement
     const startBtn = this.element?.querySelector('#startGameBtn') as HTMLButtonElement
-    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
 
     if (!player1Input || !player2Input || !startBtn) return
-
-    // Set up back button
-    if (backToStartBtn) {
-      backToStartBtn.addEventListener('click', () => {
-        this.router.navigateTo(StartPageScreen)
-      })
-    }
 
     const updateStartButton = () => {
       const hasPlayer1 = player1Input.value.trim().length > 0
@@ -485,6 +479,9 @@ class LoginScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
+      
+      // Show the global back button for login screen
+      App.getInstance().toggleGlobalBackButton(true)
     }
     return div
   }
@@ -568,6 +565,8 @@ class RegisterScreen extends Component {
     if (fragment) {
       div.appendChild(fragment)
     }
+    // Show the global back button for register screen
+    App.getInstance().toggleGlobalBackButton(true)
     return div
   }
 
@@ -887,18 +886,45 @@ class GameScreen extends Component {
 // ============================
 
 /**
- * Main Application Class
+ * Main Application Class, singleton pattern
+ * Handles global state and initialization
+ * Manages global back button visibility
+ * Initializes the router with the start page
  */
 class App {
+  private static instance: App
   private router = AppRouter.getInstance()
+  private globalBackBtn: HTMLElement | null = null
+
+  static getInstance(): App {
+    if (!App.instance) {
+      App.instance = new App()
+    }
+    return App.instance
+  }
 
   init(): void {
+    // Set up global back button
+    this.globalBackBtn = document.getElementById('backToStartBtn')
+    if (this.globalBackBtn) {
+      this.globalBackBtn.addEventListener('click', () => {
+        this.router.navigateTo(StartPageScreen)
+      })
+    }
+    // Initialize the router with the start page
     this.router.navigateTo(StartPageScreen)
+    console.log('App initialized, navigating to StartPageScreen')
+  }
+  // Method to show/hide the global back button
+  toggleGlobalBackButton(show: boolean): void {
+    if (this.globalBackBtn) {
+      this.globalBackBtn.style.display = show ? 'block' : 'none'
+    }
   }
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  const app = new App()
+  const app = App.getInstance()
   app.init()
 })
