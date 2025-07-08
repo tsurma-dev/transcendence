@@ -688,6 +688,42 @@ class RegisterScreen extends Component {
 }
 
 /**
+ * Logged out Screen
+ * This screen is shown when the user logs out
+ * It simply redirects to the start page
+ */
+class LoggedOutScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+  private apiService = new ApiService()
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('loggedOutTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+    }
+    // Show the global button as back button for register screen
+    App.getInstance().setUserLoggedIn(false)
+    App.getInstance().toggleGlobalButton(true)
+    return div
+  }
+
+  setupEvents(): void {
+    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
+    if (backToStartBtn) {
+      backToStartBtn.addEventListener('click', () => {
+        this.router.navigateTo(StartPageScreen)
+      })
+    }
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
+  }
+}
+
+/**
  * Player Setup Screen
  */
 class PlayerSetupScreen extends Component {
@@ -922,9 +958,9 @@ class App {
       const success = await this.apiService.logout()
       if (success) {
         this.setUserLoggedIn(false)
-        this.router.navigateTo(StartPageScreen)
+        this.router.navigateTo(LoggedOutScreen)
       } else {
-        console.error('Logout failed, but redirecting to start page anyway')
+        console.error('Logout failed, redirecting to start page')
         this.setUserLoggedIn(false)
         this.router.navigateTo(StartPageScreen)
       }
