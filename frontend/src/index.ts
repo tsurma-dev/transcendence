@@ -2,13 +2,18 @@
 * =================================
 * FILE STRUCTURE AND EXECUTION FLOW
 * =================================
-* This file is structured to support a scalable Single Page Application (SPA) architecture
+* 
+* This file is located in the `src` directory of the frontend. This is where you can make
+* changes to the Typescript used in the application.
+* 
+* The file is structured to support a scalable Single Page Application (SPA) architecture
 * and follows the common Js/Ts module pattern where:
+* 
 * - Imports at to the top of the file
 * - Classes and functions in the middle
 * - Initialization/execution code at the bottom
 *
-* "What" (class definitions, function declarations, etc.)is separated from "How" (execution logic).
+* "What" (class definitions, function declarations etc.)is separated from "How" (execution logic).
 * When the browser loads the script, it needs all classes and functions to be defined before it
 * can execute the initialization code.
 * 
@@ -21,6 +26,11 @@
 * 6. Screen Components: UI components - Individual screens for the app (StartPage, QuickPlaySetup, Login, Register, PlayerSetup, GameScreen etc)
 * 7. App: Main application class that initializes everything and manages the global state
 * 8. Initialization code: Sets up the app when the DOM (Document Object Model) is ready
+* 
+* When running the application, this file is transpiled to JavaScript and bundled with other files in
+* the dist directory. The output file is then linked in the index.html file.
+* 
+* Do not edit index.js in the dist directory directly, as it is a generated file.
 */
 
 
