@@ -1,3 +1,7 @@
+/* ================================= */
+/* FILE STRUCTURE AND EXECUTION FLOW */
+/* ================================= */
+
 /* This file is located in the src directory of the frontend */
 /* It's used to import Tailwind CSS styles into the project */
 /* The styling itself is written inline in index.html */
@@ -8,3 +12,5 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Additional custom styles can be added here if needed */
