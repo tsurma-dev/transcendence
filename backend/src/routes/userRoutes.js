@@ -12,10 +12,13 @@ async function userRoutes(fastify) {
   fastify.get("/register", async (req, reply) => {
     return reply.sendFile("register.html");
   }); // will be folded into frontend
+  fastify.get("/api/profile", {
+    preHandler: fastify.verifyAuth,
+    handler: profileUser,
+  }); // API will be folded into frontend
   fastify.get("/", async (req, reply) => {
     return reply.sendFile("index.html");
   }); // will be folded into frontend
-  fastify.get("/api/profile", { preHandler: fastify.verifyAuth }, profileUser); // API will be folded into frontend
 }
 
 export default userRoutes;

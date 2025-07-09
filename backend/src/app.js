@@ -7,7 +7,6 @@ import fastifyFormbody from "@fastify/formbody";
 import fastifyJwt from "@fastify/jwt";
 import fastifyCookie from "@fastify/cookie";
 import fastifyHelmet from "@fastify/helmet";
-import fastifyCsrf from "@fastify/csrf-protection";
 import fastifyRedis from "@fastify/redis";
 import fastifyWebsocket from "@fastify/websocket";
 import fastifyCors from "@fastify/cors";

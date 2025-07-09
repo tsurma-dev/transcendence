@@ -3,6 +3,8 @@ import {
   loginUser,
   logoutUser,
   authCheckUser,
+  generate2FaSecret,
+  verify2FaSecret,
 } from "../controllers/authController.js";
 import { loginUserSchema, registerUserSchema } from "../schemas/userSchemas.js";
 
@@ -28,6 +30,16 @@ async function authRoutes(fastify) {
   fastify.get("/api/auth/check", {
     preHandler: fastify.verifyAuth,
     handler: authCheckUser,
+  });
+
+  fastify.post("/api/me/2fa/setup", {
+    preHandler: fastify.verifyAuth,
+    handler: generate2FaSecret,
+  });
+
+  fastify.post("/api/me/2fa/verify", {
+    preHandler: fastify.verifyAuth,
+    handler: verify2FaSecret,
   });
 }
 

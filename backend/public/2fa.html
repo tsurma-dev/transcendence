@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>2FA Setup</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; max-width: 500px; margin: auto; }
+    #qrcode { margin: 1rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Two-Factor Authentication Setup</h1>
+
+  <button id="setupBtn">Generate QR Code</button>
+  <div id="qrcode"></div>
+
+  <div id="verifySection" style="display:none;">
+    <label for="token">Enter code from your authenticator app:</label><br>
+    <input type="text" id="token" name="token" required />
+    <button id="verifyBtn">Verify</button>
+    <div id="verifyResult"></div>
+  </div>
+
+  <script>
+    document.getElementById('setupBtn').addEventListener('click', async () => {
+      const res = await fetch('/api/me/2fa/setup', {
+        method: 'POST',
+        credentials: 'include' // Include cookies for session-based auth
+      });
+
+      if (!res.ok) {
+        alert('Failed to initiate 2FA setup');
+        return;
+      }
+
+      const data = await res.json();
+      const qr = document.getElementById('qrcode');
+      qr.innerHTML = `<img src="${data.qrCodeUrl}" alt="QR Code" />`;
+
+      document.getElementById('verifySection').style.display = 'block';
+    });
+
+    document.getElementById('verifyBtn').addEventListener('click', async () => {
+      const token = document.getElementById('token').value;
+
+      const res = await fetch('/api/me/2fa/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies for session-based auth
+        body: JSON.stringify({ token })
+      });
+
+      const result = document.getElementById('verifyResult');
+      if (res.ok) {
+        result.textContent = '2FA setup complete!';
+        result.style.color = 'green';
+      } else {
+        result.textContent = 'Invalid token. Try again.';
+        result.style.color = 'red';
+      }
+    });
+  </script>
+</body>
+</html>

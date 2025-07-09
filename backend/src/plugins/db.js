@@ -1,13 +1,20 @@
-import fp from 'fastify-plugin';
-import Database from 'better-sqlite3';
-import { fileURLToPath } from 'url';
-import path from 'path';
+import fp from "fastify-plugin";
+import Database from "better-sqlite3";
+import { fileURLToPath } from "url";
+import path from "path";
 
 export default fp(async function (fastify, opts) {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
 
-  const dbPath = path.join(__dirname, '..', '..', '..', 'database', 'database.sqlite');
+  const dbPath = path.join(
+    __dirname,
+    "..",
+    "..",
+    "..",
+    "database",
+    "database.sqlite"
+  );
   const db = new Database(dbPath);
 
   db.exec(`
@@ -16,6 +23,8 @@ export default fp(async function (fastify, opts) {
       username TEXT NOT NULL UNIQUE,
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
+      two_fa_enabled INTEGER DEFAULT 0,
+      two_fa_secret TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -51,9 +60,9 @@ export default fp(async function (fastify, opts) {
     );
   `);
 
-  fastify.decorate('db', db);
+  fastify.decorate("db", db);
 
-  fastify.addHook('onClose', (instance, done) => {
+  fastify.addHook("onClose", (instance, done) => {
     db.close();
     done();
   });

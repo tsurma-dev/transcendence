@@ -1,5 +1,7 @@
 import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
+import speakeasy from "speakeasy";
+import QRcode from "qrcode";
 
 const SALT_ROUNDS = 10;
 
@@ -72,4 +74,17 @@ export function updateUserEmail(db, id, email) {
     success: info.changes > 0,
     user: findUserById(db, id),
   };
+}
+
+export function set2FA(db, id, secret) {
+  console.log(db, id, secret);
+  const stmt = db.prepare("UPDATE users SET two_fa_secret = ? WHERE id = ?");
+  const info = stmt.run(secret.base32, id);
+  return { success: info.changes > 0 };
+}
+
+export function enable2FA(db, id) {
+  const stmt = db.prepare("UPDATE users SET two_fa_enabled = 1 WHERE id = ?");
+  const info = stmt.run(id);
+  return { success: info.changes > 0 };
 }
