@@ -1,3 +1,26 @@
+<!-- This is the main HTML file for the Transcendence Pong game
+
+=================================
+FILE STRUCTURE AND EXECUTION FLOW
+================================= 
+
+This file is located in the `src` directory of the frontend. This is where you can make
+changes to the HTML structure and templates used in the application.
+
+This file contains the HTML structure, including templates for different screens
+(Start page, Login, Register, PlayerSetup, Game Screen etc). It uses Tailwind CSS for styling,
+which is written inline in the HTML file. The templates are defined using `<template>` tags,
+which will be used by the TypeScript code to render the appropriate screens.
+
+When running the application, the HTML file is loaded first, which initializes the app and sets up the screens. 
+All interactions and server communication are managed through index.ts. 
+
+The dist directory contains the final output files that are served to the browser (index.html, index.js, output.css).
+
+Do not edit files in the dist directory, as they are generated files.
+
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,17 +32,59 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
   <!-- Main App Container -->
-  <div id="app" class="min-h-screen flex items-center justify-center p-4"></div>
+  <div id="app" class="min-h-screen flex items-center justify-center p-4">
+    <!-- Global Navigation Button (Back to Start/Log out) -->
+    <button 
+      id="backToStartBtn" 
+      class="absolute top-4 right-4 px-4 py-2 bg-red-500/80 hover:bg-red-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105">
+      ← Back to Start
+    </button>
+  </div>
+
+  <!-- Start Page template -->
+  <template id="startPageTemplate">
+    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl max-w-md w-full text-center">
+      <h1 class="text-6xl font-bold text-white mb-2 drop-shadow-lg">
+        🏓 PONG
+      </h1>
+      <p class="text-white/80 text-xl mb-8">Choose your game mode</p>
+      
+      <div class="space-y-4">
+        <!-- Quick Play Button -->
+        <button 
+          id="quickPlayBtn"
+          class="w-full px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-lg rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+        >
+          🎮 Quick Play
+        </button>
+        
+        <!-- Login Button -->
+        <button 
+          id="loginBtn"
+          class="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold text-lg rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+        >
+          🔐 Login
+        </button>
+        
+        <!-- Register Button -->
+        <button 
+          id="registerBtn"
+          class="w-full px-6 py-4 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold text-lg rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+        >
+          📝 Register
+        </button>
+      </div>
+    </div>
+  </template>
 
   <!-- Login template -->
   <template id="loginTemplate">
-    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl max-w-md w-full">
+    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl max-w-md w-full relative">
+      
       <h1 class="text-4xl font-bold text-white text-center mb-6 drop-shadow-lg">
         Let's play Pong 🏓
       </h1>
         <form id="loginForm" class="space-y-4">
-          <input type="text" name="username" placeholder="Username" required maxlength="15" 
-              class="w-full p-4 rounded-xl bg-white/90 text-gray-800 border-none outline-none focus:ring-4 focus:ring-blue-400/50 transition-all" />
           <input type="email" name="email" placeholder="Email" required 
               class="w-full p-4 rounded-xl bg-white/90 text-gray-800 border-none outline-none focus:ring-4 focus:ring-blue-400/50 transition-all" />
           <input type="password" name="password" placeholder="Password" required 
@@ -38,7 +103,7 @@
 
   <!-- Register template -->
   <template id="registerTemplate">
-    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl max-w-md w-full">
+    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl max-w-md w-full relative">
       <h1 class="text-4xl font-bold text-white text-center mb-6 drop-shadow-lg">
         Register for Pong 🏓
       </h1>
@@ -61,17 +126,22 @@
     </div>
   </template>
 
+  <!-- Logged out template -->
+  <template id="loggedOutTemplate">
+    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl max-w-md w-full text-center">
+      <h1 class="text-4xl font-bold text-white mb-4 drop-shadow-lg">
+        User successfully logged out
+      </h1>
+      <p class="text-white/80 text-lg">
+        You can now close this window or return to the start page
+      </p>
+    </div>
+  </template>
+
   <!-- Player Setup Template -->
   <template id="playerSetupTemplate">
     <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl max-w-2xl w-full relative">
-      <!-- Logout Button -->
-      <button 
-        id="logoutBtn" 
-        class="absolute top-4 right-4 px-4 py-2 bg-red-500/80 hover:bg-red-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105"
-      >
-        Log out
-      </button>
-
+      
       <!-- Online Users Counter -->
       <div class="text-center mb-4">
         <div class="inline-flex items-center bg-green-500/20 px-4 py-2 rounded-full border border-green-400/30">
@@ -133,13 +203,6 @@
   <!-- Game Screen Template -->
   <template id="gameScreenTemplate">
     <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl relative">
-      <!-- Logout Button -->
-      <button 
-        id="logoutBtn" 
-        class="absolute top-4 right-4 px-4 py-2 bg-red-500/80 hover:bg-red-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105"
-      >
-        Log out
-      </button>
       
       <!-- Players Display with Scores -->
       <div class="flex justify-between items-center mb-6">

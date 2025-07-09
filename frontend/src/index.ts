@@ -1,3 +1,39 @@
+/**
+* =================================
+* FILE STRUCTURE AND EXECUTION FLOW
+* =================================
+* 
+* This file is located in the `src` directory of the frontend. This is where you can make
+* changes to the Typescript used in the application.
+* 
+* The file is structured to support a scalable Single Page Application (SPA) architecture
+* and follows the common Js/Ts module pattern where:
+* 
+* - Imports at to the top of the file
+* - Classes and functions in the middle
+* - Initialization/execution code at the bottom
+*
+* "What" (class definitions, function declarations etc.)is separated from "How" (execution logic).
+* When the browser loads the script, it needs all classes and functions to be defined before it
+* can execute the initialization code.
+* 
+* Current file structure:
+* 1. ApiService: Handles backend communication
+* 2. Component: Base abstract class for all components
+* 3. TemplateManager: Infrastructure singleton, manages HTML templates
+* 4. AppRouter: Infrastructure singleton, manages navigation between screens
+* 5. PongGame: Game logic and rendering (placeholder for now)
+* 6. Screen Components: UI components - Individual screens for the app (StartPage, QuickPlaySetup, Login, Register, PlayerSetup, GameScreen etc)
+* 7. App: Main application class that initializes everything and manages the global state
+* 8. Initialization code: Sets up the app when the DOM (Document Object Model) is ready
+* 
+* When running the application, this file is transpiled to JavaScript and bundled with other files in
+* the dist directory. The output file is then linked in the index.html file.
+* 
+* Do not edit index.js in the dist directory directly, as it is a generated file.
+*/
+
+
 // ===========================
 // SCALABLE SPA ARCHITECTURE
 // ===========================
@@ -350,6 +386,121 @@ class PongGame {
 // ===================
 
 /**
+ * Start Page Screen
+ */
+class StartPageScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('startPageTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+      
+      // Hide the global button on the start page
+      App.getInstance().toggleGlobalButton(false)
+    }
+    return div
+  }
+
+  setupEvents(): void {
+    const quickPlayBtn = this.element?.querySelector('#quickPlayBtn') as HTMLButtonElement
+    const loginBtn = this.element?.querySelector('#loginBtn') as HTMLButtonElement
+    const registerBtn = this.element?.querySelector('#registerBtn') as HTMLButtonElement
+
+    if (quickPlayBtn) {
+      quickPlayBtn.addEventListener('click', () => {
+        this.router.navigateTo(QuickPlaySetupScreen)
+      })
+    }
+
+    if (loginBtn) {
+      loginBtn.addEventListener('click', () => {
+        this.router.navigateTo(LoginScreen)
+      })
+    }
+
+    if (registerBtn) {
+      registerBtn.addEventListener('click', () => {
+        this.router.navigateTo(RegisterScreen)
+      })
+    }
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
+  }
+}
+
+/**
+ * Quick Play Setup Screen (no authentication required)
+ */
+class QuickPlaySetupScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('playerSetupTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+
+      // Remove the online users count and logout button for quick play
+      const onlineUsersDiv = div.querySelector('#onlineUsersCount')?.closest('.text-center')
+      if (onlineUsersDiv) onlineUsersDiv.remove()
+      
+      // Show the global button as back button for quick play
+      App.getInstance().setUserLoggedIn(false)
+      App.getInstance().toggleGlobalButton(true)
+    }
+    return div
+  }
+
+  setupEvents(): void {
+    const player1Input = this.element?.querySelector('#player1Name') as HTMLInputElement
+    const player2Input = this.element?.querySelector('#player2Name') as HTMLInputElement
+    const startBtn = this.element?.querySelector('#startGameBtn') as HTMLButtonElement
+
+    if (!player1Input || !player2Input || !startBtn) return
+
+    const updateStartButton = () => {
+      const hasPlayer1 = player1Input.value.trim().length > 0
+      const hasPlayer2 = player2Input.value.trim().length > 0
+      startBtn.disabled = !(hasPlayer1 && hasPlayer2)
+    }
+
+    player1Input.addEventListener('input', updateStartButton)
+    player2Input.addEventListener('input', updateStartButton)
+
+    const handleSubmit = () => {
+      const player1Name = player1Input.value.trim()
+      const player2Name = player2Input.value.trim()
+
+      if (player1Name && player2Name) {
+        this.router.navigateTo(GameScreen, player1Name, player2Name, true) // true = isQuickPlay
+      }
+    }
+
+    startBtn.addEventListener('click', handleSubmit)
+
+    // Enter key support
+    const handleEnter = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !startBtn.disabled) {
+        handleSubmit()
+      }
+    }
+
+    player1Input.addEventListener('keypress', handleEnter)
+    player2Input.addEventListener('keypress', handleEnter)
+  }
+
+  cleanup(): void {
+    // Cleanup will be handled automatically by unmount
+  }
+}
+
+/**
  * Login Screen
  */
 class LoginScreen extends Component {
@@ -362,6 +513,10 @@ class LoginScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
+      
+      // Show the global button as back button for login screen
+      App.getInstance().setUserLoggedIn(false)
+      App.getInstance().toggleGlobalButton(true)
     }
     return div
   }
@@ -370,8 +525,16 @@ class LoginScreen extends Component {
     const form = this.element?.querySelector('#loginForm') as HTMLFormElement
     const errorDiv = this.element?.querySelector('#loginError') as HTMLElement
     const showRegisterBtn = this.element?.querySelector('#showRegisterBtn') as HTMLButtonElement
+    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
 
     if (!form || !errorDiv) return
+
+    // Navigate back to start page
+    if (backToStartBtn) {
+      backToStartBtn.addEventListener('click', () => {
+        this.router.navigateTo(StartPageScreen)
+      })
+    }
 
     // Navigate to register screen
     if (showRegisterBtn) {
@@ -387,13 +550,11 @@ class LoginScreen extends Component {
 
       const formData = new FormData(form)
       const loginData = {
-        username: formData.get('username') as string,
         email: formData.get('email') as string,
         password: formData.get('password') as string
       }
 
       try {
-        // Replace with your actual login endpoint
         const response = await fetch(`${this.apiService['baseUrl']}/api/login`, {
           method: 'POST',
           headers: {
@@ -404,7 +565,8 @@ class LoginScreen extends Component {
         })
 
         if (response.ok) {
-          // Login successful, navigate to player setup
+          // Login successful, set user as logged in and navigate to player setup
+          App.getInstance().setUserLoggedIn(true)
           this.router.navigateTo(PlayerSetupScreen)
         } else {
           const error = await response.text()
@@ -439,6 +601,9 @@ class RegisterScreen extends Component {
     if (fragment) {
       div.appendChild(fragment)
     }
+    // Show the global button as back button for register screen
+    App.getInstance().setUserLoggedIn(false)
+    App.getInstance().toggleGlobalButton(true)
     return div
   }
 
@@ -446,8 +611,16 @@ class RegisterScreen extends Component {
     const form = this.element?.querySelector('#registerForm') as HTMLFormElement
     const errorDiv = this.element?.querySelector('#registerError') as HTMLElement
     const showLoginBtn = this.element?.querySelector('#showLoginBtn') as HTMLButtonElement
+    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
 
     if (!form || !errorDiv) return
+
+    // Navigate back to start page
+    if (backToStartBtn) {
+      backToStartBtn.addEventListener('click', () => {
+        this.router.navigateTo(StartPageScreen)
+      })
+    }
 
     // Navigate to login screen
     if (showLoginBtn) {
@@ -515,6 +688,54 @@ class RegisterScreen extends Component {
 }
 
 /**
+ * Logged out Screen
+ * This screen is shown when the user logs out
+ * It displays the username and redirects to the start page
+ */
+class LoggedOutScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+  private apiService = new ApiService()
+  private username: string
+
+  constructor(username: string = 'User') {
+    super()
+    this.username = username
+  }
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('loggedOutTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+      
+      // Update the message to include the username
+      const heading = div.querySelector('h1')
+      if (heading) {
+        heading.textContent = `${this.username} successfully logged out`
+      }
+    }
+    // Show the global button as back button for logout screen
+    App.getInstance().setUserLoggedIn(false)
+    App.getInstance().toggleGlobalButton(true)
+    return div
+  }
+
+  setupEvents(): void {
+    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
+    if (backToStartBtn) {
+      backToStartBtn.addEventListener('click', () => {
+        this.router.navigateTo(StartPageScreen)
+      })
+    }
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
+  }
+}
+
+/**
  * Player Setup Screen
  */
 class PlayerSetupScreen extends Component {
@@ -527,6 +748,10 @@ class PlayerSetupScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
+      
+      // Show the global button as logout button for authenticated users
+      App.getInstance().setUserLoggedIn(true)
+      App.getInstance().toggleGlobalButton(true)
     }
     return div
   }
@@ -535,22 +760,8 @@ class PlayerSetupScreen extends Component {
     const player1Input = this.element?.querySelector('#player1Name') as HTMLInputElement
     const player2Input = this.element?.querySelector('#player2Name') as HTMLInputElement
     const startBtn = this.element?.querySelector('#startGameBtn') as HTMLButtonElement
-    const logoutBtn = this.element?.querySelector('#logoutBtn') as HTMLButtonElement
 
     if (!player1Input || !player2Input || !startBtn) return
-
-    // Set up logout button
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', async () => {
-        const success = await this.apiService.logout()
-        if (success) {
-          this.router.navigateTo(LoginScreen)
-        } else {
-          console.error('Logout failed, but redirecting to login anyway')
-          this.router.navigateTo(LoginScreen)
-        }
-      })
-    }
 
     // Load online users count
     this.loadOnlineUsersCount()
@@ -653,11 +864,13 @@ class GameScreen extends Component {
   private pongGame: PongGame | null = null
   private player1Name: string
   private player2Name: string
+  private isQuickPlay: boolean
 
-  constructor(player1Name: string, player2Name: string) {
+  constructor(player1Name: string, player2Name: string, isQuickPlay: boolean = false) {
     super()
     this.player1Name = player1Name
     this.player2Name = player2Name
+    this.isQuickPlay = isQuickPlay
   }
 
   render(): HTMLElement {
@@ -665,25 +878,19 @@ class GameScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
+      
+      // Set the global button state based on quick play or authenticated mode
+      if (this.isQuickPlay) {
+        App.getInstance().setUserLoggedIn(false)
+      } else {
+        App.getInstance().setUserLoggedIn(true)
+      }
+      App.getInstance().toggleGlobalButton(true)
     }
     return div
   }
 
   setupEvents(): void {
-    // Set up logout button
-    const logoutBtn = this.element?.querySelector('#logoutBtn') as HTMLButtonElement
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', async () => {
-        const success = await this.apiService.logout()
-        if (success) {
-          this.router.navigateTo(LoginScreen)
-        } else {
-          console.error('Logout failed, but redirecting to login anyway')
-          this.router.navigateTo(LoginScreen)
-        }
-      })
-    }
-
     // Update player names display
     const player1Display = this.element?.querySelector('#player1Display')
     const player2Display = this.element?.querySelector('#player2Display')
@@ -724,18 +931,86 @@ class GameScreen extends Component {
 // ============================
 
 /**
- * Main Application Class
+ * Main Application Class, singleton pattern
+ * Handles global state and initialization
+ * Manages global navigation button (back/logout)
+ * Initializes the router with the start page
  */
 class App {
+  private static instance: App
   private router = AppRouter.getInstance()
+  private globalBtn: HTMLElement | null = null
+  private apiService = new ApiService()
+  private isUserLoggedIn: boolean = false
+
+  static getInstance(): App {
+    if (!App.instance) {
+      App.instance = new App()
+    }
+    return App.instance
+  }
 
   init(): void {
-    this.router.navigateTo(LoginScreen)
+    // Set up global navigation button
+    this.globalBtn = document.getElementById('backToStartBtn')
+    if (this.globalBtn) {
+      this.globalBtn.addEventListener('click', () => {
+        this.handleGlobalButtonClick()
+      })
+    }
+   
+    // Initialize the router with the start page
+    this.router.navigateTo(StartPageScreen)
+    console.log('App initialized, navigating to StartPageScreen')
   }
+
+  private async handleGlobalButtonClick(): Promise<void> {
+    if (this.isUserLoggedIn) {
+      // Get current user before logout to display username
+      const currentUser = await this.apiService.getCurrentUser()
+      const username = currentUser?.username || 'User'
+      
+      // Handle logout
+      const success = await this.apiService.logout()
+      if (success) {
+        this.setUserLoggedIn(false)
+        this.router.navigateTo(LoggedOutScreen, username)
+      } else {
+        console.error('Logout failed, redirecting to start page')
+        this.setUserLoggedIn(false)
+        this.router.navigateTo(StartPageScreen)
+      }
+    } else {
+      // Handle back to start
+      this.router.navigateTo(StartPageScreen)
+    }
+  }
+
+  // Method to show/hide the global navigation button
+  toggleGlobalButton(show: boolean): void {
+    if (this.globalBtn) {
+      this.globalBtn.style.display = show ? 'block' : 'none'
+    }
+  }
+
+  // Method to set user login state and update button appearance
+  setUserLoggedIn(loggedIn: boolean): void {
+    this.isUserLoggedIn = loggedIn
+    if (this.globalBtn) {
+      if (loggedIn) {
+        this.globalBtn.textContent = 'Log out'
+        this.globalBtn.className = 'absolute top-4 right-4 px-4 py-2 bg-red-500/80 hover:bg-red-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105'
+      } else {
+        this.globalBtn.textContent = '← Back to Start'
+        this.globalBtn.className = 'absolute top-4 right-4 px-4 py-2 bg-red-500/80 hover:bg-red-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105'
+      }
+    }
+  }
+  
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  const app = new App()
+  const app = App.getInstance()
   app.init()
 })
