@@ -978,10 +978,8 @@ class App {
     if (this.globalBtn) {
       if (loggedIn) {
         this.globalBtn.textContent = 'Log out'
-        this.globalBtn.className = 'absolute top-4 right-4 px-4 py-2 bg-red-500/80 hover:bg-red-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105'
       } else {
         this.globalBtn.textContent = '← Back to Start'
-        this.globalBtn.className = 'absolute top-4 right-4 px-4 py-2 bg-red-500/80 hover:bg-red-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105'
       }
     }
   }
