@@ -525,16 +525,8 @@ class LoginScreen extends Component {
     const form = this.element?.querySelector('#loginForm') as HTMLFormElement
     const errorDiv = this.element?.querySelector('#loginError') as HTMLElement
     const showRegisterBtn = this.element?.querySelector('#showRegisterBtn') as HTMLButtonElement
-    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
 
     if (!form || !errorDiv) return
-
-    // Navigate back to start page
-    if (backToStartBtn) {
-      backToStartBtn.addEventListener('click', () => {
-        this.router.navigateTo(StartPageScreen)
-      })
-    }
 
     // Navigate to register screen
     if (showRegisterBtn) {
@@ -611,16 +603,8 @@ class RegisterScreen extends Component {
     const form = this.element?.querySelector('#registerForm') as HTMLFormElement
     const errorDiv = this.element?.querySelector('#registerError') as HTMLElement
     const showLoginBtn = this.element?.querySelector('#showLoginBtn') as HTMLButtonElement
-    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
 
     if (!form || !errorDiv) return
-
-    // Navigate back to start page
-    if (backToStartBtn) {
-      backToStartBtn.addEventListener('click', () => {
-        this.router.navigateTo(StartPageScreen)
-      })
-    }
 
     // Navigate to login screen
     if (showLoginBtn) {
@@ -722,12 +706,7 @@ class LoggedOutScreen extends Component {
   }
 
   setupEvents(): void {
-    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
-    if (backToStartBtn) {
-      backToStartBtn.addEventListener('click', () => {
-        this.router.navigateTo(StartPageScreen)
-      })
-    }
+    // Global button is managed by App class
   }
 
   cleanup(): void {
@@ -999,10 +978,8 @@ class App {
     if (this.globalBtn) {
       if (loggedIn) {
         this.globalBtn.textContent = 'Log out'
-        this.globalBtn.className = 'absolute top-4 right-4 px-4 py-2 bg-red-500/80 hover:bg-red-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105'
       } else {
         this.globalBtn.textContent = '← Back to Start'
-        this.globalBtn.className = 'absolute top-4 right-4 px-4 py-2 bg-red-500/80 hover:bg-red-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105'
       }
     }
   }
