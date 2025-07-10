@@ -525,16 +525,8 @@ class LoginScreen extends Component {
     const form = this.element?.querySelector('#loginForm') as HTMLFormElement
     const errorDiv = this.element?.querySelector('#loginError') as HTMLElement
     const showRegisterBtn = this.element?.querySelector('#showRegisterBtn') as HTMLButtonElement
-    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
 
     if (!form || !errorDiv) return
-
-    // Navigate back to start page
-    if (backToStartBtn) {
-      backToStartBtn.addEventListener('click', () => {
-        this.router.navigateTo(StartPageScreen)
-      })
-    }
 
     // Navigate to register screen
     if (showRegisterBtn) {
@@ -611,16 +603,8 @@ class RegisterScreen extends Component {
     const form = this.element?.querySelector('#registerForm') as HTMLFormElement
     const errorDiv = this.element?.querySelector('#registerError') as HTMLElement
     const showLoginBtn = this.element?.querySelector('#showLoginBtn') as HTMLButtonElement
-    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
 
     if (!form || !errorDiv) return
-
-    // Navigate back to start page
-    if (backToStartBtn) {
-      backToStartBtn.addEventListener('click', () => {
-        this.router.navigateTo(StartPageScreen)
-      })
-    }
 
     // Navigate to login screen
     if (showLoginBtn) {
@@ -722,12 +706,7 @@ class LoggedOutScreen extends Component {
   }
 
   setupEvents(): void {
-    const backToStartBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
-    if (backToStartBtn) {
-      backToStartBtn.addEventListener('click', () => {
-        this.router.navigateTo(StartPageScreen)
-      })
-    }
+    // Global button is managed by App class
   }
 
   cleanup(): void {
