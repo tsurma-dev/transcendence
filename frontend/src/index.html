@@ -36,7 +36,7 @@ Do not edit files in the dist directory, as they are generated files.
     <!-- Global Navigation Button (Back to Start/Log out) -->
     <button 
       id="backToStartBtn" 
-      class="absolute top-4 right-4 px-4 py-2 bg-red-500/80 hover:bg-red-600/80 text-white text-sm font-medium rounded-lg transition-all duration-200 transform hover:scale-105">
+      class="absolute top-4 right-4 px-4 py-2 bg-gradient-to-b from-gray-300 to-gray-500 hover:from-gray-200 hover:to-gray-400 text-black font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
       ← Back to Start
     </button>
   </div>
@@ -83,7 +83,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 
   <!-- Login template -->
   <template id="loginTemplate">
-    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl max-w-md w-full relative">
+    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono tracking-wider p-8 max-w-lg w-full text-center">
       <div class="text-center mb-8">
         <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">_|_|_|      _|_|    _|      _|    _|_|_|
 _|    _|  _|    _|  _|_|    _|  _|      
@@ -92,26 +92,26 @@ _|        _|    _|  _|    _|_|  _|    _|
 _|          _|_|    _|      _|    _|_|_|</pre>
       </div>
       </h1>
-        <form id="loginForm" class="space-y-4">
-          <input type="email" name="email" placeholder="Email" required 
-              class="w-full p-4 rounded-xl bg-white/90 text-gray-800 border-none outline-none focus:ring-4 focus:ring-blue-400/50 transition-all" />
-          <input type="password" name="password" placeholder="Password" required 
-              class="w-full p-4 rounded-xl bg-white/90 text-gray-800 border-none outline-none focus:ring-4 focus:ring-blue-400/50 transition-all" />
-          <button type="submit" 
-              class="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold text-lg rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
-            Login
-          </button>
-      </form>
-      <div id="loginError" class="text-red-500 text-center mt-4 hidden"></div>
-      <div class="text-white/80 text-center mt-4">
-        Don't have an account? <button id="showRegisterBtn" class="text-blue-300 hover:text-blue-200 underline cursor-pointer">Register here</button>
-      </div>
+      <form id="loginForm" class="space-y-4">
+        <input type="email" name="email" placeholder="Email" required 
+            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+        <input type="password" name="password" placeholder="Password" required 
+            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+        <button type="submit" 
+            class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          Login
+        </button>
+    </form>
+    <div id="loginError" class="text-red-500 text-center mt-4 hidden"></div>
+    <div class="text-black text-center mt-4 font-mono">
+      Don't have an account? <button id="showRegisterBtn" class="text-black underline cursor-pointer font-bold hover:text-gray-700">Register here</button>
+    </div>
     </div>
   </template>
 
   <!-- Register template -->
   <template id="registerTemplate">
-    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl max-w-md w-full relative">
+    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono tracking-wider p-8 max-w-lg w-full text-center">
       <div class="text-center mb-8">
         <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">_|_|_|      _|_|    _|      _|    _|_|_|
 _|    _|  _|    _|  _|_|    _|  _|      
@@ -121,19 +121,19 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       </div>
       <form id="registerForm" class="space-y-4">
         <input type="text" name="username" placeholder="Username" required maxlength="15" 
-            class="w-full p-4 rounded-xl bg-white/90 text-gray-800 border-none outline-none focus:ring-4 focus:ring-blue-400/50 transition-all" />
+            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
         <input type="email" name="email" placeholder="Email" required 
-            class="w-full p-4 rounded-xl bg-white/90 text-gray-800 border-none outline-none focus:ring-4 focus:ring-blue-400/50 transition-all" />
+            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
         <input type="password" name="password" placeholder="Password" required 
-            class="w-full p-4 rounded-xl bg-white/90 text-gray-800 border-none outline-none focus:ring-4 focus:ring-blue-400/50 transition-all" />
+            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
         <button type="submit" 
-            class="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold text-lg rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
+            class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
           Register
         </button>
       </form>
       <div id="registerError" class="text-red-500 text-center mt-4 hidden"></div>
-      <div class="text-white/80 text-center mt-4">
-        Already have an account? <button id="showLoginBtn" class="text-blue-300 hover:text-blue-200 underline cursor-pointer">Login here</button>
+      <div class="text-black text-center mt-4 font-mono">
+        Already have an account? <button id="showLoginBtn" class="text-black underline cursor-pointer font-bold hover:text-gray-700">Login here</button>
       </div>
     </div>
   </template>
@@ -152,7 +152,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 
   <!-- Player Setup Template -->
   <template id="playerSetupTemplate">
-    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl max-w-2xl w-full relative">
+    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-2xl w-full relative">
       
       <!-- Online Users Counter -->
       <div class="text-center mb-4">
@@ -174,31 +174,31 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       
       <div class="grid md:grid-cols-2 gap-8 mb-8">
         <!-- Player 1 Input -->
-        <div class="bg-white/20 p-6 rounded-2xl border border-white/30">
-          <h3 class="text-2xl font-semibold text-white mb-4 text-center">Player 1</h3>
+        <div class="p-6 border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <h3 class="text-2xl font-semibold text-black mb-4 text-center font-mono uppercase tracking-wider">Player 1</h3>
           <input 
             type="text" 
             id="player1Name" 
             placeholder="Enter your name" 
             maxlength="15"
-            class="w-full p-4 rounded-xl bg-white/90 text-gray-800 text-center font-semibold text-lg border-none outline-none focus:ring-4 focus:ring-blue-400/50 transition-all"
+            class="w-full p-4 rounded-none bg-white/90 text-gray-800 text-center font-semibold text-lg border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono"
           >
-          <div class="text-white/80 text-center mt-3 text-sm">
+          <div class="text-black text-center mt-3 text-sm font-mono uppercase tracking-wider">
             Controls: <span class="font-semibold">W</span> (Up) / <span class="font-semibold">S</span> (Down)
           </div>
         </div>
         
         <!-- Player 2 Input -->
-        <div class="bg-white/20 p-6 rounded-2xl border border-white/30">
-          <h3 class="text-2xl font-semibold text-white mb-4 text-center">Player 2</h3>
+        <div class="p-6 border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <h3 class="text-2xl font-semibold text-black mb-4 text-center font-mono uppercase tracking-wider">Player 2</h3>
           <input 
             type="text" 
             id="player2Name" 
             placeholder="Enter your name" 
             maxlength="15"
-            class="w-full p-4 rounded-xl bg-white/90 text-gray-800 text-center font-semibold text-lg border-none outline-none focus:ring-4 focus:ring-blue-400/50 transition-all"
+            class="w-full p-4 rounded-none bg-white/90 text-gray-800 text-center font-semibold text-lg border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono"
           >
-          <div class="text-white/80 text-center mt-3 text-sm">
+          <div class="text-black text-center mt-3 text-sm font-mono uppercase tracking-wider">
             Controls: <span class="font-semibold">↑</span> (Up) / <span class="font-semibold">↓</span> (Down)
           </div>
         </div>
@@ -208,8 +208,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         <button 
           id="startGameBtn" 
           disabled
-          class="px-8 py-4 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-bold text-xl rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:hover:scale-100 disabled:hover:shadow-none"
-        >
+          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
           START GAME
         </button>
       </div>
@@ -218,22 +217,22 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 
   <!-- Game Screen Template -->
   <template id="gameScreenTemplate">
-    <div class="backdrop-blur-lg bg-white/10 p-8 rounded-3xl border border-white/20 shadow-2xl relative">
+    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-4xl w-full relative">
       
       <!-- Players Display with Scores -->
       <div class="flex justify-between items-center mb-6">
-        <div class="bg-white/20 px-6 py-4 rounded-xl border border-white/30 min-w-[200px] text-center">
-          <div class="text-white/80 text-sm mb-1">Player 1</div>
-          <div id="player1Display" class="text-white font-semibold text-lg">Player 1</div>
-          <div id="player1Score" class="text-white text-4xl font-bold mt-2">0</div>
+        <div class="border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] px-6 py-4 min-w-[200px] text-center">
+          <div class="text-black text-sm mb-1 font-mono uppercase tracking-wider">Player 1</div>
+          <div id="player1Display" class="text-black font-semibold text-lg font-mono">Player 1</div>
+          <div id="player1Score" class="text-black text-4xl font-bold mt-2 font-mono">0</div>
         </div>
         
-        <div class="text-white text-2xl font-bold px-4">VS</div>
+        <div class="text-black text-2xl font-bold px-4 font-mono">VS</div>
         
-        <div class="bg-white/20 px-6 py-4 rounded-xl border border-white/30 min-w-[200px] text-center">
-          <div class="text-white/80 text-sm mb-1">Player 2</div>
-          <div id="player2Display" class="text-white font-semibold text-lg">Player 2</div>
-          <div id="player2Score" class="text-white text-4xl font-bold mt-2">0</div>
+        <div class="border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] px-6 py-4 min-w-[200px] text-center">
+          <div class="text-black text-sm mb-1 font-mono uppercase tracking-wider">Player 2</div>
+          <div id="player2Display" class="text-black font-semibold text-lg font-mono">Player 2</div>
+          <div id="player2Score" class="text-black text-4xl font-bold mt-2 font-mono">0</div>
         </div>
       </div>
 
@@ -243,12 +242,12 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           id="pongCanvas" 
           width="800" 
           height="400" 
-          class="bg-black border-4 border-white rounded-lg shadow-2xl"
+          class="bg-black border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
         ></canvas>
       </div>
 
       <!-- Controls Info -->
-      <div class="text-white/80 text-center mt-4 text-sm space-y-1">
+      <div class="text-black text-center mt-4 text-sm space-y-1 font-mono uppercase tracking-wider">
         <div><strong id="player1Controls">Player 1:</strong> W (Up) / S (Down)</div>
         <div><strong id="player2Controls">Player 2:</strong> ↑ (Up) / ↓ (Down)</div>
       </div>
