@@ -19,6 +19,7 @@ export const loginUserSchema = {
     properties: {
       email: emailField,
       password: passwordField,
+      TwoFAToken: { type: "string" },
     },
   },
 };
