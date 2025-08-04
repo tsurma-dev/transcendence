@@ -400,6 +400,8 @@ class StartPageScreen extends Component {
       
       // Hide the global button on the start page
       App.getInstance().toggleGlobalButton(false)
+      // Hide the user profile button on the start page
+      App.getInstance().toggleUserProfileButton(false)
     }
     return div
   }
@@ -517,6 +519,7 @@ class LoginScreen extends Component {
       // Show the global button as back button for login screen
       App.getInstance().setUserLoggedIn(false)
       App.getInstance().toggleGlobalButton(true)
+      App.getInstance().toggleUserProfileButton(true)
     }
     return div
   }
@@ -905,6 +908,67 @@ class GameScreen extends Component {
   }
 }
 
+/**
+ * User Profile Screen
+ */
+
+class UserProfileScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+  private apiService = new ApiService()
+  private user: { username: string } | null = null
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('userProfileTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+      
+      // Show the global button as logout button for authenticated users
+      App.getInstance().setUserLoggedIn(true)
+      App.getInstance().toggleGlobalButton(true)
+    }
+    return div
+  }
+
+  async setupEvents(): Promise<void> {
+    const usernameDisplay = this.element?.querySelector('#usernameDisplay') as HTMLElement
+    const logoutBtn = this.element?.querySelector('#logoutBtn') as HTMLButtonElement
+
+    if (!usernameDisplay || !logoutBtn) return
+
+    // Load current user data
+    try {
+      this.user = await this.apiService.getCurrentUser()
+      if (this.user && this.user.username) {
+        usernameDisplay.textContent = `Username: ${this.user.username}`
+      } else {
+        usernameDisplay.textContent = 'No user logged in'
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error)
+      usernameDisplay.textContent = 'Error loading user profile'
+    }
+
+    // Handle logout button click
+    logoutBtn.addEventListener('click', async () => {
+      const success = await this.apiService.logout()
+      if (success) {
+        App.getInstance().setUserLoggedIn(false)
+        this.router.navigateTo(LoggedOutScreen, this.user?.username || 'User')
+      } else {
+        console.error('Logout failed, redirecting to start page')
+        App.getInstance().setUserLoggedIn(false)
+        this.router.navigateTo(StartPageScreen)
+      }
+    })
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
+  }
+}
+
 // ============================
 // APPLICATION INITIALIZATION
 // ============================
@@ -919,6 +983,7 @@ class App {
   private static instance: App
   private router = AppRouter.getInstance()
   private globalBtn: HTMLElement | null = null
+  private userProfileBtn: HTMLElement | null = document.getElementById('userProfileBtn')
   private apiService = new ApiService()
   private isUserLoggedIn: boolean = false
 
@@ -937,6 +1002,15 @@ class App {
         this.handleGlobalButtonClick()
       })
     }
+
+    // Set up user profile button
+    const userProfileBtn = document.getElementById('userProfileBtn')
+    if (this.userProfileBtn) {
+      this.userProfileBtn.addEventListener('click', () => {
+        this.handleUserProfileClick()
+      })
+    }
+        
    
     // Initialize the router with the start page
     this.router.navigateTo(StartPageScreen)
@@ -965,10 +1039,27 @@ class App {
     }
   }
 
+  private async handleUserProfileClick(): Promise<void> {
+    if (this.isUserLoggedIn) {
+      // Navigate to user profile screen
+      this.router.navigateTo(UserProfileScreen)
+    } else {
+      // Navigate to login screen
+      this.router.navigateTo(LoginScreen)
+    }
+  }
+
   // Method to show/hide the global navigation button
   toggleGlobalButton(show: boolean): void {
     if (this.globalBtn) {
       this.globalBtn.style.display = show ? 'block' : 'none'
+    }
+  }
+
+  // Method to show/hide the user profile button
+  toggleUserProfileButton(show: boolean): void {
+    if (this.userProfileBtn) {
+      this.userProfileBtn.style.display = show ? 'block' : 'none'
     }
   }
 
