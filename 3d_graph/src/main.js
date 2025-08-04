@@ -84,6 +84,8 @@ const createScene = function () {
 	box.receiveShadows = true;
 	shadowGenerator.useBlurExponentialShadowMap = true;
 
+
+
 	// PINGPONG PADDLES
 	const paddleMaterial = new BABYLON.StandardMaterial('paddleMaterial', scene);
 	paddleMaterial.diffuseColor = new BABYLON.Color3(0, 0, 1);
@@ -108,6 +110,7 @@ const createScene = function () {
 	paddle2.position.z = 4.1;
 	paddle2.material = paddleMaterial;
 
+
 	// MOVING PADDLES
 	// Move the paddles with arrow keys
 	const keys = {};
@@ -120,20 +123,32 @@ const createScene = function () {
 	scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, function (evt) {
 		keys[evt.sourceEvent.key] = false;
 	}));
-	// Move paddles based on key state
+	// Move paddle 1 based on key state
 	scene.registerBeforeRender(function () {
 		if (keys["ArrowLeft"] || keys["a"] || keys["A"]) {
 			paddle1.position.x -= 0.05;
-			paddle2.position.x -= 0.05;
 		}
 		if (keys["ArrowRight"] || keys["d"] || keys["D"]) {
 			paddle1.position.x += 0.05;
-			paddle2.position.x += 0.05;
 		}
 		// Keep paddles within bounds
 		const maxX = 1.6; // Half the width of the table minus half the paddle width
 		paddle1.position.x = Math.max(-maxX, Math.min(maxX, paddle1.position.x));
-		paddle2.position.x = Math.max(-maxX, Math.min(maxX, paddle2.position.x));
+	});
+
+	// MOVING THE BALL
+	let ballVelocity = new BABYLON.Vector3(0.02, 0, 0.02); // Initial velocity of the ball (reduced for slower movement)
+	scene.registerBeforeRender(function () {
+		sphere.position.addInPlace(ballVelocity);
+
+		// Bounce off the sides of the table
+		if (sphere.position.x < -1.9 || sphere.position.x > 1.9) {
+			ballVelocity.x *= -1;
+		}
+		// Bounce off the ends of the table
+		if (sphere.position.z > 3.9 || sphere.position.z < -3.9) {
+			ballVelocity.z *= -1;
+		}
 	});
 
 	// Add Gizmo for light manipulation
