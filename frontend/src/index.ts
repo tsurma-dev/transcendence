@@ -125,6 +125,106 @@ class ApiService {
       return false
     }
   }
+
+  async updatePassword(password: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/password`, {
+        method: 'PATCH',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+      
+      if (response.ok) {
+        return { success: true }
+      } else {
+        return { success: false, message: result.message || 'Failed to update password' }
+      }
+    } catch (error) {
+      console.error('Password update error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async updateEmail(email: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/email`, {
+        method: 'PATCH',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+      
+      if (response.ok) {
+        return { success: true }
+      } else {
+        return { success: false, message: result.message || 'Failed to update email' }
+      }
+    } catch (error) {
+      console.error('Email update error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async updateUsername(username: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/username`, {
+        method: 'PATCH',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username }),
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+      
+      if (response.ok) {
+        return { success: true }
+      } else {
+        return { success: false, message: result.message || 'Failed to update username' }
+      }
+    } catch (error) {
+      console.error('Username update error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async deleteAccount(password: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/delete`, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+      
+      if (response.ok) {
+        return { success: true }
+      } else {
+        return { success: false, message: result.message || 'Failed to delete account' }
+      }
+    } catch (error) {
+      console.error('Account deletion error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
 }
 
 /**
@@ -733,6 +833,7 @@ class PlayerSetupScreen extends Component {
       // Show the global button as logout button for authenticated users
       App.getInstance().setUserLoggedIn(true)
       App.getInstance().toggleGlobalButton(true)
+      App.getInstance().toggleUserProfileButton(true)
     }
     return div
   }
@@ -867,6 +968,8 @@ class GameScreen extends Component {
         App.getInstance().setUserLoggedIn(true)
       }
       App.getInstance().toggleGlobalButton(true)
+      App.getInstance().toggleUserProfileButton(true)
+
     }
     return div
   }
@@ -978,9 +1081,8 @@ class UserProfileScreen extends Component {
     // Handle user settings button click (placeholder functionality)
     if (userSettingsBtn) {
       userSettingsBtn.addEventListener('click', () => {
-        // TODO: Navigate to user settings screen
-        console.log('User settings clicked - functionality not implemented yet')
-        alert('User settings functionality not implemented yet')
+        // Navigate to user settings screen
+        this.router.navigateTo(UserSettingsScreen)
       })
     }
 
@@ -1027,6 +1129,161 @@ class UserProfileScreen extends Component {
       onlineStatusDot.className = 'w-3 h-3 rounded-full mr-2 bg-red-400'
       onlineStatusText.textContent = 'Offline'
       onlineStatusText.className = 'text-red-600 font-mono text-sm font-bold'
+    }
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
+  }
+}
+
+/**
+ * User Settings Screen
+ */
+class UserSettingsScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+  private apiService = new ApiService()
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('userSettingsTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+      
+      // Show the global button as logout button for authenticated users
+      App.getInstance().setUserLoggedIn(true)
+      App.getInstance().toggleGlobalButton(true)
+    }
+    return div
+  }
+
+  setupEvents(): void {
+    const updatePasswordForm = this.element?.querySelector('#updatePasswordForm') as HTMLFormElement
+    const updateEmailForm = this.element?.querySelector('#updateEmailForm') as HTMLFormElement
+    const updateUsernameForm = this.element?.querySelector('#updateUsernameForm') as HTMLFormElement
+    const deleteAccountForm = this.element?.querySelector('#deleteAccountForm') as HTMLFormElement
+
+    // Handle password update
+    if (updatePasswordForm) {
+      updatePasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        const passwordResponseDiv = this.element?.querySelector('#passwordResponse') as HTMLElement
+        await this.handlePasswordUpdate(updatePasswordForm, passwordResponseDiv)
+      })
+    }
+
+    // Handle email update
+    if (updateEmailForm) {
+      updateEmailForm.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        const emailResponseDiv = this.element?.querySelector('#emailResponse') as HTMLElement
+        await this.handleEmailUpdate(updateEmailForm, emailResponseDiv)
+      })
+    }
+
+    // Handle username update
+    if (updateUsernameForm) {
+      updateUsernameForm.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        const usernameResponseDiv = this.element?.querySelector('#usernameResponse') as HTMLElement
+        await this.handleUsernameUpdate(updateUsernameForm, usernameResponseDiv)
+      })
+    }
+
+    // Handle account deletion
+    if (deleteAccountForm) {
+      deleteAccountForm.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        const confirmDelete = confirm('Are you sure you want to delete your account? This action cannot be undone.')
+        if (confirmDelete) {
+          const deleteResponseDiv = this.element?.querySelector('#deleteResponse') as HTMLElement
+          await this.handleAccountDeletion(deleteAccountForm, deleteResponseDiv)
+        }
+      })
+    }
+  }
+
+  private async handlePasswordUpdate(form: HTMLFormElement, responseDiv: HTMLElement): Promise<void> {
+    const formData = new FormData(form)
+    const password = formData.get('password') as string
+
+    const result = await this.apiService.updatePassword(password)
+    
+    if (result.success) {
+      responseDiv.textContent = 'Password updated successfully! You have been logged out for security. Redirecting to login...'
+      responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+      form.reset()
+      
+      // User is logged out after password change for security
+      setTimeout(() => {
+        App.getInstance().setUserLoggedIn(false)
+        this.router.navigateTo(LoginScreen)
+      }, 2000)
+    } else {
+      responseDiv.textContent = `Error: ${result.message}`
+      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+    }
+  }
+
+  private async handleEmailUpdate(form: HTMLFormElement, responseDiv: HTMLElement): Promise<void> {
+    const formData = new FormData(form)
+    const email = formData.get('email') as string
+
+    const result = await this.apiService.updateEmail(email)
+    
+    if (result.success) {
+      responseDiv.textContent = 'Email updated successfully!'
+      responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+      form.reset()
+    } else {
+      responseDiv.textContent = `Error: ${result.message}`
+      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+    }
+  }
+
+  private async handleUsernameUpdate(form: HTMLFormElement, responseDiv: HTMLElement): Promise<void> {
+    const formData = new FormData(form)
+    const username = formData.get('username') as string
+
+    const result = await this.apiService.updateUsername(username)
+    
+    if (result.success) {
+      responseDiv.textContent = 'Username updated successfully!'
+      responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+      form.reset()
+    } else {
+      responseDiv.textContent = `Error: ${result.message}`
+      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+    }
+  }
+
+  private async handleAccountDeletion(form: HTMLFormElement, responseDiv: HTMLElement): Promise<void> {
+    const formData = new FormData(form)
+    const password = formData.get('password') as string
+
+    const result = await this.apiService.deleteAccount(password)
+    
+    if (result.success) {
+      responseDiv.textContent = 'Account deleted successfully. Redirecting...'
+      responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+      
+      // Redirect to start page after successful deletion
+      setTimeout(() => {
+        App.getInstance().setUserLoggedIn(false)
+        this.router.navigateTo(StartPageScreen)
+      }, 2000)
+    } else {
+      responseDiv.textContent = `Error: ${result.message}`
+      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
     }
   }
 

@@ -52,6 +52,7 @@ await app.register(fastifyCors, {
     "http://localhost:5173",
   ], // Allow frontend dev servers, 5173 is for Vite
   credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
 });
 
 await app.register(fastifyFormbody);
