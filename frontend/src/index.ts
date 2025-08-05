@@ -75,7 +75,7 @@ class ApiService {
     }
   }
 
-  async getCurrentUser(): Promise<{username: string} | null> {
+  async getCurrentUser(): Promise<{id: number, username: string, email: string, createdAt: string} | null> {
     try {
       console.log('Fetching current user from:', `${this.baseUrl}/api/me`)
       const response = await fetch(`${this.baseUrl}/api/me`, {
@@ -916,7 +916,7 @@ class UserProfileScreen extends Component {
   private templateManager = TemplateManager.getInstance()
   private router = AppRouter.getInstance()
   private apiService = new ApiService()
-  private user: { username: string } | null = null
+  private user: {id: number, username: string, email: string, createdAt: string} | null = null
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('userProfileTemplate')
@@ -932,36 +932,68 @@ class UserProfileScreen extends Component {
   }
 
   async setupEvents(): Promise<void> {
-    const usernameDisplay = this.element?.querySelector('#usernameDisplay') as HTMLElement
-    const logoutBtn = this.element?.querySelector('#logoutBtn') as HTMLButtonElement
-
-    if (!usernameDisplay || !logoutBtn) return
+    const profileUsername = this.element?.querySelector('#profileUsername') as HTMLElement
+    const profileEmail = this.element?.querySelector('#profileEmail') as HTMLElement
+    const profileJoinedDate = this.element?.querySelector('#profileJoinedDate') as HTMLElement
+    const profileLastLogin = this.element?.querySelector('#profileLastLogin') as HTMLElement
+    const profileTotalGames = this.element?.querySelector('#profileTotalGames') as HTMLElement
+    const profileGamesWon = this.element?.querySelector('#profileGamesWon') as HTMLElement
+    const userSettingsBtn = this.element?.querySelector('#userSettingsBtn') as HTMLButtonElement
+    const deleteAccountBtn = this.element?.querySelector('#deleteAccountBtn') as HTMLButtonElement
 
     // Load current user data
     try {
       this.user = await this.apiService.getCurrentUser()
-      if (this.user && this.user.username) {
-        usernameDisplay.textContent = `Username: ${this.user.username}`
+      if (this.user) {
+        // Populate user information
+        if (profileUsername) profileUsername.textContent = this.user.username
+        if (profileEmail) profileEmail.textContent = this.user.email
+        if (profileJoinedDate) profileJoinedDate.textContent = this.user.createdAt || 'Unknown'
+        if (profileLastLogin) profileLastLogin.textContent = 'Today' // Placeholder since API doesn't provide this yet
+        
+        // Placeholder values for game stats (not implemented yet)
+        if (profileTotalGames) profileTotalGames.textContent = '0'
+        if (profileGamesWon) profileGamesWon.textContent = '0'
       } else {
-        usernameDisplay.textContent = 'No user logged in'
+        // Handle case where no user is logged in
+        if (profileUsername) profileUsername.textContent = 'Not logged in'
+        if (profileEmail) profileEmail.textContent = 'N/A'
+        if (profileJoinedDate) profileJoinedDate.textContent = 'N/A'
+        if (profileLastLogin) profileLastLogin.textContent = 'N/A'
+        if (profileTotalGames) profileTotalGames.textContent = '0'
+        if (profileGamesWon) profileGamesWon.textContent = '0'
       }
     } catch (error) {
       console.error('Error loading user profile:', error)
-      usernameDisplay.textContent = 'Error loading user profile'
+      // Show error state
+      if (profileUsername) profileUsername.textContent = 'Error loading profile'
+      if (profileEmail) profileEmail.textContent = 'Error'
+      if (profileJoinedDate) profileJoinedDate.textContent = 'Error'
+      if (profileLastLogin) profileLastLogin.textContent = 'Error'
+      if (profileTotalGames) profileTotalGames.textContent = '0'
+      if (profileGamesWon) profileGamesWon.textContent = '0'
     }
 
-    // Handle logout button click
-    logoutBtn.addEventListener('click', async () => {
-      const success = await this.apiService.logout()
-      if (success) {
-        App.getInstance().setUserLoggedIn(false)
-        this.router.navigateTo(LoggedOutScreen, this.user?.username || 'User')
-      } else {
-        console.error('Logout failed, redirecting to start page')
-        App.getInstance().setUserLoggedIn(false)
-        this.router.navigateTo(StartPageScreen)
-      }
-    })
+    // Handle user settings button click (placeholder functionality)
+    if (userSettingsBtn) {
+      userSettingsBtn.addEventListener('click', () => {
+        // TODO: Navigate to user settings screen
+        console.log('User settings clicked - functionality not implemented yet')
+        alert('User settings functionality not implemented yet')
+      })
+    }
+
+    // Handle delete account button click
+    if (deleteAccountBtn) {
+      deleteAccountBtn.addEventListener('click', async () => {
+        const confirmDelete = confirm('Are you sure you want to delete your account? This action cannot be undone.')
+        if (confirmDelete) {
+          // TODO: Implement account deletion
+          console.log('Delete account clicked - functionality not implemented yet')
+          alert('Account deletion functionality not implemented yet')
+        }
+      })
+    }
   }
 
   cleanup(): void {
