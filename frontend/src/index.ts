@@ -519,7 +519,6 @@ class LoginScreen extends Component {
       // Show the global button as back button for login screen
       App.getInstance().setUserLoggedIn(false)
       App.getInstance().toggleGlobalButton(true)
-      App.getInstance().toggleUserProfileButton(true)
     }
     return div
   }
