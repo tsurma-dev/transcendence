@@ -31,8 +31,28 @@ export async function postUser(req, reply) {
   }
 }
 
+function compare2FA(secret, token) {
+  if (!token) {
+    return "Token Missing";
+  }
+
+  const verified = speakeasy.totp.verify({
+    secret: secret,
+    encoding: "base32",
+    token: token,
+    window: 1,
+  });
+
+  if (!verified) {
+    return "Invalid token";
+  }
+
+  return "Success";
+}
+
 export async function loginUser(req, reply) {
-  const { email, password } = req.body;
+  const { email, password, TwoFAToken } = req.body;
+
   const user = findUserByEmail(req.server.db, email);
   if (!user) {
     return reply.code(401).send({ message: "Invalid credentials" });
@@ -41,6 +61,13 @@ export async function loginUser(req, reply) {
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) {
     return reply.code(401).send({ message: "Invalid credentials" });
+  }
+
+  if (user.two_fa_enabled == 1 && user.two_fa_secret) {
+    const twoFAResult = compare2FA(user.two_fa_secret, TwoFAToken);
+    if (twoFAResult !== "Success") {
+      return reply.code(401).send({ message: twoFAResult });
+    }
   }
 
   await reissueJwtAndSetCookie({
@@ -82,11 +109,12 @@ export async function generate2FaSecret(req, reply) {
       name: `Transcendence:${user.email}`,
     });
     const info = set2FA(req.server.db, user.id, secret);
+    console.log(info);
     const qr = await QRCode.toDataURL(secret.otpauth_url);
     reply.send({ qrCodeUrl: qr, secret: secret.base32 });
   } catch (error) {
     req.log.error(error);
-    return reply.code(500).send({ error: "Failed to generate 2FA setup" });
+    return reply.code(500).send({ message: "Failed to generate 2FA setup" });
   }
 }
 
@@ -94,17 +122,16 @@ export async function verify2FaSecret(req, reply) {
   try {
     const { TwoFAToken } = req.body;
     const { id } = req.user;
-    const user = findUserById(req.sever.db, id);
-    const verified = speakeasy.totp.verfiy({
-      secret: user.two_fa_secret,
-      encoding: "base32",
-      TwoFAToken,
-      window: 1,
-    });
-    if (!verified) {
-      return reply.code(400).send({ error: "Invalid token" });
+    const user = findUserById(req.server.db, id);
+
+    const twoFAResult = compare2FA(user.two_fa_secret, TwoFAToken);
+    if (twoFAResult !== "Success") {
+      return reply.code(400).send({ message: "Invalid token" });
     }
     enable2FA(req.server.db, id);
     return { success: true };
-  } catch (error) {}
+  } catch (error) {
+    req.log.error(error);
+    return reply.code(500).send({ message: "Failed to validate 2FA setup" });
+  }
 }

@@ -75,7 +75,7 @@ class ApiService {
     }
   }
 
-  async getCurrentUser(): Promise<{username: string} | null> {
+  async getCurrentUser(): Promise<{id: number, username: string, email: string, createdAt: string} | null> {
     try {
       console.log('Fetching current user from:', `${this.baseUrl}/api/me`)
       const response = await fetch(`${this.baseUrl}/api/me`, {
@@ -400,6 +400,8 @@ class StartPageScreen extends Component {
       
       // Hide the global button on the start page
       App.getInstance().toggleGlobalButton(false)
+      // Hide the user profile button on the start page
+      App.getInstance().toggleUserProfileButton(false)
     }
     return div
   }
@@ -905,6 +907,134 @@ class GameScreen extends Component {
   }
 }
 
+/**
+ * User Profile Screen
+ */
+
+class UserProfileScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+  private apiService = new ApiService()
+  private user: {id: number, username: string, email: string, createdAt: string} | null = null
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('userProfileTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+      
+      // Show the global button as logout button for authenticated users
+      App.getInstance().setUserLoggedIn(true)
+      App.getInstance().toggleGlobalButton(true)
+    }
+    return div
+  }
+
+  async setupEvents(): Promise<void> {
+    const profileUsername = this.element?.querySelector('#profileUsername') as HTMLElement
+    const profileEmail = this.element?.querySelector('#profileEmail') as HTMLElement
+    const profileJoinedDate = this.element?.querySelector('#profileJoinedDate') as HTMLElement
+    const profileLastLogin = this.element?.querySelector('#profileLastLogin') as HTMLElement
+    const profileTotalGames = this.element?.querySelector('#profileTotalGames') as HTMLElement
+    const profileGamesWon = this.element?.querySelector('#profileGamesWon') as HTMLElement
+    const userSettingsBtn = this.element?.querySelector('#userSettingsBtn') as HTMLButtonElement
+    const deleteAccountBtn = this.element?.querySelector('#deleteAccountBtn') as HTMLButtonElement
+
+    // Load current user data
+    try {
+      this.user = await this.apiService.getCurrentUser()
+      if (this.user) {
+        // Populate user information
+        if (profileUsername) profileUsername.textContent = this.user.username
+        if (profileEmail) profileEmail.textContent = this.user.email
+        if (profileJoinedDate) profileJoinedDate.textContent = this.user.createdAt || 'Unknown'
+        
+        // Placeholder values for game stats (not implemented yet)
+        if (profileTotalGames) profileTotalGames.textContent = '0'
+        if (profileGamesWon) profileGamesWon.textContent = '0'
+      } else {
+        // Handle case where no user is logged in
+        if (profileUsername) profileUsername.textContent = 'Not logged in'
+        if (profileEmail) profileEmail.textContent = 'N/A'
+        if (profileJoinedDate) profileJoinedDate.textContent = 'N/A'
+        if (profileLastLogin) profileLastLogin.textContent = 'N/A'
+        if (profileTotalGames) profileTotalGames.textContent = '0'
+        if (profileGamesWon) profileGamesWon.textContent = '0'
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error)
+      // Show error state
+      if (profileUsername) profileUsername.textContent = 'Error loading profile'
+      if (profileEmail) profileEmail.textContent = 'Error'
+      if (profileJoinedDate) profileJoinedDate.textContent = 'Error'
+      if (profileLastLogin) profileLastLogin.textContent = 'Error'
+      if (profileTotalGames) profileTotalGames.textContent = '0'
+      if (profileGamesWon) profileGamesWon.textContent = '0'
+    }
+
+    // Update online status
+    this.updateOnlineStatus()
+
+    // Handle user settings button click (placeholder functionality)
+    if (userSettingsBtn) {
+      userSettingsBtn.addEventListener('click', () => {
+        // TODO: Navigate to user settings screen
+        console.log('User settings clicked - functionality not implemented yet')
+        alert('User settings functionality not implemented yet')
+      })
+    }
+
+    // Handle delete account button click
+    if (deleteAccountBtn) {
+      deleteAccountBtn.addEventListener('click', async () => {
+        const confirmDelete = confirm('Are you sure you want to delete your account? This action cannot be undone.')
+        if (confirmDelete) {
+          // TODO: Implement account deletion
+          console.log('Delete account clicked - functionality not implemented yet')
+          alert('Account deletion functionality not implemented yet')
+        }
+      })
+    }
+  }
+
+  private async updateOnlineStatus(): Promise<void> {
+    const onlineStatusDot = this.element?.querySelector('#onlineStatusDot') as HTMLElement
+    const onlineStatusText = this.element?.querySelector('#onlineStatusText') as HTMLElement
+
+    if (!onlineStatusDot || !onlineStatusText) {
+      console.error('Online status elements not found')
+      return
+    }
+
+    try {
+      // Check if user is online by trying to get current user data
+      const currentUser = await this.apiService.getCurrentUser()
+      
+      if (currentUser && currentUser.username) {
+        // User is online
+        onlineStatusDot.className = 'w-3 h-3 rounded-full mr-2 bg-green-400 animate-pulse'
+        onlineStatusText.textContent = 'Online'
+        onlineStatusText.className = 'text-green-600 font-mono text-sm font-bold'
+      } else {
+        // User is offline or not authenticated
+        onlineStatusDot.className = 'w-3 h-3 rounded-full mr-2 bg-red-400'
+        onlineStatusText.textContent = 'Offline'
+        onlineStatusText.className = 'text-red-600 font-mono text-sm font-bold'
+      }
+    } catch (error) {
+      console.error('Error checking online status:', error)
+      // Assume offline on error
+      onlineStatusDot.className = 'w-3 h-3 rounded-full mr-2 bg-red-400'
+      onlineStatusText.textContent = 'Offline'
+      onlineStatusText.className = 'text-red-600 font-mono text-sm font-bold'
+    }
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
+  }
+}
+
 // ============================
 // APPLICATION INITIALIZATION
 // ============================
@@ -919,6 +1049,7 @@ class App {
   private static instance: App
   private router = AppRouter.getInstance()
   private globalBtn: HTMLElement | null = null
+  private userProfileBtn: HTMLElement | null = document.getElementById('userProfileBtn')
   private apiService = new ApiService()
   private isUserLoggedIn: boolean = false
 
@@ -937,6 +1068,15 @@ class App {
         this.handleGlobalButtonClick()
       })
     }
+
+    // Set up user profile button
+    const userProfileBtn = document.getElementById('userProfileBtn')
+    if (this.userProfileBtn) {
+      this.userProfileBtn.addEventListener('click', () => {
+        this.handleUserProfileClick()
+      })
+    }
+        
    
     // Initialize the router with the start page
     this.router.navigateTo(StartPageScreen)
@@ -965,10 +1105,27 @@ class App {
     }
   }
 
+  private async handleUserProfileClick(): Promise<void> {
+    if (this.isUserLoggedIn) {
+      // Navigate to user profile screen
+      this.router.navigateTo(UserProfileScreen)
+    } else {
+      // Navigate to login screen
+      this.router.navigateTo(LoginScreen)
+    }
+  }
+
   // Method to show/hide the global navigation button
   toggleGlobalButton(show: boolean): void {
     if (this.globalBtn) {
       this.globalBtn.style.display = show ? 'block' : 'none'
+    }
+  }
+
+  // Method to show/hide the user profile button
+  toggleUserProfileButton(show: boolean): void {
+    if (this.userProfileBtn) {
+      this.userProfileBtn.style.display = show ? 'block' : 'none'
     }
   }
 
