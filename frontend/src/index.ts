@@ -949,7 +949,6 @@ class UserProfileScreen extends Component {
         if (profileUsername) profileUsername.textContent = this.user.username
         if (profileEmail) profileEmail.textContent = this.user.email
         if (profileJoinedDate) profileJoinedDate.textContent = this.user.createdAt || 'Unknown'
-        if (profileLastLogin) profileLastLogin.textContent = 'Today' // Placeholder since API doesn't provide this yet
         
         // Placeholder values for game stats (not implemented yet)
         if (profileTotalGames) profileTotalGames.textContent = '0'
@@ -974,6 +973,9 @@ class UserProfileScreen extends Component {
       if (profileGamesWon) profileGamesWon.textContent = '0'
     }
 
+    // Update online status
+    this.updateOnlineStatus()
+
     // Handle user settings button click (placeholder functionality)
     if (userSettingsBtn) {
       userSettingsBtn.addEventListener('click', () => {
@@ -993,6 +995,39 @@ class UserProfileScreen extends Component {
           alert('Account deletion functionality not implemented yet')
         }
       })
+    }
+  }
+
+  private async updateOnlineStatus(): Promise<void> {
+    const onlineStatusDot = this.element?.querySelector('#onlineStatusDot') as HTMLElement
+    const onlineStatusText = this.element?.querySelector('#onlineStatusText') as HTMLElement
+
+    if (!onlineStatusDot || !onlineStatusText) {
+      console.error('Online status elements not found')
+      return
+    }
+
+    try {
+      // Check if user is online by trying to get current user data
+      const currentUser = await this.apiService.getCurrentUser()
+      
+      if (currentUser && currentUser.username) {
+        // User is online
+        onlineStatusDot.className = 'w-3 h-3 rounded-full mr-2 bg-green-400 animate-pulse'
+        onlineStatusText.textContent = 'Online'
+        onlineStatusText.className = 'text-green-600 font-mono text-sm font-bold'
+      } else {
+        // User is offline or not authenticated
+        onlineStatusDot.className = 'w-3 h-3 rounded-full mr-2 bg-red-400'
+        onlineStatusText.textContent = 'Offline'
+        onlineStatusText.className = 'text-red-600 font-mono text-sm font-bold'
+      }
+    } catch (error) {
+      console.error('Error checking online status:', error)
+      // Assume offline on error
+      onlineStatusDot.className = 'w-3 h-3 rounded-full mr-2 bg-red-400'
+      onlineStatusText.textContent = 'Offline'
+      onlineStatusText.className = 'text-red-600 font-mono text-sm font-bold'
     }
   }
 

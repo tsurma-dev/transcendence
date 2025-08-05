@@ -171,6 +171,11 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           alt="User Avatar"
           class="w-32 h-32 rounded-full border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mx-auto mb-4"
         >
+        <!-- Online status indicator -->
+        <div class="flex items-center justify-center">
+          <div id="onlineStatusDot" class="w-3 h-3 rounded-full mr-2 bg-green-400"></div>
+          <span id="onlineStatusText" class="text-black font-mono text-sm font-bold">Online</span>
+        </div>
       </div>
       <!-- User information -->
       <div class="flex justify-center mb-4">
@@ -178,7 +183,6 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           <p class="font-mono flex"><span class="w-40">Username:</span><span id="profileUsername" class="font-bold"></span></p>
           <p class="font-mono flex"><span class="w-40">Email:</span><span id="profileEmail" class="font-bold"></span></p>
           <p class="font-mono flex"><span class="w-40">Joined:</span><span id="profileJoinedDate" class="font-bold"></span></p>
-          <p class="font-mono flex"><span class="w-40">Last seen:</span><span id="profileLastLogin" class="font-bold"></span></p>
           <p class="font-mono flex"><span class="w-40">Total Games:</span><span id="profileTotalGames" class="font-bold"></span></p>
           <p class="font-mono flex"><span class="w-40">Games Won:</span><span id="profileGamesWon" class="font-bold"></span></p>
         </div>
