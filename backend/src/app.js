@@ -82,7 +82,6 @@ await app.register(fastifyHelmet, {
     },
   },
 });
-
 await app.register(fastifyWebsocket);
 await app.register(dbPlugin);
 await app.register(authPlugin);
