@@ -262,8 +262,22 @@ class ApiService {
   }
 
   async disable2FA(): Promise<{success: boolean, message?: string}> {
-    // For now, return not implemented since backend doesn't have disable endpoint
-    return { success: false, message: '2FA disable not implemented yet' }
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/2fa/remove`, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include'
+      })
+      const result = await response.json().catch(() => ({}))
+      if (response.ok) {
+        return { success: true }
+      } else {
+        return { success: false, message: result.message || 'Failed to disable 2FA' }
+      }
+    } catch (error) {
+      console.error('Disable 2FA error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
   }
 
   async deleteAccount(password: string): Promise<{success: boolean, message?: string}> {
@@ -1546,9 +1560,8 @@ class UserSettingsScreen extends Component {
     // Handle 2FA disable
     if (disable2FABtn) {
       disable2FABtn.addEventListener('click', async () => {
-        // Temporarily disabled since backend doesn't support it yet
-        const responseDiv = this.element?.querySelector('#twoFAResponse') as HTMLElement
-        this.showResponse(responseDiv, '2FA disable functionality not yet implemented', 'error')
+        // Invoke disable 2FA functionality
+        await this.handleDisable2FA()
       })
     }
 
