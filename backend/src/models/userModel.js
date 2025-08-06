@@ -85,3 +85,9 @@ export function enable2FA(db, id) {
   const info = stmt.run(id);
   return { success: info.changes > 0 };
 }
+
+export function disable2FA(db, id) {
+  const stmt = db.prepare("UPDATE users SET two_fa_enabled = 0 WHERE id = ?");
+  const info = stmt.run(id);
+  return { success: info.changes > 0 };
+}

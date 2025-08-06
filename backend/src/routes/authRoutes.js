@@ -1,4 +1,5 @@
 import {
+  remove2Fa,
   postUser,
   loginUser,
   logoutUser,
@@ -40,6 +41,11 @@ async function authRoutes(fastify) {
   fastify.post("/api/me/2fa/verify", {
     preHandler: fastify.verifyAuth,
     handler: verify2FaSecret,
+  });
+
+  fastify.post("/api/me/2fa/remove", {
+    preHandler: fastify.verifyAuth,
+    handler: remove2Fa,
   });
 }
 
