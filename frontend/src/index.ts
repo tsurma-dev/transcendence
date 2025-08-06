@@ -75,7 +75,7 @@ class ApiService {
     }
   }
 
-  async getCurrentUser(): Promise<{id: number, username: string, email: string, createdAt: string} | null> {
+  async getCurrentUser(): Promise<{id: number, username: string, email: string, createdAt: string, twoFAEnabled?: boolean} | null> {
     try {
       console.log('Fetching current user from:', `${this.baseUrl}/api/me`)
       const response = await fetch(`${this.baseUrl}/api/me`, {
@@ -199,6 +199,71 @@ class ApiService {
       console.error('Username update error:', error)
       return { success: false, message: 'Network error. Please try again.' }
     }
+  }
+
+  async get2FAStatus(): Promise<{success: boolean, enabled?: boolean, message?: string}> {
+    try {
+      // Get 2FA status from current user data
+      const user = await this.getCurrentUser()
+      
+      if (user) {
+        return { success: true, enabled: Boolean(user.twoFAEnabled) }
+      } else {
+        return { success: false, message: 'Failed to get user data' }
+      }
+    } catch (error) {
+      console.error('Get 2FA status error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async enable2FA(): Promise<{success: boolean, qrCode?: string, secret?: string, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/2fa/setup`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+      
+      if (response.ok) {
+        return { success: true, qrCode: result.qrCodeUrl, secret: result.secret }
+      } else {
+        return { success: false, message: result.message || 'Failed to enable 2FA' }
+      }
+    } catch (error) {
+      console.error('Enable 2FA error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async verify2FA(code: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/2fa/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ TwoFAToken: code }),
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+      
+      if (response.ok) {
+        return { success: true }
+      } else {
+        return { success: false, message: result.message || 'Failed to verify 2FA' }
+      }
+    } catch (error) {
+      console.error('Verify 2FA error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async disable2FA(): Promise<{success: boolean, message?: string}> {
+    // For now, return not implemented since backend doesn't have disable endpoint
+    return { success: false, message: '2FA disable not implemented yet' }
   }
 
   async deleteAccount(password: string): Promise<{success: boolean, message?: string}> {
@@ -609,6 +674,8 @@ class LoginScreen extends Component {
   private templateManager = TemplateManager.getInstance()
   private router = AppRouter.getInstance()
   private apiService = new ApiService()
+  private requiresTwoFA: boolean = false
+  private loginCredentials: {email: string, password: string} | null = null
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('loginTemplate')
@@ -625,10 +692,12 @@ class LoginScreen extends Component {
 
   setupEvents(): void {
     const form = this.element?.querySelector('#loginForm') as HTMLFormElement
+    const twoFAForm = this.element?.querySelector('#twoFAVerificationForm') as HTMLFormElement
     const errorDiv = this.element?.querySelector('#loginError') as HTMLElement
     const showRegisterBtn = this.element?.querySelector('#showRegisterBtn') as HTMLButtonElement
+    const backToCredentialsBtn = this.element?.querySelector('#backToCredentialsBtn') as HTMLButtonElement
 
-    if (!form || !errorDiv) return
+    if (!form || !twoFAForm || !errorDiv) return
 
     // Navigate to register screen
     if (showRegisterBtn) {
@@ -637,10 +706,18 @@ class LoginScreen extends Component {
       })
     }
 
+    // Back to credentials button
+    if (backToCredentialsBtn) {
+      backToCredentialsBtn.addEventListener('click', () => {
+        this.showCredentialsSection()
+        this.clearError()
+      })
+    }
+
+    // Handle initial login form submission (credentials)
     form.addEventListener('submit', async (e) => {
       e.preventDefault()
-      errorDiv.classList.add('hidden')
-      errorDiv.textContent = ''
+      this.clearError()
 
       const formData = new FormData(form)
       const loginData = {
@@ -648,31 +725,125 @@ class LoginScreen extends Component {
         password: formData.get('password') as string
       }
 
-      try {
-        const response = await fetch(`${this.apiService['baseUrl']}/api/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(loginData),
-          credentials: 'include'
-        })
+      this.loginCredentials = loginData
+      await this.attemptLogin(loginData)
+    })
 
-        if (response.ok) {
-          // Login successful, set user as logged in and navigate to player setup
-          App.getInstance().setUserLoggedIn(true)
-          this.router.navigateTo(PlayerSetupScreen)
-        } else {
-          const error = await response.text()
-          errorDiv.textContent = error || 'Login failed'
-          errorDiv.classList.remove('hidden')
-        }
-      } catch (error) {
-        console.error('Login error:', error)
-        errorDiv.textContent = 'Network error. Please try again.'
-        errorDiv.classList.remove('hidden')
+    // Handle 2FA verification form submission
+    twoFAForm.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      this.clearError()
+
+      const formData = new FormData(twoFAForm)
+      const twoFACode = formData.get('twoFACode') as string
+
+      if (!twoFACode || twoFACode.length !== 6) {
+        this.showError('Please enter a valid 6-digit code')
+        return
+      }
+
+      if (this.loginCredentials) {
+        // Retry login with 2FA token
+        await this.attemptLogin({
+          ...this.loginCredentials,
+          TwoFAToken: twoFACode
+        })
       }
     })
+
+    // Auto-format 2FA code input (numbers only)
+    const twoFAInput = this.element?.querySelector('#twoFACode') as HTMLInputElement
+    if (twoFAInput) {
+      twoFAInput.addEventListener('input', (e) => {
+        const target = e.target as HTMLInputElement
+        target.value = target.value.replace(/\D/g, '').substring(0, 6)
+      })
+    }
+  }
+
+  private async attemptLogin(loginData: {email: string, password: string, TwoFAToken?: string}): Promise<void> {
+    try {
+      const response = await fetch(`${this.apiService['baseUrl']}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginData),
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        // Login successful, navigate to player setup
+        App.getInstance().setUserLoggedIn(true)
+        this.router.navigateTo(PlayerSetupScreen)
+      } else {
+        const error = await response.json().catch(async () => {
+          const text = await response.text()
+          return { message: text }
+        })
+        
+        // Check if the error indicates 2FA is required
+        if (response.status === 401 && !loginData.TwoFAToken) {
+          // Check if error message suggests 2FA is needed
+          const errorMessage = error.message || ''
+          if (errorMessage.toLowerCase().includes('token') || errorMessage.toLowerCase().includes('2fa')) {
+            // Show 2FA verification section
+            this.requiresTwoFA = true
+            this.showTwoFASection()
+            return
+          }
+        }
+        
+        this.showError(error.message || 'Login failed')
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      this.showError('Network error. Please try again.')
+    }
+  }
+
+  private showCredentialsSection(): void {
+    const credentialsSection = this.element?.querySelector('#loginCredentialsSection')
+    const twoFASection = this.element?.querySelector('#twoFAVerificationSection')
+    
+    if (credentialsSection && twoFASection) {
+      credentialsSection.classList.remove('hidden')
+      twoFASection.classList.add('hidden')
+    }
+    
+    this.requiresTwoFA = false
+  }
+
+  private showTwoFASection(): void {
+    const credentialsSection = this.element?.querySelector('#loginCredentialsSection')
+    const twoFASection = this.element?.querySelector('#twoFAVerificationSection')
+    const twoFAInput = this.element?.querySelector('#twoFACode') as HTMLInputElement
+    
+    if (credentialsSection && twoFASection) {
+      credentialsSection.classList.add('hidden')
+      twoFASection.classList.remove('hidden')
+      
+      // Focus on 2FA input
+      if (twoFAInput) {
+        setTimeout(() => twoFAInput.focus(), 100)
+      }
+    }
+  }
+
+  private showError(message: string): void {
+    const errorDiv = this.element?.querySelector('#loginError') as HTMLElement
+    if (errorDiv) {
+      errorDiv.textContent = message
+      errorDiv.classList.remove('hidden')
+    }
+  }
+
+  private clearError(): void {
+    const errorDiv = this.element?.querySelector('#loginError') as HTMLElement
+    if (errorDiv) {
+      errorDiv.classList.add('hidden')
+      errorDiv.textContent = ''
+    }
   }
 
   cleanup(): void {
@@ -1018,7 +1189,7 @@ class UserProfileScreen extends Component {
   private templateManager = TemplateManager.getInstance()
   private router = AppRouter.getInstance()
   private apiService = new ApiService()
-  private user: {id: number, username: string, email: string, createdAt: string} | null = null
+  private user: {id: number, username: string, email: string, createdAt: string, twoFAEnabled?: boolean} | null = null
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('userProfileTemplate')
@@ -1158,11 +1329,19 @@ class UserSettingsScreen extends Component {
     return div
   }
 
-  setupEvents(): void {
+  async setupEvents(): Promise<void> {
+    // Load initial 2FA status
+    await this.load2FAStatus()
+
     const updatePasswordForm = this.element?.querySelector('#updatePasswordForm') as HTMLFormElement
     const updateEmailForm = this.element?.querySelector('#updateEmailForm') as HTMLFormElement
     const updateUsernameForm = this.element?.querySelector('#updateUsernameForm') as HTMLFormElement
     const deleteAccountForm = this.element?.querySelector('#deleteAccountForm') as HTMLFormElement
+
+    // 2FA controls
+    const enable2FABtn = this.element?.querySelector('#enable2FABtn') as HTMLButtonElement
+    const disable2FABtn = this.element?.querySelector('#disable2FABtn') as HTMLButtonElement
+    const verify2FABtn = this.element?.querySelector('#verify2FABtn') as HTMLButtonElement
 
     // Handle password update
     if (updatePasswordForm) {
@@ -1199,6 +1378,32 @@ class UserSettingsScreen extends Component {
         if (confirmDelete) {
           const deleteResponseDiv = this.element?.querySelector('#deleteResponse') as HTMLElement
           await this.handleAccountDeletion(deleteAccountForm, deleteResponseDiv)
+        }
+      })
+    }
+
+    // Handle 2FA enable
+    if (enable2FABtn) {
+      enable2FABtn.addEventListener('click', async () => {
+        await this.handleEnable2FA()
+      })
+    }
+
+    // Handle 2FA disable
+    if (disable2FABtn) {
+      disable2FABtn.addEventListener('click', async () => {
+        // Temporarily disabled since backend doesn't support it yet
+        const responseDiv = this.element?.querySelector('#twoFAResponse') as HTMLElement
+        this.showResponse(responseDiv, '2FA disable functionality not yet implemented', 'error')
+      })
+    }
+
+    // Handle 2FA verify
+    if (verify2FABtn) {
+      verify2FABtn.addEventListener('click', async () => {
+        const codeInput = this.element?.querySelector('#verificationCode') as HTMLInputElement
+        if (codeInput) {
+          await this.handleVerify2FA(codeInput.value)
         }
       })
     }
@@ -1284,6 +1489,119 @@ class UserSettingsScreen extends Component {
       responseDiv.textContent = `Error: ${result.message}`
       responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
       responseDiv.classList.remove('hidden')
+    }
+  }
+
+  private async load2FAStatus(): Promise<void> {
+    const statusResult = await this.apiService.get2FAStatus()
+    const statusElement = this.element?.querySelector('#twoFAStatus') as HTMLElement
+    const enable2FABtn = this.element?.querySelector('#enable2FABtn') as HTMLButtonElement
+    const disable2FABtn = this.element?.querySelector('#disable2FABtn') as HTMLButtonElement
+
+    if (statusElement && enable2FABtn && disable2FABtn) {
+      if (statusResult.success) {
+        if (statusResult.enabled) {
+          statusElement.textContent = 'Enabled'
+          statusElement.className = 'text-green-600 font-bold font-mono'
+          enable2FABtn.classList.add('hidden')
+          disable2FABtn.classList.remove('hidden')
+        } else {
+          statusElement.textContent = 'Disabled'
+          statusElement.className = 'text-red-600 font-bold font-mono'
+          enable2FABtn.classList.remove('hidden')
+          disable2FABtn.classList.add('hidden')
+        }
+      } else {
+        statusElement.textContent = 'Error loading status'
+        statusElement.className = 'text-red-600 font-bold font-mono'
+      }
+    }
+  }
+
+  private async handleEnable2FA(): Promise<void> {
+    const result = await this.apiService.enable2FA()
+    const responseDiv = this.element?.querySelector('#twoFAResponse') as HTMLElement
+    const qrCodeSection = this.element?.querySelector('#qrCodeSection') as HTMLElement
+    const qrCodeContainer = this.element?.querySelector('#qrCodeContainer') as HTMLElement
+    const manualSecret = this.element?.querySelector('#manualSecret') as HTMLElement
+
+    if (result.success && result.qrCode && result.secret) {
+      // Show QR code setup
+      if (qrCodeContainer && manualSecret && qrCodeSection) {
+        qrCodeContainer.innerHTML = `<img src="${result.qrCode}" alt="2FA QR Code" class="max-w-full" />`
+        manualSecret.textContent = result.secret
+        qrCodeSection.classList.remove('hidden')
+        
+        // Hide enable button
+        const enable2FABtn = this.element?.querySelector('#enable2FABtn') as HTMLButtonElement
+        if (enable2FABtn) {
+          enable2FABtn.classList.add('hidden')
+        }
+      }
+      
+      this.showResponse(responseDiv, 'Scan the QR code with your authenticator app and enter the verification code.', 'success')
+    } else {
+      this.showResponse(responseDiv, result.message || 'Failed to enable 2FA', 'error')
+    }
+  }
+
+  private async handleVerify2FA(code: string): Promise<void> {
+    if (!code || code.length !== 6) {
+      const responseDiv = this.element?.querySelector('#twoFAResponse') as HTMLElement
+      this.showResponse(responseDiv, 'Please enter a valid 6-digit code', 'error')
+      return
+    }
+
+    const result = await this.apiService.verify2FA(code)
+    const responseDiv = this.element?.querySelector('#twoFAResponse') as HTMLElement
+
+    if (result.success) {
+      this.showResponse(responseDiv, '2FA has been successfully enabled!', 'success')
+      
+      // Hide QR code section and show disable button
+      const qrCodeSection = this.element?.querySelector('#qrCodeSection') as HTMLElement
+      const disable2FABtn = this.element?.querySelector('#disable2FABtn') as HTMLButtonElement
+      
+      if (qrCodeSection) qrCodeSection.classList.add('hidden')
+      if (disable2FABtn) disable2FABtn.classList.remove('hidden')
+      
+      // Update status
+      await this.load2FAStatus()
+      
+      // Clear verification code
+      const codeInput = this.element?.querySelector('#verificationCode') as HTMLInputElement
+      if (codeInput) codeInput.value = ''
+    } else {
+      this.showResponse(responseDiv, result.message || 'Invalid verification code', 'error')
+    }
+  }
+
+  private async handleDisable2FA(): Promise<void> {
+    const result = await this.apiService.disable2FA()
+    const responseDiv = this.element?.querySelector('#twoFAResponse') as HTMLElement
+
+    if (result.success) {
+      this.showResponse(responseDiv, '2FA has been disabled', 'success')
+      await this.load2FAStatus()
+    } else {
+      this.showResponse(responseDiv, result.message || 'Failed to disable 2FA', 'error')
+    }
+  }
+
+  private showResponse(responseDiv: HTMLElement, message: string, type: 'success' | 'error'): void {
+    if (!responseDiv) return
+    
+    responseDiv.textContent = message
+    responseDiv.className = type === 'success' ? 
+      'text-green-600 text-left mt-2 font-mono' : 
+      'text-red-600 text-left mt-2 font-mono'
+    responseDiv.classList.remove('hidden')
+    
+    // Auto-hide success messages after 5 seconds
+    if (type === 'success') {
+      setTimeout(() => {
+        responseDiv.classList.add('hidden')
+      }, 5000)
     }
   }
 

@@ -98,21 +98,47 @@ _|_|_|    _|    _|  _|  _|  _|  _|  _|_|
 _|        _|    _|  _|    _|_|  _|    _|
 _|          _|_|    _|      _|    _|_|_|</pre>
       </div>
-      </h1>
-      <form id="loginForm" class="space-y-4">
-        <input type="email" name="email" placeholder="Email" required 
-            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
-        <input type="password" name="password" placeholder="Password" required 
-            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
-        <button type="submit" 
-            class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
-          Login
-        </button>
-    </form>
-    <div id="loginError" class="text-red-500 text-center mt-4 hidden"></div>
-    <div class="text-black text-center mt-4 font-mono">
-      Don't have an account? <button id="showRegisterBtn" class="text-black underline cursor-pointer font-bold hover:text-gray-700">Register here</button>
-    </div>
+      
+      <!-- Login Credentials Form -->
+      <div id="loginCredentialsSection">
+        <form id="loginForm" class="space-y-4">
+          <input type="email" name="email" placeholder="Email" required 
+              class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+          <input type="password" name="password" placeholder="Password" required 
+              class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+          <button type="submit" 
+              class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+            Login
+          </button>
+        </form>
+        <div class="text-black text-center mt-4 font-mono">
+          Don't have an account? <button id="showRegisterBtn" class="text-black underline cursor-pointer font-bold hover:text-gray-700">Register here</button>
+        </div>
+      </div>
+
+      <!-- 2FA Verification Section (hidden by default) -->
+      <div id="twoFAVerificationSection" class="hidden">
+        <div class="text-black text-center mb-4 font-mono">
+          <h3 class="text-lg font-bold mb-2">Two-Factor Authentication Required</h3>
+          <p class="text-sm">Enter the 6-digit code from your authenticator app</p>
+        </div>
+        
+        <form id="twoFAVerificationForm" class="space-y-4">
+          <input type="text" id="twoFACode" name="twoFACode" placeholder="Enter 6-digit code" required 
+              maxlength="6" pattern="[0-9]{6}" autocomplete="off"
+              class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono text-center text-2xl tracking-widest" />
+          <button type="submit" 
+              class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+            Verify Code
+          </button>
+        </form>
+        
+        <div class="text-black text-center mt-4 font-mono">
+          <button id="backToCredentialsBtn" class="text-black underline cursor-pointer font-bold hover:text-gray-700">← Back to Login</button>
+        </div>
+      </div>
+
+      <div id="loginError" class="text-red-500 text-center mt-4 hidden"></div>
     </div>
   </template>
 
@@ -199,7 +225,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 
   <!-- User settings template -->
   <template id="userSettingsTemplate">
-    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-lg w-full text-center">
+    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-2xl w-full text-center">
       <h1 class="text-4xl font-bold text-white mb-4 drop-shadow-lg">
         User Settings
       </h1>
@@ -242,6 +268,47 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         </button>
         <div id="usernameResponse" class="text-black text-left mt-2 hidden"></div>
       </form>
+      <div class="mb-6 p-6 border-4 border-black rounded-none shadow-[4px_4px_0px_0px rgba(0,0,0,1)]">
+        <h2 class="text-2xl font-semibold text-black mb-4">Two-Factor Authentication</h2>
+        <div class="text-center mb-4">
+          <span class="text-black font-mono text-lg">2FA Status: </span>
+          <span id="twoFAStatus" class="text-black font-bold font-mono">Loading...</span>
+        </div>
+        <div id="twoFAControls" class="space-y-4">
+          <!-- Enable 2FA Button (shown when 2FA is disabled) -->
+          <button 
+            id="enable2FABtn"
+            class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider hidden">
+            Enable 2FA
+          </button>
+          
+          <!-- Disable 2FA Button (shown when 2FA is enabled) -->
+          <button 
+            id="disable2FABtn"
+            class="w-full px-6 py-4 bg-gradient-to-b from-orange-400 to-orange-600 hover:from-orange-300 hover:to-orange-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider hidden">
+            Disable 2FA
+          </button>
+          
+          <!-- QR Code Display (shown during 2FA setup) -->
+          <div id="qrCodeSection" class="text-center hidden">
+            <p class="text-black font-mono mb-4">Scan this QR code with your authenticator app:</p>
+            <div id="qrCodeContainer" class="bg-white p-4 border-4 border-black inline-block mb-4"></div>
+            <p class="text-black font-mono text-sm mb-4">Or enter this secret manually: <span id="manualSecret" class="font-bold"></span></p>
+            <input 
+              type="text" 
+              id="verificationCode" 
+              placeholder="Enter 6-digit code from your app" 
+              maxlength="6"
+              class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono mb-4" />
+            <button 
+              id="verify2FABtn"
+              class="w-full px-6 py-4 bg-gradient-to-b from-green-400 to-green-600 hover:from-green-300 hover:to-green-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+              Verify & Enable 2FA
+            </button>
+          </div>
+        </div>
+        <div id="twoFAResponse" class="text-black text-left mt-2 hidden"></div>
+      </div>
       <form id="deleteAccountForm" class="mb-6">
         <h2 class="text-2xl font-semibold text-black mb-4">Delete Account</h2>
         <label class="block mb-2">
