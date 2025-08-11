@@ -1,0 +1,11 @@
+Model Information:
+* title:	Bath
+* source:	https://sketchfab.com/3d-models/bath-dfa03e726711444e8460e4e1f03513ef
+* author:	Joker Boss (https://sketchfab.com/jokerrr.boss)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Bath" (https://sketchfab.com/3d-models/bath-dfa03e726711444e8460e4e1f03513ef) by Joker Boss (https://sketchfab.com/jokerrr.boss) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
