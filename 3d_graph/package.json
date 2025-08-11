@@ -1,0 +1,17 @@
+{
+  "name": "transcendance",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@babylonjs/core": "^8.22.2",
+    "@babylonjs/inspector": "^8.22.2",
+    "@babylonjs/loaders": "^8.22.2",
+    "vite": "^7.0.4"
+  }
+}
