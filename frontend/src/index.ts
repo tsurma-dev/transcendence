@@ -1833,6 +1833,11 @@ class App {
       this.userMenuDropdown?.classList.add('hidden')
       this.router.navigateTo(UserSettingsScreen)
     })
+    // Start Game menu button
+    document.getElementById('startGameMenuBtn')?.addEventListener('click', () => {
+      this.userMenuDropdown?.classList.add('hidden')
+      this.router.navigateTo(PlayerSetupScreen)
+    })
     document.getElementById('logoutMenuBtn')?.addEventListener('click', () => {
       this.userMenuDropdown?.classList.add('hidden')
       this.handleGlobalButtonClick()
