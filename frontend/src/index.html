@@ -31,18 +31,30 @@ Do not edit files in the dist directory, as they are generated files.
   <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body class="min-h-screen bg-gradient-to-br from-yellow-300 via-amber-400 to-orange-400">
-  <!-- Global Navigation Button (Back to Start/Log out) -->
-  <button 
-    id="backToStartBtn" 
-    class="fixed top-4 right-4 px-4 py-2 bg-blue-500 hover:bg-red-700 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider z-50">
-    ← Back to Start
-  </button>
-  <!-- Global Navigation Button (User Profile) -->
-  <button 
-    id="userProfileBtn"
-    class="fixed top-4 left-4 px-4 py-2 bg-blue-500 hover:bg-green-700 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider z-50">
-    User Profile
-  </button>
+  <!-- Global Navigation Menu for logged-in users -->
+  <div id="userMenuWrapper" class="fixed top-4 right-4 z-50" style="display: none;">
+    <!-- Menu Toggle Button shows username -->
+    <button
+      id="userProfileBtn"
+      class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 font-mono uppercase tracking-wider">
+      <!-- Username will be inserted here -->
+      <span id="userProfileName">User</span>
+      <span class="ml-2">▾</span>
+    </button>
+    <!-- Dropdown Menu -->
+    <div id="userMenuDropdown" class="hidden mt-2 w-40 bg-white border border-gray-300 rounded shadow-lg">
+      <button id="profileMenuBtn" class="block w-full text-left px-4 py-2 hover:bg-gray-100 font-mono text-sm">Profile</button>
+      <button id="settingsMenuBtn" class="block w-full text-left px-4 py-2 hover:bg-gray-100 font-mono text-sm">Settings</button>
+      <button id="logoutMenuBtn" class="block w-full text-left px-4 py-2 hover:bg-gray-100 font-mono text-sm">Log Out</button>
+    </div>
+    <!-- Back to Start Button for non-logged-in users -->
+    <button
+      id="backMenuBtn"
+      class="block w-full text-left px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 font-mono uppercase tracking-wider hidden"
+    >
+      ← Back to Start
+    </button>
+  </div>
   
   <!-- Main App Container -->
   <div id="app" class="min-h-screen flex items-center justify-center p-4">
