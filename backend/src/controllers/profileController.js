@@ -11,6 +11,12 @@ import { loginCookieOptions } from "../config/cookies.js";
 import { reissueJwtAndSetCookie } from "../utils/authUtils.js";
 import bcrypt from "bcrypt";
 
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 export function getMe(req, reply) {
   try {
     const { id } = req.user;
@@ -150,4 +156,34 @@ export async function deleteMe(req, reply) {
     req.log.error(error);
     reply.code(500).send({ message: "Internal Server Error" });
   }
+}
+
+export async function putUserAvatar(req, reply) {
+  const user = req.user;
+  if (!user) return reply.code(401).send({ message: "Unauthorized" });
+
+  const data = await req.file();
+  if (!data) return reply.code(400).send({ message: "No file uploaded" });
+  if (data.mimetype !== "image/png")
+    return reply.code(415).send({ message: "Only PNG files are allowed" });
+
+  const avatarDir = path.join(
+    __dirname,
+    "..",
+    "..",
+    "public",
+    "uploads",
+    "avatars"
+  );
+  fs.mkdirSync(avatarDir, { recursive: true });
+
+  const avatarPath = path.join(avatarDir, `${user.id}.png`);
+  await new Promise((resolve, reject) => {
+    const writeStream = fs.createWriteStream(avatarPath);
+    data.file.pipe(writeStream);
+    writeStream.on("finish", resolve);
+    writeStream.on("error", reject);
+  });
+
+  reply.send({ message: "Avatar uploaded successfully" });
 }

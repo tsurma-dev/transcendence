@@ -1,0 +1,44 @@
+<input id="file" type="file" accept="image/png" />
+<button id="upload">Upload</button>
+<progress id="progress" value="0" max="100" hidden></progress>
+<div id="status"></div>
+
+<script>
+const fileInput = document.getElementById('file');
+const uploadBtn = document.getElementById('upload');
+const progressBar = document.getElementById('progress');
+const statusDiv = document.getElementById('status');
+
+uploadBtn.addEventListener('click', () => {
+  const file = fileInput.files[0];
+  if (!file) return statusDiv.textContent = 'Please select a PNG file.';
+  if (file.type !== 'image/png') return statusDiv.textContent = 'Only PNG files are allowed.';
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('PUT', '/api/me/avatar', true); // or 'POST'
+  xhr.withCredentials = true;
+
+  xhr.upload.onprogress = (e) => {
+    if (e.lengthComputable) {
+      progressBar.hidden = false;
+      progressBar.value = (e.loaded / e.total) * 100;
+    }
+  };
+
+  xhr.onload = () => {
+    if (xhr.status >= 200 && xhr.status < 300) {
+      const resp = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+      statusDiv.textContent = resp.message || 'Upload successful!';
+    } else {
+      statusDiv.textContent = `Upload failed: ${xhr.statusText}`;
+    }
+  };
+
+  xhr.onerror = () => { statusDiv.textContent = 'Network error.'; };
+
+  xhr.send(formData);
+});
+</script>
