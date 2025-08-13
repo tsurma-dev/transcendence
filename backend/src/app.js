@@ -16,6 +16,7 @@ import authPlugin from "./plugins/auth.js";
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
+import fastifyMultipart from "@fastify/multipart";
 // import pongRoutes from './routes/matchRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -83,6 +84,8 @@ await app.register(fastifyHelmet, {
     },
   },
 });
+
+await app.register(fastifyMultipart);
 await app.register(fastifyWebsocket);
 await app.register(dbPlugin);
 await app.register(authPlugin);
