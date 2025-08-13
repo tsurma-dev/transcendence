@@ -1881,15 +1881,21 @@ class App {
     }
   }
 
-  // Method to show user menu or back button based on login state
+  // Method to toggle between profile menu and back button inside wrapper
   toggleUserProfileButton(loggedIn: boolean): void {
-    // Toggle visibility of user menu wrapper
-    if (this.userMenuWrapper) {
-      this.userMenuWrapper.style.display = loggedIn ? 'block' : 'none'
+    if (!this.userMenuWrapper) return
+    // Ensure wrapper is always visible
+    this.userMenuWrapper.style.display = 'block'
+    // Hide dropdown when toggling
+    if (this.userMenuDropdown) {
+      this.userMenuDropdown.classList.add('hidden')
     }
-    // Toggle visibility of back button for non-logged-in users
-    if (this.backMenuBtn) {
-      this.backMenuBtn.style.display = loggedIn ? 'none' : 'block'
+    // Toggle display of profile button and back button
+    const profileBtn = document.getElementById('userProfileBtn')
+    const backBtn = document.getElementById('backMenuBtn')
+    if (profileBtn && backBtn) {
+      profileBtn.style.display = loggedIn ? 'inline-block' : 'none'
+      backBtn.style.display = loggedIn ? 'none' : 'block'
     }
   }
 
