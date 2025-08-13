@@ -731,8 +731,9 @@ class StartPageScreen extends Component {
     if (fragment) {
       div.appendChild(fragment)
       
-      // Hide the user profile button on the start page
-      App.getInstance().toggleUserProfileButton(false)
+      // Hide the user menu wrapper entirely on the start page
+      const wrapper = document.getElementById('userMenuWrapper')
+      if (wrapper) wrapper.style.display = 'none'
     }
     return div
   }
@@ -1884,7 +1885,13 @@ class App {
   // Method to toggle between profile menu and back button inside wrapper
   toggleUserProfileButton(loggedIn: boolean): void {
     if (!this.userMenuWrapper) return
-    // Ensure wrapper is always visible
+    // Always hide on StartPageScreen
+    const path = window.location.pathname
+    if (path === '/start' || path === '/') {
+      this.userMenuWrapper.style.display = 'none'
+      return
+    }
+    // Ensure wrapper is always visible for other screens
     this.userMenuWrapper.style.display = 'block'
     // Hide dropdown when toggling
     if (this.userMenuDropdown) {
