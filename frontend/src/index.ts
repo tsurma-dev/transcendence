@@ -731,10 +731,9 @@ class StartPageScreen extends Component {
     if (fragment) {
       div.appendChild(fragment)
       
-      // Hide the global button on the start page
-      App.getInstance().toggleGlobalButton(false)
-      // Hide the user profile button on the start page
-      App.getInstance().toggleUserProfileButton(false)
+      // Hide the user menu wrapper entirely on the start page
+      const wrapper = document.getElementById('userMenuWrapper')
+      if (wrapper) wrapper.style.display = 'none'
     }
     return div
   }
@@ -785,9 +784,8 @@ class QuickPlaySetupScreen extends Component {
       const onlineUsersDiv = div.querySelector('#onlineUsersCount')?.closest('.text-center')
       if (onlineUsersDiv) onlineUsersDiv.remove()
       
-      // Show the global button as back button for quick play
+      // Back button toggle now handled by setUserLoggedIn
       App.getInstance().setUserLoggedIn(false)
-      App.getInstance().toggleGlobalButton(true)
     }
     return div
   }
@@ -851,9 +849,8 @@ class LoginScreen extends Component {
     if (fragment) {
       div.appendChild(fragment)
       
-      // Show the global button as back button for login screen
+      // Back button toggle now handled by setUserLoggedIn
       App.getInstance().setUserLoggedIn(false)
-      App.getInstance().toggleGlobalButton(true)
     }
     return div
   }
@@ -1034,9 +1031,8 @@ class RegisterScreen extends Component {
     if (fragment) {
       div.appendChild(fragment)
     }
-    // Show the global button as back button for register screen
+    // Back button toggle now handled by setUserLoggedIn
     App.getInstance().setUserLoggedIn(false)
-    App.getInstance().toggleGlobalButton(true)
     return div
   }
 
@@ -1140,9 +1136,8 @@ class LoggedOutScreen extends Component {
         heading.textContent = `${this.username} successfully logged out`
       }
     }
-    // Show the global button as back button for logout screen
+    // Reset to logged-out state (back button shows automatically)
     App.getInstance().setUserLoggedIn(false)
-    App.getInstance().toggleGlobalButton(true)
     return div
   }
 
@@ -1169,10 +1164,8 @@ class PlayerSetupScreen extends Component {
     if (fragment) {
       div.appendChild(fragment)
       
-      // Show the global button as logout button for authenticated users
+      // Show user menu for authenticated users
       App.getInstance().setUserLoggedIn(true)
-      App.getInstance().toggleGlobalButton(true)
-      App.getInstance().toggleUserProfileButton(true)
     }
     return div
   }
@@ -1306,8 +1299,7 @@ class GameScreen extends Component {
       } else {
         App.getInstance().setUserLoggedIn(true)
       }
-      App.getInstance().toggleGlobalButton(true)
-      App.getInstance().toggleUserProfileButton(true)
+      // Menu/back toggle handled by setUserLoggedIn
 
     }
     return div
@@ -1365,9 +1357,8 @@ class UserProfileScreen extends Component {
     if (fragment) {
       div.appendChild(fragment)
       
-      // Show the global button as logout button for authenticated users
+      // Show user menu for authenticated users
       App.getInstance().setUserLoggedIn(true)
-      App.getInstance().toggleGlobalButton(true)
     }
     return div
   }
@@ -1490,9 +1481,8 @@ class UserSettingsScreen extends Component {
     if (fragment) {
       div.appendChild(fragment)
       
-      // Show the global button as logout button for authenticated users
+      // Show user menu for authenticated users
       App.getInstance().setUserLoggedIn(true)
-      App.getInstance().toggleGlobalButton(true)
     }
     return div
   }
@@ -1790,10 +1780,14 @@ class UserSettingsScreen extends Component {
 class App {
   private static instance: App
   private router = AppRouter.getInstance()
-  private globalBtn: HTMLElement | null = null
-  private userProfileBtn: HTMLElement | null = document.getElementById('userProfileBtn')
+  // Back button for non-logged-in users
+  private backMenuBtn: HTMLElement | null = document.getElementById('backMenuBtn')
+  // Wrapper for user menu dropdown
+  private userMenuWrapper: HTMLElement | null = document.getElementById('userMenuWrapper')
+  private userMenuDropdown: HTMLElement | null = document.getElementById('userMenuDropdown')
   private apiService = new ApiService()
   private isUserLoggedIn: boolean = false
+  private userProfileName: HTMLElement | null = document.getElementById('userProfileName')
 
   static getInstance(): App {
     if (!App.instance) {
@@ -1803,19 +1797,55 @@ class App {
   }
 
   init(): void {
-    // Set up global navigation button
-    this.globalBtn = document.getElementById('backToStartBtn')
-    if (this.globalBtn) {
-      this.globalBtn.addEventListener('click', () => {
+    // Determine initial authentication state and populate username/menu
+    this.apiService.getCurrentUser().then(user => {
+      this.setUserLoggedIn(!!user)
+    })
+    // Set up back button for non-authenticated users
+    this.backMenuBtn = document.getElementById('backMenuBtn')
+    if (this.backMenuBtn) {
+      this.backMenuBtn.addEventListener('click', () => {
         this.handleGlobalButtonClick()
       })
     }
 
-    // Set up user profile button
-    const userProfileBtn = document.getElementById('userProfileBtn')
-    if (this.userProfileBtn) {
-      this.userProfileBtn.addEventListener('click', () => {
-        this.handleUserProfileClick()
+    // Set up user menu toggle and actions
+    const profileBtn = document.getElementById('userProfileBtn')
+    if (profileBtn && this.userMenuDropdown) {
+      // Toggle dropdown
+      profileBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.userMenuDropdown!.classList.toggle('hidden')
+      })
+      // Close when clicking outside
+      document.addEventListener('click', () => {
+        this.userMenuDropdown!.classList.add('hidden')
+      })
+      // Prevent closing when clicking inside
+      this.userMenuDropdown.addEventListener('click', (e) => e.stopPropagation())
+    }
+    // Profile, settings and logout menu buttons
+    document.getElementById('profileMenuBtn')?.addEventListener('click', () => {
+      this.userMenuDropdown?.classList.add('hidden')
+      this.router.navigateTo(UserProfileScreen)
+    })
+    document.getElementById('settingsMenuBtn')?.addEventListener('click', () => {
+      this.userMenuDropdown?.classList.add('hidden')
+      this.router.navigateTo(UserSettingsScreen)
+    })
+    // Start Game menu button
+    document.getElementById('startGameMenuBtn')?.addEventListener('click', () => {
+      this.userMenuDropdown?.classList.add('hidden')
+      this.router.navigateTo(PlayerSetupScreen)
+    })
+    document.getElementById('logoutMenuBtn')?.addEventListener('click', () => {
+      this.userMenuDropdown?.classList.add('hidden')
+      this.handleGlobalButtonClick()
+    })
+    // Populate username in menu
+    if (this.userProfileName) {
+      this.apiService.getCurrentUser().then(user => {
+        this.userProfileName!.textContent = user?.username || 'User'
       })
     }
         
@@ -1857,29 +1887,42 @@ class App {
     }
   }
 
-  // Method to show/hide the global navigation button
-  toggleGlobalButton(show: boolean): void {
-    if (this.globalBtn) {
-      this.globalBtn.style.display = show ? 'block' : 'none'
+  // Method to toggle between profile menu and back button inside wrapper
+  toggleUserProfileButton(loggedIn: boolean): void {
+    if (!this.userMenuWrapper) return
+    // Always hide on StartPageScreen
+    const path = window.location.pathname
+    if (path === '/start' || path === '/') {
+      this.userMenuWrapper.style.display = 'none'
+      return
+    }
+    // Ensure wrapper is always visible for other screens
+    this.userMenuWrapper.style.display = 'block'
+    // Hide dropdown when toggling
+    if (this.userMenuDropdown) {
+      this.userMenuDropdown.classList.add('hidden')
+    }
+    // Toggle display of profile button and back button
+    const profileBtn = document.getElementById('userProfileBtn')
+    const backBtn = document.getElementById('backMenuBtn')
+    if (profileBtn && backBtn) {
+      profileBtn.style.display = loggedIn ? 'inline-block' : 'none'
+      backBtn.style.display = loggedIn ? 'none' : 'block'
     }
   }
 
-  // Method to show/hide the user profile button
-  toggleUserProfileButton(show: boolean): void {
-    if (this.userProfileBtn) {
-      this.userProfileBtn.style.display = show ? 'block' : 'none'
-    }
-  }
-
-  // Method to set user login state and update button appearance
+  // Method to set user login state, update navigation and profile menu label
   setUserLoggedIn(loggedIn: boolean): void {
     this.isUserLoggedIn = loggedIn
-    if (this.globalBtn) {
-      if (loggedIn) {
-        this.globalBtn.textContent = 'Log out'
-      } else {
-        this.globalBtn.textContent = '← Back to Start'
-      }
+    // Update profile menu visibility
+    this.toggleUserProfileButton(loggedIn)
+    // Fetch and update username in menu when logged in
+    if (loggedIn && this.userProfileName) {
+      this.apiService.getCurrentUser().then(user => {
+        if (user?.username) {
+          this.userProfileName!.textContent = user.username
+        }
+      })
     }
   }
   
