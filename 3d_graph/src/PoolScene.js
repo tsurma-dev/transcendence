@@ -94,11 +94,11 @@ export class PoolScene {
 
 	_createLights(scene) {
 		//Lights
-		this.light = new DirectionalLight("light", new Vector3(-0.5, -1, 0), scene);
-		const light2 = new HemisphericLight("HemiLight", new Vector3(0, 1, 0), scene);
-		this.light.position = new Vector3(0, 3, 0);
+		this.light = new DirectionalLight("light", new Vector3(-1, -1, -1), scene);
+		const light2 = new HemisphericLight("HemiLight", new Vector3(0, 1, 3), scene);
+		this.light.position = new Vector3(3, 3, 3);
 		this.light.intensity = 0.7;
-		light2.intensity = 0.4;
+		light2.intensity = 0.7;
 		// Shadow
 		this.shadowGenerator = new ShadowGenerator(1024, this.light);
 		this.shadowGenerator.useBlurExponentialShadowMap = true;
@@ -120,7 +120,7 @@ export class PoolScene {
 		floor.receiveShadows = true;
 
 		// --- FRONT/BACK WALLS ---
-		const backWallWidth = GAME_CONSTANTS.TABLE_WIDTH + GAME_CONSTANTS.WALL_THICKNESS;
+		const backWallWidth = GAME_CONSTANTS.TABLE_WIDTH + 2 * GAME_CONSTANTS.WALL_THICKNESS;
 		const backWallHeight = GAME_CONSTANTS.WALL_HEIGHT;
 		const backWallDepth = GAME_CONSTANTS.WALL_THICKNESS;
 
@@ -142,9 +142,11 @@ export class PoolScene {
 		backWall.position.set(0, GAME_CONSTANTS.FLOOR_LEVEL + GAME_CONSTANTS.WALL_HEIGHT / 2, -(GAME_CONSTANTS.TABLE_DEPTH / 2) - GAME_CONSTANTS.WATER_EXTRA_SPACE);
 		backWall.material = materials.poolMaterial;
 		backWall.receiveShadows = true;
+		this.shadowGenerator.addShadowCaster(backWall, true);
 
 		const frontWall = backWall.clone("frontWall");
 		frontWall.position.z = GAME_CONSTANTS.TABLE_DEPTH / 2 + GAME_CONSTANTS.WATER_EXTRA_SPACE;
+		this.shadowGenerator.addShadowCaster(frontWall, true);
 
 		// --- SIDE WALLS ---
 		const leftWallDepth = GAME_CONSTANTS.TABLE_DEPTH + 2*GAME_CONSTANTS.WATER_EXTRA_SPACE - GAME_CONSTANTS.WALL_THICKNESS;
@@ -166,12 +168,14 @@ export class PoolScene {
 			faceUV: sideWallUV,
 			wrap: true
 		}, scene);
-		leftWall.position.set(-(GAME_CONSTANTS.TABLE_WIDTH / 2), GAME_CONSTANTS.FLOOR_LEVEL + leftWallHeight / 2, 0);
+		leftWall.position.set(-(GAME_CONSTANTS.TABLE_WIDTH / 2 + GAME_CONSTANTS.WALL_THICKNESS / 2), GAME_CONSTANTS.FLOOR_LEVEL + leftWallHeight / 2, 0);
 		leftWall.material = materials.poolMaterial;
 		leftWall.receiveShadows = true;
+		this.shadowGenerator.addShadowCaster(leftWall, true);
 
 		const rightWall = leftWall.clone("rightWall");
-		rightWall.position.x = GAME_CONSTANTS.TABLE_WIDTH / 2;
+		rightWall.position.x = GAME_CONSTANTS.TABLE_WIDTH / 2 + GAME_CONSTANTS.WALL_THICKNESS / 2;
+		this.shadowGenerator.addShadowCaster(rightWall, true);
 	}
 
 	_createLadders(scene) {
@@ -184,14 +188,14 @@ export class PoolScene {
 			const ladder1 = result.meshes[0];
 			this.shadowGenerator.addShadowCaster(ladder1, true);
 			ladder1.scaling.scaleInPlace(1);
-			ladder1.position = new Vector3(-1.8, 0.16, 4.5);
+			ladder1.position = new Vector3(-1.9, 0.16, 4.5);
 			ladder1.rotationQuaternion = null;
 			ladder1.rotation.y = Math.PI / 2;
 
 
 			const ladder2 = ladder1.instantiateHierarchy();
 			this.shadowGenerator.addShadowCaster(ladder2, true);
-			ladder2.position = new Vector3(1.8, 0.16, -4.5);
+			ladder2.position = new Vector3(1.9, 0.16, -4.5);
 			ladder2.rotationQuaternion = null;
 			ladder2.rotation.y = -Math.PI / 2;
 		});

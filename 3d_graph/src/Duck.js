@@ -47,12 +47,12 @@ export class Duck {
     this.mesh.rotationQuaternion = null;
     // this.mesh.rotation.y = Math.atan2(this.velocity.x, this.velocity.z) + Math.PI;
 
-	// Get the time elapsed since the last frame (in seconds)
-    const deltaTime = this.scene.getEngine().getDeltaTime() / 1000;
+	// // Get the time elapsed since the last frame (in seconds)
+    // const deltaTime = this.scene.getEngine().getDeltaTime() / 1000;
 
-    // Scale the velocity by deltaTime to ensure consistent speed
-    const scaledVelocity = this.velocity.scale(deltaTime);
-    this.mesh.position.addInPlace(scaledVelocity);
+    // // Scale the velocity by deltaTime to ensure consistent speed
+    // const scaledVelocity = this.velocity.scale(deltaTime);
+    // this.mesh.position.addInPlace(scaledVelocity);
 
   }
 }
