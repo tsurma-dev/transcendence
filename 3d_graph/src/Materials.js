@@ -31,21 +31,17 @@ export class Materials {
 
 _createPoolMaterial() {
     const poolMat = new StandardMaterial("poolMat", this.scene);
-    const texArray = [];
 
     const diffuseTex = new Texture("/textures/tiles_diff.jpg", this.scene);
     poolMat.diffuseTexture = diffuseTex;
-    texArray.push(diffuseTex);
 
     const normalTex = new Texture("/textures/tiles_nor.jpg", this.scene);
     poolMat.bumpTexture = normalTex;
 	poolMat.invertNormalMapX = true;
 	poolMat.invertNormalMapY = true;
-    texArray.push(normalTex);
 
     const aoTex = new Texture("/textures/tiles_ao.jpg", this.scene);
     poolMat.ambientTexture = aoTex;
-    texArray.push(aoTex);
 
     return poolMat;
   }
