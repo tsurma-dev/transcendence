@@ -339,6 +339,17 @@ class ApiService {
     }
   }
 
+  async deleteAvatar(): Promise<{success: boolean, message?: string}> {
+    try {
+      // Placeholder for future implementation
+      console.log('Delete avatar placeholder - not implemented yet')
+      return { success: false, message: 'Delete avatar functionality not implemented yet' }
+    } catch (error) {
+      console.error('Avatar delete error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
   getAvatarUrl(username?: string): string {
     if (username) {
       // Backend serves user avatars via username and handles fallback automatically
@@ -1393,6 +1404,7 @@ class UserProfileScreen extends Component {
   private router = AppRouter.getInstance()
   private apiService = new ApiService()
   private user: {id: number, username: string, email: string, createdAt: string, twoFAEnabled?: boolean} | null = null
+  private hasCustomAvatar: boolean = false
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('userProfileTemplate')
@@ -1421,6 +1433,12 @@ class UserProfileScreen extends Component {
     const userSettingsBtn = this.element?.querySelector('#userSettingsBtn') as HTMLButtonElement
     const deleteAccountBtn = this.element?.querySelector('#deleteAccountBtn') as HTMLButtonElement
 
+    // Avatar menu elements
+    const avatarMenuBtn = this.element?.querySelector('#avatarMenuBtn') as HTMLButtonElement
+    const avatarMenuDropdown = this.element?.querySelector('#avatarMenuDropdown') as HTMLElement
+    const uploadAvatarBtn = this.element?.querySelector('#uploadAvatarBtn') as HTMLButtonElement
+    const deleteAvatarBtn = this.element?.querySelector('#deleteAvatarBtn') as HTMLButtonElement
+
     // Load current user data
     try {
       this.user = await this.apiService.getCurrentUser()
@@ -1430,9 +1448,9 @@ class UserProfileScreen extends Component {
         if (profileEmail) profileEmail.textContent = this.user.email
         if (profileJoinedDate) profileJoinedDate.textContent = this.user.createdAt || 'Unknown'
         
-        // Load user avatar (check if custom avatar exists)
+        // Load user avatar and set up avatar state tracking
         if (profileAvatar && this.user.username) {
-          this.loadUserAvatar(profileAvatar, this.user.username)
+          await this.loadUserAvatar(profileAvatar, this.user.username)
         }
         
         // Placeholder values for game stats (not implemented yet)
@@ -1456,6 +1474,39 @@ class UserProfileScreen extends Component {
       if (profileLastLogin) profileLastLogin.textContent = 'Error'
       if (profileTotalGames) profileTotalGames.textContent = '0'
       if (profileGamesWon) profileGamesWon.textContent = '0'
+    }
+
+    // Handle avatar menu toggle
+    if (avatarMenuBtn && avatarMenuDropdown) {
+      avatarMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.toggleAvatarMenu()
+      })
+
+      // Close menu when clicking outside
+      document.addEventListener('click', () => {
+        this.closeAvatarMenu()
+      })
+
+      avatarMenuDropdown.addEventListener('click', (e) => {
+        e.stopPropagation()
+      })
+    }
+
+    // Handle upload avatar button
+    if (uploadAvatarBtn && avatarFileInput) {
+      uploadAvatarBtn.addEventListener('click', () => {
+        avatarFileInput.click()
+        this.closeAvatarMenu()
+      })
+    }
+
+    // Handle delete avatar button
+    if (deleteAvatarBtn) {
+      deleteAvatarBtn.addEventListener('click', async () => {
+        await this.handleAvatarDelete(profileAvatar, avatarUploadStatus, avatarStatusMessage)
+        this.closeAvatarMenu()
+      })
     }
 
     // Handle avatar upload
@@ -1525,29 +1576,36 @@ class UserProfileScreen extends Component {
     }
   }
 
-  private loadUserAvatar(avatarImg: HTMLImageElement, username: string): void {
+  private async loadUserAvatar(avatarImg: HTMLImageElement, username: string): Promise<void> {
     // Try to load custom avatar from backend
     const customAvatarUrl = this.apiService.getAvatarUrl(username)
     
     console.log('Attempting to load custom avatar for user:', username, 'URL:', customAvatarUrl)
     
-    // Create a test image to check if custom avatar exists
-    const testImg = new Image()
-    
-    testImg.onload = () => {
-      console.log('Custom avatar found, replacing default avatar')
-      // Custom avatar exists, replace the default
-      avatarImg.src = customAvatarUrl
-    }
-    
-    testImg.onerror = () => {
-      console.log('No custom avatar found, keeping default avatar')
-      // Custom avatar doesn't exist, keep the default that's already set in the template
-      // No action needed since default is already loaded
-    }
-    
-    // Test if the custom avatar exists
-    testImg.src = customAvatarUrl
+    return new Promise((resolve) => {
+      // Create a test image to check if custom avatar exists
+      const testImg = new Image()
+      
+      testImg.onload = () => {
+        console.log('Custom avatar found, replacing default avatar')
+        // Custom avatar exists, replace the default
+        avatarImg.src = customAvatarUrl
+        this.hasCustomAvatar = true
+        this.updateDeleteButtonVisibility()
+        resolve()
+      }
+      
+      testImg.onerror = () => {
+        console.log('No custom avatar found, keeping default avatar')
+        // Custom avatar doesn't exist, keep the default that's already set in the template
+        this.hasCustomAvatar = false
+        this.updateDeleteButtonVisibility()
+        resolve()
+      }
+      
+      // Test if the custom avatar exists
+      testImg.src = customAvatarUrl
+    })
   }
 
   private async handleAvatarUpload(
@@ -1597,6 +1655,8 @@ class UserProfileScreen extends Component {
         testImg.onload = () => {
           console.log('New avatar loaded successfully, updating display')
           avatarImg.src = newAvatarUrl
+          this.hasCustomAvatar = true
+          this.updateDeleteButtonVisibility()
         }
         testImg.onerror = () => {
           console.log('Failed to load new avatar after upload, keeping current')
@@ -1619,6 +1679,74 @@ class UserProfileScreen extends Component {
       messageDiv.textContent = 'Network error. Please try again.'
       messageDiv.className = 'mt-1 text-red-600 font-mono text-sm font-bold'
       progressBar.classList.add('hidden')
+    }
+  }
+
+  private toggleAvatarMenu(): void {
+    const avatarMenuDropdown = this.element?.querySelector('#avatarMenuDropdown') as HTMLElement
+    if (avatarMenuDropdown) {
+      avatarMenuDropdown.classList.toggle('hidden')
+    }
+  }
+
+  private closeAvatarMenu(): void {
+    const avatarMenuDropdown = this.element?.querySelector('#avatarMenuDropdown') as HTMLElement
+    if (avatarMenuDropdown) {
+      avatarMenuDropdown.classList.add('hidden')
+    }
+  }
+
+  private updateDeleteButtonVisibility(): void {
+    const deleteAvatarBtn = this.element?.querySelector('#deleteAvatarBtn') as HTMLElement
+    if (deleteAvatarBtn) {
+      if (this.hasCustomAvatar) {
+        deleteAvatarBtn.style.display = 'block'
+      } else {
+        deleteAvatarBtn.style.display = 'none'
+      }
+    }
+  }
+
+  private async handleAvatarDelete(
+    avatarImg: HTMLImageElement,
+    statusDiv: HTMLElement,
+    messageDiv: HTMLElement
+  ): Promise<void> {
+    if (!this.user) return
+
+    console.log('Starting avatar delete for user:', this.user.username)
+
+    // Show status
+    statusDiv.classList.remove('hidden')
+    messageDiv.textContent = 'Deleting avatar...'
+    messageDiv.className = 'mt-1 text-blue-600 font-mono text-sm'
+
+    try {
+      const result = await this.apiService.deleteAvatar()
+      
+      console.log('Avatar delete result:', result)
+
+      if (result.success) {
+        messageDiv.textContent = result.message || 'Avatar deleted successfully!'
+        messageDiv.className = 'mt-1 text-green-600 font-mono text-sm font-bold'
+        
+        // Reset to default avatar
+        avatarImg.src = 'images/default_avatar.jpg'
+        this.hasCustomAvatar = false
+        this.updateDeleteButtonVisibility()
+        
+        // Hide status after success
+        setTimeout(() => {
+          statusDiv.classList.add('hidden')
+        }, 2000)
+      } else {
+        messageDiv.textContent = result.message || 'Delete failed'
+        messageDiv.className = 'mt-1 text-red-600 font-mono text-sm font-bold'
+      }
+    } catch (error) {
+      console.error('Avatar delete error:', error)
+      messageDiv.textContent = 'Network error. Please try again.'
+      messageDiv.className = 'mt-1 text-red-600 font-mono text-sm font-bold'
     }
   }
 
