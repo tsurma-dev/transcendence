@@ -304,6 +304,60 @@ class ApiService {
       return { success: false, message: 'Network error. Please try again.' }
     }
   }
+
+  async uploadAvatar(file: File): Promise<{success: boolean, message?: string}> {
+    try {
+      // Validate file type
+      if (file.type !== 'image/png') {
+        return { success: false, message: 'Only PNG files are allowed.' }
+      }
+
+      console.log('Uploading avatar to:', `${this.baseUrl}/api/me/avatar`)
+
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch(`${this.baseUrl}/api/me/avatar`, {
+        method: 'PUT',
+        mode: 'cors',
+        body: formData,
+        credentials: 'include'
+      })
+
+      console.log('Upload response status:', response.status, response.statusText)
+
+      const result = await response.json().catch(() => ({}))
+      
+      if (response.ok) {
+        return { success: true, message: result.message || 'Avatar uploaded successfully!' }
+      } else {
+        return { success: false, message: result.message || 'Failed to upload avatar' }
+      }
+    } catch (error) {
+      console.error('Avatar upload error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async deleteAvatar(): Promise<{success: boolean, message?: string}> {
+    try {
+      // Placeholder for future implementation
+      console.log('Delete avatar placeholder - not implemented yet')
+      return { success: false, message: 'Delete avatar functionality not implemented yet' }
+    } catch (error) {
+      console.error('Avatar delete error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  getAvatarUrl(username?: string): string {
+    if (username) {
+      // Backend serves user avatars via username and handles fallback automatically
+      return `${this.baseUrl}/users/${username}/avatar`
+    }
+    // Default avatar fallback for when no username is provided
+    return 'images/default_avatar.jpg'
+  }
 }
 
 /**
@@ -1350,6 +1404,7 @@ class UserProfileScreen extends Component {
   private router = AppRouter.getInstance()
   private apiService = new ApiService()
   private user: {id: number, username: string, email: string, createdAt: string, twoFAEnabled?: boolean} | null = null
+  private hasCustomAvatar: boolean = false
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('userProfileTemplate')
@@ -1370,8 +1425,19 @@ class UserProfileScreen extends Component {
     const profileLastLogin = this.element?.querySelector('#profileLastLogin') as HTMLElement
     const profileTotalGames = this.element?.querySelector('#profileTotalGames') as HTMLElement
     const profileGamesWon = this.element?.querySelector('#profileGamesWon') as HTMLElement
+    const profileAvatar = this.element?.querySelector('#profileAvatar') as HTMLImageElement
+    const avatarFileInput = this.element?.querySelector('#avatarFileInput') as HTMLInputElement
+    const avatarUploadStatus = this.element?.querySelector('#avatarUploadStatus') as HTMLElement
+    const avatarUploadProgress = this.element?.querySelector('#avatarUploadProgress') as HTMLProgressElement
+    const avatarStatusMessage = this.element?.querySelector('#avatarStatusMessage') as HTMLElement
     const userSettingsBtn = this.element?.querySelector('#userSettingsBtn') as HTMLButtonElement
     const deleteAccountBtn = this.element?.querySelector('#deleteAccountBtn') as HTMLButtonElement
+
+    // Avatar menu elements
+    const avatarMenuBtn = this.element?.querySelector('#avatarMenuBtn') as HTMLButtonElement
+    const avatarMenuDropdown = this.element?.querySelector('#avatarMenuDropdown') as HTMLElement
+    const uploadAvatarBtn = this.element?.querySelector('#uploadAvatarBtn') as HTMLButtonElement
+    const deleteAvatarBtn = this.element?.querySelector('#deleteAvatarBtn') as HTMLButtonElement
 
     // Load current user data
     try {
@@ -1381,6 +1447,11 @@ class UserProfileScreen extends Component {
         if (profileUsername) profileUsername.textContent = this.user.username
         if (profileEmail) profileEmail.textContent = this.user.email
         if (profileJoinedDate) profileJoinedDate.textContent = this.user.createdAt || 'Unknown'
+        
+        // Load user avatar and set up avatar state tracking
+        if (profileAvatar && this.user.username) {
+          await this.loadUserAvatar(profileAvatar, this.user.username)
+        }
         
         // Placeholder values for game stats (not implemented yet)
         if (profileTotalGames) profileTotalGames.textContent = '0'
@@ -1403,6 +1474,49 @@ class UserProfileScreen extends Component {
       if (profileLastLogin) profileLastLogin.textContent = 'Error'
       if (profileTotalGames) profileTotalGames.textContent = '0'
       if (profileGamesWon) profileGamesWon.textContent = '0'
+    }
+
+    // Handle avatar menu toggle
+    if (avatarMenuBtn && avatarMenuDropdown) {
+      avatarMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.toggleAvatarMenu()
+      })
+
+      // Close menu when clicking outside
+      document.addEventListener('click', () => {
+        this.closeAvatarMenu()
+      })
+
+      avatarMenuDropdown.addEventListener('click', (e) => {
+        e.stopPropagation()
+      })
+    }
+
+    // Handle upload avatar button
+    if (uploadAvatarBtn && avatarFileInput) {
+      uploadAvatarBtn.addEventListener('click', () => {
+        avatarFileInput.click()
+        this.closeAvatarMenu()
+      })
+    }
+
+    // Handle delete avatar button
+    if (deleteAvatarBtn) {
+      deleteAvatarBtn.addEventListener('click', async () => {
+        await this.handleAvatarDelete(profileAvatar, avatarUploadStatus, avatarStatusMessage)
+        this.closeAvatarMenu()
+      })
+    }
+
+    // Handle avatar upload
+    if (avatarFileInput) {
+      avatarFileInput.addEventListener('change', async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0]
+        if (file && this.user) {
+          await this.handleAvatarUpload(file, profileAvatar, avatarUploadStatus, avatarUploadProgress, avatarStatusMessage)
+        }
+      })
     }
 
     // Update online status
@@ -1459,6 +1573,180 @@ class UserProfileScreen extends Component {
       onlineStatusDot.className = 'w-3 h-3 rounded-full mr-2 bg-red-400'
       onlineStatusText.textContent = 'Offline'
       onlineStatusText.className = 'text-red-600 font-mono text-sm font-bold'
+    }
+  }
+
+  private async loadUserAvatar(avatarImg: HTMLImageElement, username: string): Promise<void> {
+    // Try to load custom avatar from backend
+    const customAvatarUrl = this.apiService.getAvatarUrl(username)
+    
+    console.log('Attempting to load custom avatar for user:', username, 'URL:', customAvatarUrl)
+    
+    return new Promise((resolve) => {
+      // Create a test image to check if custom avatar exists
+      const testImg = new Image()
+      
+      testImg.onload = () => {
+        console.log('Custom avatar found, replacing default avatar')
+        // Custom avatar exists, replace the default
+        avatarImg.src = customAvatarUrl
+        this.hasCustomAvatar = true
+        this.updateDeleteButtonVisibility()
+        resolve()
+      }
+      
+      testImg.onerror = () => {
+        console.log('No custom avatar found, keeping default avatar')
+        // Custom avatar doesn't exist, keep the default that's already set in the template
+        this.hasCustomAvatar = false
+        this.updateDeleteButtonVisibility()
+        resolve()
+      }
+      
+      // Test if the custom avatar exists
+      testImg.src = customAvatarUrl
+    })
+  }
+
+  private async handleAvatarUpload(
+    file: File, 
+    avatarImg: HTMLImageElement, 
+    statusDiv: HTMLElement, 
+    progressBar: HTMLProgressElement, 
+    messageDiv: HTMLElement
+  ): Promise<void> {
+    if (!this.user) return
+
+    console.log('Starting avatar upload for user:', this.user.username, 'File:', file.name, file.type, file.size)
+
+    // Show upload status
+    statusDiv.classList.remove('hidden')
+    progressBar.classList.remove('hidden')
+    progressBar.value = 0
+    messageDiv.textContent = 'Uploading avatar...'
+    messageDiv.className = 'mt-1 text-blue-600 font-mono text-sm'
+
+    try {
+      // Simulate progress for visual feedback
+      const progressInterval = setInterval(() => {
+        if (progressBar.value < 90) {
+          progressBar.value += 10
+        }
+      }, 100)
+
+      const result = await this.apiService.uploadAvatar(file)
+      
+      console.log('Avatar upload result:', result)
+      
+      clearInterval(progressInterval)
+      progressBar.value = 100
+
+      if (result.success) {
+        messageDiv.textContent = result.message || 'Avatar uploaded successfully!'
+        messageDiv.className = 'mt-1 text-green-600 font-mono text-sm font-bold'
+        
+        // Reload avatar image with cache-busting
+        const newAvatarUrl = `${this.apiService.getAvatarUrl(this.user.username)}?t=${Date.now()}`
+        
+        console.log('Reloading avatar after upload with URL:', newAvatarUrl)
+        
+        // Create a test image to verify the new avatar loaded successfully
+        const testImg = new Image()
+        testImg.onload = () => {
+          console.log('New avatar loaded successfully, updating display')
+          avatarImg.src = newAvatarUrl
+          this.hasCustomAvatar = true
+          this.updateDeleteButtonVisibility()
+        }
+        testImg.onerror = () => {
+          console.log('Failed to load new avatar after upload, keeping current')
+          // Keep the current avatar if the new one fails to load
+        }
+        testImg.src = newAvatarUrl
+        
+        // Hide status after success
+        setTimeout(() => {
+          statusDiv.classList.add('hidden')
+          progressBar.classList.add('hidden')
+        }, 2000)
+      } else {
+        messageDiv.textContent = result.message || 'Upload failed'
+        messageDiv.className = 'mt-1 text-red-600 font-mono text-sm font-bold'
+        progressBar.classList.add('hidden')
+      }
+    } catch (error) {
+      console.error('Avatar upload error:', error)
+      messageDiv.textContent = 'Network error. Please try again.'
+      messageDiv.className = 'mt-1 text-red-600 font-mono text-sm font-bold'
+      progressBar.classList.add('hidden')
+    }
+  }
+
+  private toggleAvatarMenu(): void {
+    const avatarMenuDropdown = this.element?.querySelector('#avatarMenuDropdown') as HTMLElement
+    if (avatarMenuDropdown) {
+      avatarMenuDropdown.classList.toggle('hidden')
+    }
+  }
+
+  private closeAvatarMenu(): void {
+    const avatarMenuDropdown = this.element?.querySelector('#avatarMenuDropdown') as HTMLElement
+    if (avatarMenuDropdown) {
+      avatarMenuDropdown.classList.add('hidden')
+    }
+  }
+
+  private updateDeleteButtonVisibility(): void {
+    const deleteAvatarBtn = this.element?.querySelector('#deleteAvatarBtn') as HTMLElement
+    if (deleteAvatarBtn) {
+      if (this.hasCustomAvatar) {
+        deleteAvatarBtn.style.display = 'block'
+      } else {
+        deleteAvatarBtn.style.display = 'none'
+      }
+    }
+  }
+
+  private async handleAvatarDelete(
+    avatarImg: HTMLImageElement,
+    statusDiv: HTMLElement,
+    messageDiv: HTMLElement
+  ): Promise<void> {
+    if (!this.user) return
+
+    console.log('Starting avatar delete for user:', this.user.username)
+
+    // Show status
+    statusDiv.classList.remove('hidden')
+    messageDiv.textContent = 'Deleting avatar...'
+    messageDiv.className = 'mt-1 text-blue-600 font-mono text-sm'
+
+    try {
+      const result = await this.apiService.deleteAvatar()
+      
+      console.log('Avatar delete result:', result)
+
+      if (result.success) {
+        messageDiv.textContent = result.message || 'Avatar deleted successfully!'
+        messageDiv.className = 'mt-1 text-green-600 font-mono text-sm font-bold'
+        
+        // Reset to default avatar
+        avatarImg.src = 'images/default_avatar.jpg'
+        this.hasCustomAvatar = false
+        this.updateDeleteButtonVisibility()
+        
+        // Hide status after success
+        setTimeout(() => {
+          statusDiv.classList.add('hidden')
+        }, 2000)
+      } else {
+        messageDiv.textContent = result.message || 'Delete failed'
+        messageDiv.className = 'mt-1 text-red-600 font-mono text-sm font-bold'
+      }
+    } catch (error) {
+      console.error('Avatar delete error:', error)
+      messageDiv.textContent = 'Network error. Please try again.'
+      messageDiv.className = 'mt-1 text-red-600 font-mono text-sm font-bold'
     }
   }
 
