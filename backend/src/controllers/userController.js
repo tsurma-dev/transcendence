@@ -64,6 +64,11 @@ export function getUserAvatar(req, reply) {
     );
     const defaultAvatarRelativePath = "uploads/avatars/default.jpg";
 
+    // Set CORS headers for avatar images
+    reply.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+    reply.header('Access-Control-Allow-Credentials', 'true');
+    reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
+
     if (fs.existsSync(avatarAbsolutePath)) {
       return reply.sendFile(avatarRelativePath);
     } else {
