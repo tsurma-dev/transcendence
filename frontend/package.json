@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "npm run build && npx serve dist",
+    "dev": "npm run build && npx serve dist --single",
     "build:css": "npx postcss src/index.css -o dist/output.css",
     "build:ts": "npx tsc",
 	"copy:html": "cp src/index.html dist/index.html",
 	"copy:assets": "cp -r src/assets/* dist/",
     "build": "npm run build:css && npm run build:ts && npm run copy:html && npm run copy:assets",
-    "serve": "npx serve dist"
+    "serve": "npx serve dist --single"
   },
   "keywords": [],
   "author": "",
