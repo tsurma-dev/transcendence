@@ -1444,8 +1444,7 @@ class UserProfileScreen extends Component {
     const avatarStatusMessage = this.element?.querySelector('#avatarStatusMessage') as HTMLElement
     const userSettingsBtn = this.element?.querySelector('#userSettingsBtn') as HTMLButtonElement
     const matchHistoryBtn = this.element?.querySelector('#matchHistoryBtn') as HTMLButtonElement
-    const deleteAccountBtn = this.element?.querySelector('#deleteAccountBtn') as HTMLButtonElement
-
+    
     // Avatar menu elements
     const avatarMenuBtn = this.element?.querySelector('#avatarMenuBtn') as HTMLButtonElement
     const avatarMenuDropdown = this.element?.querySelector('#avatarMenuDropdown') as HTMLElement
@@ -1543,17 +1542,6 @@ class UserProfileScreen extends Component {
       })
     }
 
-    // Handle delete account button click
-    if (deleteAccountBtn) {
-      deleteAccountBtn.addEventListener('click', async () => {
-        const confirmDelete = confirm('Are you sure you want to delete your account? This action cannot be undone.')
-        if (confirmDelete) {
-          // TODO: Implement account deletion
-          console.log('Delete account clicked - functionality not implemented yet')
-          alert('Account deletion functionality not implemented yet')
-        }
-      })
-    }
   }
 
   private async updateOnlineStatus(): Promise<void> {
