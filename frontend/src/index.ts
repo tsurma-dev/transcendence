@@ -464,6 +464,7 @@ class AppRouter {
     this.routes.set('/register', { component: RegisterScreen })
     this.routes.set('/profile', { component: UserProfileScreen })
     this.routes.set('/settings', { component: UserSettingsScreen })
+    this.routes.set('/match-history', { component: MatchHistoryScreen })
     this.routes.set('/quick-play', { component: QuickPlaySetupScreen })
     this.routes.set('/player-setup', { component: PlayerSetupScreen })
     this.routes.set('/game', { component: GameScreen })
@@ -566,6 +567,8 @@ class AppRouter {
         return '/profile'
       case 'UserSettingsScreen':
         return '/settings'
+      case 'MatchHistoryScreen':
+        return '/match-history'
       case 'QuickPlaySetupScreen':
         return '/quick-play'
       case 'PlayerSetupScreen':
@@ -1437,16 +1440,14 @@ class UserProfileScreen extends Component {
     const profileEmail = this.element?.querySelector('#profileEmail') as HTMLElement
     const profileJoinedDate = this.element?.querySelector('#profileJoinedDate') as HTMLElement
     const profileLastLogin = this.element?.querySelector('#profileLastLogin') as HTMLElement
-    const profileTotalGames = this.element?.querySelector('#profileTotalGames') as HTMLElement
-    const profileGamesWon = this.element?.querySelector('#profileGamesWon') as HTMLElement
     const profileAvatar = this.element?.querySelector('#profileAvatar') as HTMLImageElement
     const avatarFileInput = this.element?.querySelector('#avatarFileInput') as HTMLInputElement
     const avatarUploadStatus = this.element?.querySelector('#avatarUploadStatus') as HTMLElement
     const avatarUploadProgress = this.element?.querySelector('#avatarUploadProgress') as HTMLProgressElement
     const avatarStatusMessage = this.element?.querySelector('#avatarStatusMessage') as HTMLElement
     const userSettingsBtn = this.element?.querySelector('#userSettingsBtn') as HTMLButtonElement
-    const deleteAccountBtn = this.element?.querySelector('#deleteAccountBtn') as HTMLButtonElement
-
+    const matchHistoryBtn = this.element?.querySelector('#matchHistoryBtn') as HTMLButtonElement
+    
     // Avatar menu elements
     const avatarMenuBtn = this.element?.querySelector('#avatarMenuBtn') as HTMLButtonElement
     const avatarMenuDropdown = this.element?.querySelector('#avatarMenuDropdown') as HTMLElement
@@ -1466,18 +1467,12 @@ class UserProfileScreen extends Component {
         if (profileAvatar && this.user.username) {
           await this.loadUserAvatar(profileAvatar, this.user.username)
         }
-        
-        // Placeholder values for game stats (not implemented yet)
-        if (profileTotalGames) profileTotalGames.textContent = '0'
-        if (profileGamesWon) profileGamesWon.textContent = '0'
       } else {
         // Handle case where no user is logged in
         if (profileUsername) profileUsername.textContent = 'Not logged in'
         if (profileEmail) profileEmail.textContent = 'N/A'
         if (profileJoinedDate) profileJoinedDate.textContent = 'N/A'
         if (profileLastLogin) profileLastLogin.textContent = 'N/A'
-        if (profileTotalGames) profileTotalGames.textContent = '0'
-        if (profileGamesWon) profileGamesWon.textContent = '0'
       }
     } catch (error) {
       console.error('Error loading user profile:', error)
@@ -1486,8 +1481,6 @@ class UserProfileScreen extends Component {
       if (profileEmail) profileEmail.textContent = 'Error'
       if (profileJoinedDate) profileJoinedDate.textContent = 'Error'
       if (profileLastLogin) profileLastLogin.textContent = 'Error'
-      if (profileTotalGames) profileTotalGames.textContent = '0'
-      if (profileGamesWon) profileGamesWon.textContent = '0'
     }
 
     // Handle avatar menu toggle
@@ -1544,17 +1537,14 @@ class UserProfileScreen extends Component {
       })
     }
 
-    // Handle delete account button click
-    if (deleteAccountBtn) {
-      deleteAccountBtn.addEventListener('click', async () => {
-        const confirmDelete = confirm('Are you sure you want to delete your account? This action cannot be undone.')
-        if (confirmDelete) {
-          // TODO: Implement account deletion
-          console.log('Delete account clicked - functionality not implemented yet')
-          alert('Account deletion functionality not implemented yet')
-        }
+    // Handle match history button click
+    if (matchHistoryBtn) {
+      matchHistoryBtn.addEventListener('click', () => {
+        // Navigate to match history screen
+        this.router.navigateTo(MatchHistoryScreen)
       })
     }
+
   }
 
   private async updateOnlineStatus(): Promise<void> {
@@ -1591,34 +1581,40 @@ class UserProfileScreen extends Component {
   }
 
   private async loadUserAvatar(avatarImg: HTMLImageElement, username: string): Promise<void> {
-    // Try to load custom avatar from backend
-    const customAvatarUrl = this.apiService.getAvatarUrl(username)
+    // Load the avatar from backend
+    const avatarUrl = this.apiService.getAvatarUrl(username)
     
-    console.log('Attempting to load custom avatar for user:', username, 'URL:', customAvatarUrl)
+    console.log('Loading avatar for user:', username, 'URL:', avatarUrl)
     
     return new Promise((resolve) => {
-      // Create a test image to check if custom avatar exists
+      // Create a test image to load the avatar
       const testImg = new Image()
       
       testImg.onload = () => {
-        console.log('Custom avatar found, replacing default avatar')
-        // Custom avatar exists, replace the default
-        avatarImg.src = customAvatarUrl
-        this.hasCustomAvatar = true
+        console.log('Avatar loaded successfully')
+        // Set the avatar image
+        avatarImg.src = avatarUrl
+        
+        // Initially assume no custom avatar - this will be set to true only after uploads
+        // or we could check localStorage for a flag that tracks custom avatar status
+        const hasCustomAvatarFlag = localStorage.getItem(`hasCustomAvatar_${username}`)
+        this.hasCustomAvatar = hasCustomAvatarFlag === 'true'
         this.updateDeleteButtonVisibility()
+        
+        console.log('Avatar loaded, custom avatar status:', this.hasCustomAvatar)
         resolve()
       }
       
       testImg.onerror = () => {
-        console.log('No custom avatar found, keeping default avatar')
-        // Custom avatar doesn't exist, keep the default that's already set in the template
+        console.log('Failed to load avatar, using default')
+        // Avatar failed to load, keep default and assume no custom avatar
         this.hasCustomAvatar = false
         this.updateDeleteButtonVisibility()
         resolve()
       }
       
-      // Test if the custom avatar exists
-      testImg.src = customAvatarUrl
+      // Load the avatar
+      testImg.src = avatarUrl
     })
   }
 
@@ -1670,6 +1666,10 @@ class UserProfileScreen extends Component {
           console.log('New avatar loaded successfully, updating display')
           avatarImg.src = newAvatarUrl
           this.hasCustomAvatar = true
+          // Store custom avatar flag in localStorage
+          if (this.user?.username) {
+            localStorage.setItem(`hasCustomAvatar_${this.user.username}`, 'true')
+          }
           this.updateDeleteButtonVisibility()
         }
         testImg.onerror = () => {
@@ -1747,6 +1747,10 @@ class UserProfileScreen extends Component {
         // Reset to default avatar
         avatarImg.src = 'images/default_avatar.jpg'
         this.hasCustomAvatar = false
+        // Remove custom avatar flag from localStorage
+        if (this.user?.username) {
+          localStorage.removeItem(`hasCustomAvatar_${this.user.username}`)
+        }
         this.updateDeleteButtonVisibility()
         
         // Hide status after success
@@ -1866,6 +1870,7 @@ class UserSettingsScreen extends Component {
         }
       })
     }
+
   }
 
   private async handlePasswordUpdate(form: HTMLFormElement, responseDiv: HTMLElement): Promise<void> {
@@ -2062,6 +2067,55 @@ class UserSettingsScreen extends Component {
         responseDiv.classList.add('hidden')
       }, 5000)
     }
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
+  }
+}
+
+/**
+ * Match History Screen
+ * Shows user's match history with statistics
+ */
+class MatchHistoryScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+  private apiService = new ApiService()
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('matchHistoryTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+      
+      // Show user menu for authenticated users
+      App.getInstance().setUserLoggedIn(true)
+    }
+    return div
+  }
+
+  setupEvents(): void {
+    const backToProfileBtn = this.element?.querySelector('#backToProfileBtn') as HTMLButtonElement
+
+    // Handle back to profile button
+    if (backToProfileBtn) {
+      backToProfileBtn.addEventListener('click', () => {
+        this.router.navigateTo(UserProfileScreen)
+      })
+    }
+
+    // Load match history data (placeholder)
+    this.loadMatchHistory()
+  }
+
+  private async loadMatchHistory(): Promise<void> {
+    // TODO: Implement actual match history loading from backend
+    console.log('Loading match history - using placeholder data for now')
+
+    // When implemented, fetch data from the backend:
+    // const matches = await this.apiService.getMatchHistory()
+    // this.populateMatchHistory(matches)
   }
 
   cleanup(): void {
