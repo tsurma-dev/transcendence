@@ -1581,34 +1581,40 @@ class UserProfileScreen extends Component {
   }
 
   private async loadUserAvatar(avatarImg: HTMLImageElement, username: string): Promise<void> {
-    // Try to load custom avatar from backend
-    const customAvatarUrl = this.apiService.getAvatarUrl(username)
+    // Load the avatar from backend
+    const avatarUrl = this.apiService.getAvatarUrl(username)
     
-    console.log('Attempting to load custom avatar for user:', username, 'URL:', customAvatarUrl)
+    console.log('Loading avatar for user:', username, 'URL:', avatarUrl)
     
     return new Promise((resolve) => {
-      // Create a test image to check if custom avatar exists
+      // Create a test image to load the avatar
       const testImg = new Image()
       
       testImg.onload = () => {
-        console.log('Custom avatar found, replacing default avatar')
-        // Custom avatar exists, replace the default
-        avatarImg.src = customAvatarUrl
-        this.hasCustomAvatar = true
+        console.log('Avatar loaded successfully')
+        // Set the avatar image
+        avatarImg.src = avatarUrl
+        
+        // Initially assume no custom avatar - this will be set to true only after uploads
+        // or we could check localStorage for a flag that tracks custom avatar status
+        const hasCustomAvatarFlag = localStorage.getItem(`hasCustomAvatar_${username}`)
+        this.hasCustomAvatar = hasCustomAvatarFlag === 'true'
         this.updateDeleteButtonVisibility()
+        
+        console.log('Avatar loaded, custom avatar status:', this.hasCustomAvatar)
         resolve()
       }
       
       testImg.onerror = () => {
-        console.log('No custom avatar found, keeping default avatar')
-        // Custom avatar doesn't exist, keep the default that's already set in the template
+        console.log('Failed to load avatar, using default')
+        // Avatar failed to load, keep default and assume no custom avatar
         this.hasCustomAvatar = false
         this.updateDeleteButtonVisibility()
         resolve()
       }
       
-      // Test if the custom avatar exists
-      testImg.src = customAvatarUrl
+      // Load the avatar
+      testImg.src = avatarUrl
     })
   }
 
@@ -1660,6 +1666,10 @@ class UserProfileScreen extends Component {
           console.log('New avatar loaded successfully, updating display')
           avatarImg.src = newAvatarUrl
           this.hasCustomAvatar = true
+          // Store custom avatar flag in localStorage
+          if (this.user?.username) {
+            localStorage.setItem(`hasCustomAvatar_${this.user.username}`, 'true')
+          }
           this.updateDeleteButtonVisibility()
         }
         testImg.onerror = () => {
@@ -1737,6 +1747,10 @@ class UserProfileScreen extends Component {
         // Reset to default avatar
         avatarImg.src = 'images/default_avatar.jpg'
         this.hasCustomAvatar = false
+        // Remove custom avatar flag from localStorage
+        if (this.user?.username) {
+          localStorage.removeItem(`hasCustomAvatar_${this.user.username}`)
+        }
         this.updateDeleteButtonVisibility()
         
         // Hide status after success
