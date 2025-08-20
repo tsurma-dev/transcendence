@@ -5,6 +5,7 @@ import {
   patchMePassword,
   deleteMe,
   putUserAvatar,
+  deleteUserAvatar,
 } from "../controllers/profileController.js";
 import {
   changeEmailSchema,
@@ -43,6 +44,11 @@ async function profileRoutes(fastify) {
   fastify.put("/api/me/avatar", {
     preHandler: fastify.verifyAuth,
     handler: putUserAvatar,
+  });
+
+  fastify.delete("/api/me/avatar", {
+    preHandler: fastify.verifyAuth,
+    handler: deleteUserAvatar,
   });
 }
 
