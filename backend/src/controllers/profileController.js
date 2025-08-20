@@ -187,3 +187,27 @@ export async function putUserAvatar(req, reply) {
 
   reply.send({ message: "Avatar uploaded successfully" });
 }
+
+export async function deleteUserAvatar(req, reply) {
+  const user = req.user;
+  if (!user) return reply.code(401).send({ message: "Unauthorized" });
+
+  const avatarPath = path.join(
+    process.cwd(),
+    "public",
+    "uploads",
+    "avatars",
+    `${user.id}.png`
+  );
+
+  try {
+    await fs.promises.unlink(avatarPath);
+    return reply.send({ message: "Avatar deleted successfully" });
+  } catch (err) {
+    if (err.code === "ENOENT") {
+      return reply.code(404).send({ message: "No avatar found for this user" });
+    }
+    console.error(err);
+    return reply.code(500).send({ message: "Error deleting avatar" });
+  }
+}
