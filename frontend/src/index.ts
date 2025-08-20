@@ -341,9 +341,23 @@ class ApiService {
 
   async deleteAvatar(): Promise<{success: boolean, message?: string}> {
     try {
-      // Placeholder for future implementation
-      console.log('Delete avatar placeholder - not implemented yet')
-      return { success: false, message: 'Delete avatar functionality not implemented yet' }
+      console.log('Deleting avatar from:', `${this.baseUrl}/api/me/avatar`)
+
+      const response = await fetch(`${this.baseUrl}/api/me/avatar`, {
+        method: 'DELETE',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      console.log('Delete response status:', response.status, response.statusText)
+
+      const result = await response.json().catch(() => ({}))
+      
+      if (response.ok) {
+        return { success: true, message: result.message || 'Avatar deleted successfully!' }
+      } else {
+        return { success: false, message: result.message || 'Failed to delete avatar' }
+      }
     } catch (error) {
       console.error('Avatar delete error:', error)
       return { success: false, message: 'Network error. Please try again.' }
