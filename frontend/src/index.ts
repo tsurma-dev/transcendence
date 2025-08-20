@@ -464,6 +464,7 @@ class AppRouter {
     this.routes.set('/register', { component: RegisterScreen })
     this.routes.set('/profile', { component: UserProfileScreen })
     this.routes.set('/settings', { component: UserSettingsScreen })
+    this.routes.set('/match-history', { component: MatchHistoryScreen })
     this.routes.set('/quick-play', { component: QuickPlaySetupScreen })
     this.routes.set('/player-setup', { component: PlayerSetupScreen })
     this.routes.set('/game', { component: GameScreen })
@@ -566,6 +567,8 @@ class AppRouter {
         return '/profile'
       case 'UserSettingsScreen':
         return '/settings'
+      case 'MatchHistoryScreen':
+        return '/match-history'
       case 'QuickPlaySetupScreen':
         return '/quick-play'
       case 'PlayerSetupScreen':
