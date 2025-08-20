@@ -1437,8 +1437,6 @@ class UserProfileScreen extends Component {
     const profileEmail = this.element?.querySelector('#profileEmail') as HTMLElement
     const profileJoinedDate = this.element?.querySelector('#profileJoinedDate') as HTMLElement
     const profileLastLogin = this.element?.querySelector('#profileLastLogin') as HTMLElement
-    const profileTotalGames = this.element?.querySelector('#profileTotalGames') as HTMLElement
-    const profileGamesWon = this.element?.querySelector('#profileGamesWon') as HTMLElement
     const profileAvatar = this.element?.querySelector('#profileAvatar') as HTMLImageElement
     const avatarFileInput = this.element?.querySelector('#avatarFileInput') as HTMLInputElement
     const avatarUploadStatus = this.element?.querySelector('#avatarUploadStatus') as HTMLElement
@@ -1467,18 +1465,12 @@ class UserProfileScreen extends Component {
         if (profileAvatar && this.user.username) {
           await this.loadUserAvatar(profileAvatar, this.user.username)
         }
-        
-        // Placeholder values for game stats (not implemented yet)
-        if (profileTotalGames) profileTotalGames.textContent = '0'
-        if (profileGamesWon) profileGamesWon.textContent = '0'
       } else {
         // Handle case where no user is logged in
         if (profileUsername) profileUsername.textContent = 'Not logged in'
         if (profileEmail) profileEmail.textContent = 'N/A'
         if (profileJoinedDate) profileJoinedDate.textContent = 'N/A'
         if (profileLastLogin) profileLastLogin.textContent = 'N/A'
-        if (profileTotalGames) profileTotalGames.textContent = '0'
-        if (profileGamesWon) profileGamesWon.textContent = '0'
       }
     } catch (error) {
       console.error('Error loading user profile:', error)
@@ -1487,8 +1479,6 @@ class UserProfileScreen extends Component {
       if (profileEmail) profileEmail.textContent = 'Error'
       if (profileJoinedDate) profileJoinedDate.textContent = 'Error'
       if (profileLastLogin) profileLastLogin.textContent = 'Error'
-      if (profileTotalGames) profileTotalGames.textContent = '0'
-      if (profileGamesWon) profileGamesWon.textContent = '0'
     }
 
     // Handle avatar menu toggle
@@ -2108,7 +2098,7 @@ class MatchHistoryScreen extends Component {
         this.router.navigateTo(UserProfileScreen)
       })
     }
-    
+
     // Load match history data (placeholder)
     this.loadMatchHistory()
   }
