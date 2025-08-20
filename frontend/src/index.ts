@@ -1445,6 +1445,7 @@ class UserProfileScreen extends Component {
     const avatarUploadProgress = this.element?.querySelector('#avatarUploadProgress') as HTMLProgressElement
     const avatarStatusMessage = this.element?.querySelector('#avatarStatusMessage') as HTMLElement
     const userSettingsBtn = this.element?.querySelector('#userSettingsBtn') as HTMLButtonElement
+    const matchHistoryBtn = this.element?.querySelector('#matchHistoryBtn') as HTMLButtonElement
     const deleteAccountBtn = this.element?.querySelector('#deleteAccountBtn') as HTMLButtonElement
 
     // Avatar menu elements
@@ -1541,6 +1542,14 @@ class UserProfileScreen extends Component {
       userSettingsBtn.addEventListener('click', () => {
         // Navigate to user settings screen
         this.router.navigateTo(UserSettingsScreen)
+      })
+    }
+
+    // Handle match history button click
+    if (matchHistoryBtn) {
+      matchHistoryBtn.addEventListener('click', () => {
+        // Navigate to match history screen
+        this.router.navigateTo(MatchHistoryScreen)
       })
     }
 
@@ -2062,6 +2071,55 @@ class UserSettingsScreen extends Component {
         responseDiv.classList.add('hidden')
       }, 5000)
     }
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
+  }
+}
+
+/**
+ * Match History Screen
+ * Shows user's match history with statistics
+ */
+class MatchHistoryScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+  private apiService = new ApiService()
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('matchHistoryTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+      
+      // Show user menu for authenticated users
+      App.getInstance().setUserLoggedIn(true)
+    }
+    return div
+  }
+
+  setupEvents(): void {
+    const backToProfileBtn = this.element?.querySelector('#backToProfileBtn') as HTMLButtonElement
+
+    // Handle back to profile button
+    if (backToProfileBtn) {
+      backToProfileBtn.addEventListener('click', () => {
+        this.router.navigateTo(UserProfileScreen)
+      })
+    }
+    
+    // Load match history data (placeholder)
+    this.loadMatchHistory()
+  }
+
+  private async loadMatchHistory(): Promise<void> {
+    // TODO: Implement actual match history loading from backend
+    console.log('Loading match history - using placeholder data for now')
+
+    // When implemented, fetch data from the backend:
+    // const matches = await this.apiService.getMatchHistory()
+    // this.populateMatchHistory(matches)
   }
 
   cleanup(): void {
