@@ -15,9 +15,12 @@ import dbPlugin from "./plugins/db.js";
 import authPlugin from "./plugins/auth.js";
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import friendRoutes from "./routes/friendRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import fastifyMultipart from "@fastify/multipart";
 // import pongRoutes from './routes/matchRoutes.js';
+
+import "./utils/seedUsers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,7 +94,7 @@ await app.register(authPlugin);
 await app.register(userRoutes);
 await app.register(profileRoutes);
 await app.register(authRoutes);
-
+await app.register(friendRoutes);
 // await app.register(pongRoutes);
 await app.register(fastifyStatic, {
   root: path.resolve("./public"),
