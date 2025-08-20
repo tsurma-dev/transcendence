@@ -1853,6 +1853,14 @@ class UserSettingsScreen extends Component {
         }
       })
     }
+
+    // Handle back to profile button
+    const backToProfileBtn = this.element?.querySelector('#backToProfileBtn') as HTMLButtonElement
+    if (backToProfileBtn) {
+      backToProfileBtn.addEventListener('click', () => {
+        this.router.navigateTo(UserProfileScreen)
+      })
+    }
   }
 
   private async handlePasswordUpdate(form: HTMLFormElement, responseDiv: HTMLElement): Promise<void> {
