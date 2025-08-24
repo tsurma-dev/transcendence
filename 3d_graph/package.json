@@ -12,7 +12,9 @@
     "@babylonjs/core": "^8.22.2",
     "@babylonjs/inspector": "^8.22.2",
     "@babylonjs/loaders": "^8.23.1",
-    "vite": "^7.0.4"
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.3"
   },
   "dependencies": {
     "@babylonjs/materials": "^8.23.1"
