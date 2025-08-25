@@ -62,6 +62,7 @@ await app.register(fastifyCors, {
     "http://localhost:5173",
   ], // Allow frontend dev servers, 5173 is for Vite
   credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
 });
 
 await app.register(fastifyFormbody);
@@ -104,6 +105,13 @@ await app.register(friendRoutes);
 await app.register(fastifyStatic, {
   root: path.resolve("./public"),
   prefix: "/",
+  preHandler: (request, reply, done) => {
+    // Set CORS headers for static files
+    reply.header('Access-Control-Allow-Origin', 'http://localhost:3000')
+    reply.header('Access-Control-Allow-Credentials', 'true')
+    reply.header('Cross-Origin-Resource-Policy', 'cross-origin')
+    done()
+  }
 }); // will be removed with frontend
 
 export default app;

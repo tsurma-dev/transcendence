@@ -59,7 +59,9 @@ export function getUserAvatar(req, reply) {
     const avatarDir = path.join(__dirname, "../../public/uploads/avatars");
     const possibleExtensions = [".png", ".jpg"];
     let avatarFile = null;
-
+    reply.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+    reply.header('Access-Control-Allow-Credentials', 'true');
+    reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
     for (const ext of possibleExtensions) {
       const filePath = path.join(avatarDir, `${user.id}${ext}`);
       if (fs.existsSync(filePath)) {

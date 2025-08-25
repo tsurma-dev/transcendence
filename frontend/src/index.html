@@ -28,15 +28,34 @@ Do not edit files in the dist directory, as they are generated files.
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Transcendence Pong</title>
   <link href="output.css" rel="stylesheet">
-  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body class="min-h-screen bg-gradient-to-br from-yellow-300 via-amber-400 to-orange-400">
-  <!-- Global Navigation Button (Back to Start/Log out) -->
-  <button 
-    id="backToStartBtn" 
-    class="fixed top-4 right-4 px-4 py-2 bg-blue-500 hover:bg-red-700 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider z-50">
-    ← Back to Start
-  </button>
+  <!-- Global Navigation Menu for logged-in users -->
+  <div id="userMenuWrapper" class="fixed top-4 right-4 z-50" style="display: none;">
+    <!-- Menu Toggle Button shows username -->
+    <button
+      id="userProfileBtn"
+      class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 font-mono uppercase tracking-wider">
+      <!-- Username will be inserted here -->
+      <span id="userProfileName">User</span>
+      <span class="ml-2">▾</span>
+    </button>
+    <!-- Dropdown Menu -->
+    <div id="userMenuDropdown" class="hidden mt-2 w-40 bg-white border border-gray-300 rounded shadow-lg">
+      <button id="profileMenuBtn" class="block w-full text-left px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 font-mono uppercase tracking-wider">Profile</button>
+      <button id="settingsMenuBtn" class="block w-full text-left px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 font-mono uppercase tracking-wider">Settings</button>
+      <button id="startGameMenuBtn" class="block w-full text-left px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 font-mono uppercase tracking-wider">Start Game</button>
+      <button id="logoutMenuBtn" class="block w-full text-left px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 font-mono uppercase tracking-wider">Log Out</button>
+    </div>
+    <!-- Back to Start Button for non-logged-in users -->
+    <button
+      id="backMenuBtn"
+      class="block w-full text-left px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 font-mono uppercase tracking-wider hidden"
+    >
+      ← Back to Start
+    </button>
+  </div>
   
   <!-- Main App Container -->
   <div id="app" class="min-h-screen flex items-center justify-center p-4">
@@ -92,21 +111,47 @@ _|_|_|    _|    _|  _|  _|  _|  _|  _|_|
 _|        _|    _|  _|    _|_|  _|    _|
 _|          _|_|    _|      _|    _|_|_|</pre>
       </div>
-      </h1>
-      <form id="loginForm" class="space-y-4">
-        <input type="email" name="email" placeholder="Email" required 
-            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
-        <input type="password" name="password" placeholder="Password" required 
-            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
-        <button type="submit" 
-            class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
-          Login
-        </button>
-    </form>
-    <div id="loginError" class="text-red-500 text-center mt-4 hidden"></div>
-    <div class="text-black text-center mt-4 font-mono">
-      Don't have an account? <button id="showRegisterBtn" class="text-black underline cursor-pointer font-bold hover:text-gray-700">Register here</button>
-    </div>
+      
+      <!-- Login Credentials Form -->
+      <div id="loginCredentialsSection">
+        <form id="loginForm" class="space-y-4">
+          <input type="email" name="email" placeholder="Email" required 
+              class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+          <input type="password" name="password" placeholder="Password" required 
+              class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+          <button type="submit" 
+              class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+            Login
+          </button>
+        </form>
+        <div class="text-black text-center mt-4 font-mono">
+          Don't have an account? <button id="showRegisterBtn" class="text-black underline cursor-pointer font-bold hover:text-gray-700">Register here</button>
+        </div>
+      </div>
+
+      <!-- 2FA Verification Section (hidden by default) -->
+      <div id="twoFAVerificationSection" class="hidden">
+        <div class="text-black text-center mb-4 font-mono">
+          <h3 class="text-lg font-bold mb-2">Two-Factor Authentication Required</h3>
+          <p class="text-sm">Enter the 6-digit code from your authenticator app</p>
+        </div>
+        
+        <form id="twoFAVerificationForm" class="space-y-4">
+          <input type="text" id="twoFACode" name="twoFACode" placeholder="Enter 6-digit code" required 
+              maxlength="6" pattern="[0-9]{6}" autocomplete="off"
+              class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono text-center text-2xl tracking-widest" />
+          <button type="submit" 
+              class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+            Verify Code
+          </button>
+        </form>
+        
+        <div class="text-black text-center mt-4 font-mono">
+          <button id="backToCredentialsBtn" class="text-black underline cursor-pointer font-bold hover:text-gray-700">← Back to Login</button>
+        </div>
+      </div>
+
+      <div id="loginError" class="text-red-500 text-center mt-4 hidden"></div>
     </div>
   </template>
 
@@ -148,6 +193,260 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       <p class="font-mono text-black text-lg">
         You can now close this window or return to the start page
       </p>
+    </div>
+  </template>
+
+  <!-- User profile template -->
+  <template id="userProfileTemplate">
+    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-lg w-full text-center">
+      <h1 class="text-4xl font-bold text-white mb-4 drop-shadow-lg">
+        User Profile
+      </h1>
+      <!-- User avatar -->
+      <div class="mb-6">
+        <div class="relative inline-block">
+          <img 
+            id="profileAvatar"
+            src="images/default_avatar.jpg"
+            alt="User Avatar"
+            class="w-32 h-32 rounded-full border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mx-auto mb-4"
+          >
+          <!-- Avatar menu button -->
+          <div class="relative">
+            <button id="avatarMenuBtn" class="absolute bottom-2 right-2 w-8 h-8 bg-blue-500 hover:bg-blue-600 border-2 border-black rounded-full flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all duration-150">
+              <span class="text-white text-sm font-bold">📷</span>
+            </button>
+            <!-- Avatar dropdown menu -->
+            <div id="avatarMenuDropdown" class="hidden absolute bottom-10 right-0 w-48 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-10">
+              <button id="uploadAvatarBtn" class="block w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-300 font-mono uppercase text-sm font-bold">
+                📁 Upload Profile Picture
+              </button>
+              <button id="deleteAvatarBtn" class="block w-full text-left px-4 py-2 hover:bg-gray-100 font-mono uppercase text-sm font-bold text-red-600">
+                🗑️ Delete Profile Picture
+              </button>
+            </div>
+            <input 
+              type="file" 
+              id="avatarFileInput" 
+              accept="image/png" 
+              class="hidden"
+            >
+          </div>
+        </div>
+        <!-- Avatar upload progress and status -->
+        <div id="avatarUploadStatus" class="mt-2 text-center text-sm font-mono hidden">
+          <progress id="avatarUploadProgress" value="0" max="100" class="w-full h-2 rounded-none border-2 border-black hidden"></progress>
+          <div id="avatarStatusMessage" class="mt-1"></div>
+        </div>
+        <!-- Online status indicator -->
+        <div class="flex items-center justify-center">
+          <div id="onlineStatusDot" class="w-3 h-3 rounded-full mr-2 bg-green-400"></div>
+          <span id="onlineStatusText" class="text-black font-mono text-sm font-bold">Online</span>
+        </div>
+      </div>
+      <!-- User information -->
+      <div class="flex justify-center mb-4">
+        <div class="text-black text-lg text-left">
+          <p class="font-mono flex"><span class="w-40">Username:</span><span id="profileUsername" class="font-bold"></span></p>
+          <p class="font-mono flex"><span class="w-40">Email:</span><span id="profileEmail" class="font-bold"></span></p>
+          <p class="font-mono flex"><span class="w-40">Joined:</span><span id="profileJoinedDate" class="font-bold"></span></p>
+        </div>
+      </div>
+      <div class="space-y-4">
+        <button 
+          id="matchHistoryBtn"
+          class="w-full px-6 py-4 bg-gradient-to-b from-purple-400 to-purple-600 hover:from-purple-300 hover:to-purple-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          Match History
+        </button>
+        <button 
+          id="userSettingsBtn"
+          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          User Settings
+        </button>
+      </div>
+    </div>
+  </template>
+
+  <!-- User settings template -->
+  <template id="userSettingsTemplate">
+    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-2xl w-full text-center">
+      <h1 class="text-4xl font-bold text-white mb-4 drop-shadow-lg">
+        User Settings
+      </h1>
+      <form id="updatePasswordForm" class="mb-6">
+        <h2 class="text-2xl font-semibold text-black mb-4">Change Password</h2>
+        <label class="block mb-2">
+          New Password:
+          <input type="password" name="password" required 
+            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+        </label>
+        <button type="submit" 
+          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          Update Password
+        </button>
+        <div id="passwordResponse" class="text-black text-left mt-2 hidden"></div>
+      </form>
+      <form id="updateEmailForm" class="mb-6">
+        <h2 class="text-2xl font-semibold text-black mb-4">Change Email</h2>
+        <label class="block mb-2">
+          New Email:
+          <input type="email" name="email" required 
+            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+        </label>
+        <button type="submit" 
+          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150  font-mono uppercase tracking-wider">
+          Update Email
+        </button>
+        <div id="emailResponse" class="text-black text-left mt-2 hidden"></div>
+      </form>
+      <form id="updateUsernameForm" class="mb-6">
+        <h2 class="text-2xl font-semibold text-black mb-4">Change Username</h2>
+        <label class="block mb-2">
+          New Username:
+          <input type="text" name="username" required maxlength="15"
+            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+        </label>
+        <button type="submit" 
+          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          Update Username
+        </button>
+        <div id="usernameResponse" class="text-black text-left mt-2 hidden"></div>
+      </form>
+      <div class="mb-6 p-6 border-4 border-black rounded-none shadow-[4px_4px_0px_0px rgba(0,0,0,1)]">
+        <h2 class="text-2xl font-semibold text-black mb-4">Two-Factor Authentication</h2>
+        <div class="text-center mb-4">
+          <span class="text-black font-mono text-lg">2FA Status: </span>
+          <span id="twoFAStatus" class="text-black font-bold font-mono">Loading...</span>
+        </div>
+        <div id="twoFAControls" class="space-y-4">
+          <!-- Enable 2FA Button (shown when 2FA is disabled) -->
+          <button 
+            id="enable2FABtn"
+            class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider hidden">
+            Enable 2FA
+          </button>
+          
+          <!-- Disable 2FA Button (shown when 2FA is enabled) -->
+          <button 
+            id="disable2FABtn"
+            class="w-full px-6 py-4 bg-gradient-to-b from-orange-400 to-orange-600 hover:from-orange-300 hover:to-orange-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider hidden">
+            Disable 2FA
+          </button>
+          
+          <!-- QR Code Display (shown during 2FA setup) -->
+          <div id="qrCodeSection" class="text-center hidden">
+            <p class="text-black font-mono mb-4">Scan this QR code with your authenticator app:</p>
+            <div id="qrCodeContainer" class="bg-white p-4 border-4 border-black inline-block mb-4"></div>
+            <p class="text-black font-mono text-sm mb-4">Or enter this secret manually: <span id="manualSecret" class="font-bold"></span></p>
+            <input 
+              type="text" 
+              id="verificationCode" 
+              placeholder="Enter 6-digit code from your app" 
+              maxlength="6"
+              class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono mb-4" />
+            <button 
+              id="verify2FABtn"
+              class="w-full px-6 py-4 bg-gradient-to-b from-green-400 to-green-600 hover:from-green-300 hover:to-green-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+              Verify & Enable 2FA
+            </button>
+          </div>
+        </div>
+        <div id="twoFAResponse" class="text-black text-left mt-2 hidden"></div>
+      </div>
+      <form id="deleteAccountForm" class="mb-6">
+        <h2 class="text-2xl font-semibold text-black mb-4">Delete Account</h2>
+        <label class="block mb-2">
+          Confirm Password:
+          <input type="password" name="password" required 
+            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+        </label>
+        <button type="submit" 
+          class="w-full px-6 py-4 bg-gradient-to-b from-red-400 to-red-600 hover:from-red-300 hover:to-red-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate  -x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          Delete My Account
+        </button>
+        <div id="deleteResponse" class="text-black text-left mt-2 hidden"></div>
+      </form>
+    </div>
+  </template>
+
+  <!-- Match History template -->
+  <template id="matchHistoryTemplate">
+    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-4xl w-full text-center">
+      <h1 class="text-4xl font-bold text-white mb-6 drop-shadow-lg">
+        Match History
+      </h1>
+      
+      <!-- Match Statistics Overview -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="bg-white/90 border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4">
+          <div class="text-black text-2xl font-bold" id="totalMatches">2</div>
+          <div class="text-black text-sm font-mono uppercase">Total Matches</div>
+        </div>
+        <div class="bg-white/90 border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4">
+          <div class="text-green-600 text-2xl font-bold" id="matchesWon">1</div>
+          <div class="text-black text-sm font-mono uppercase">Matches Won</div>
+        </div>
+        <div class="bg-white/90 border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4">
+          <div class="text-blue-600 text-2xl font-bold" id="winPercentage">50 %</div>
+          <div class="text-black text-sm font-mono uppercase">Win Rate</div>
+        </div>
+      </div>
+
+      <!-- Match List -->
+      <div class="bg-white/90 border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
+        <h2 class="text-2xl font-bold text-black mb-4 font-mono uppercase">Matches</h2>
+        
+        <!-- Match History Header -->
+        <div class="hidden md:grid grid-cols-5 gap-4 mb-4 pb-2 border-b-2 border-black">
+          <div class="text-black font-bold text-sm font-mono uppercase">Date</div>
+          <div class="text-black font-bold text-sm font-mono uppercase">Opponent</div>
+          <div class="text-black font-bold text-sm font-mono uppercase">Score</div>
+          <div class="text-black font-bold text-sm font-mono uppercase">Result</div>
+        </div>
+
+        <!-- Match History Entries -->
+        <div id="matchHistoryList" class="space-y-2">
+          <!-- Match entries (placeholders) -->
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-3 border-2 border-gray-300 rounded-none hover:bg-gray-50">
+            <div class="text-black font-mono text-sm">
+              <span class="md:hidden font-bold">Date: </span>2025-08-19
+            </div>
+            <div class="text-black font-mono text-sm">
+              <span class="md:hidden font-bold">Opponent: </span>DuckOverflow
+            </div>
+            <div class="text-black font-mono text-sm">
+              <span class="md:hidden font-bold">Score: </span>5-1
+            </div>
+            <div class="text-green-600 font-mono text-sm font-bold">
+              <span class="md:hidden text-black font-bold">Result: </span>WIN
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-3 border-2 border-gray-300 rounded-none hover:bg-gray-50">
+            <div class="text-black font-mono text-sm">
+              <span class="md:hidden font-bold">Date: </span>2025-08-18
+            </div>
+            <div class="text-black font-mono text-sm">
+              <span class="md:hidden font-bold">Opponent: </span>PongMaster
+            </div>
+            <div class="text-black font-mono text-sm">
+              <span class="md:hidden font-bold">Score: </span>2-5
+            </div>
+            <div class="text-red-600 font-mono text-sm font-bold">
+              <span class="md:hidden text-black font-bold">Result: </span>LOSS
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Back to Profile Button -->
+      <div class="mt-6">
+        <button 
+          id="backToProfileBtn"
+          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          Back to Profile
+        </button>
+      </div>
     </div>
   </template>
 
