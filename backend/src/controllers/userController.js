@@ -55,25 +55,23 @@ export function getUserAvatar(req, reply) {
     }
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    const avatarFile = `${user.id}.png`;
-    const avatarRelativePath = `uploads/avatars/${avatarFile}`;
-    const avatarAbsolutePath = path.join(
-      __dirname,
-      "../../public",
-      avatarRelativePath
-    );
-    const defaultAvatarRelativePath = "uploads/avatars/default.jpg";
 
-    // Set CORS headers for avatar images
+    const avatarDir = path.join(__dirname, "../../public/uploads/avatars");
+    const possibleExtensions = [".png", ".jpg"];
+    let avatarFile = null;
     reply.header('Access-Control-Allow-Origin', 'http://localhost:3000');
     reply.header('Access-Control-Allow-Credentials', 'true');
     reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
-
-    if (fs.existsSync(avatarAbsolutePath)) {
-      return reply.sendFile(avatarRelativePath);
-    } else {
-      return reply.sendFile(defaultAvatarRelativePath);
+    for (const ext of possibleExtensions) {
+      const filePath = path.join(avatarDir, `${user.id}${ext}`);
+      if (fs.existsSync(filePath)) {
+        avatarFile = `uploads/avatars/${user.id}${ext}`;
+        break;
+      }
     }
+
+    const defaultAvatar = "uploads/avatars/default.jpg";
+    return reply.sendFile(avatarFile || defaultAvatar);
   } catch (error) {
     req.log.error(error);
     reply.code(500).send({ message: "Internal Server Error" });

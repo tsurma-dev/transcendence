@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Friend Management</title>
+<style>
+/* Your CSS here */
+</style>
+</head>
+<body>
+  <h1>Friend Management</h1>
+
+  <div class="section">
+    <h3>Send Friend Request</h3>
+    <input id="sendUsername" placeholder="Username">
+    <button id="sendBtn">Send Request</button>
+    <div id="sendStatus"></div>
+  </div>
+
+  <div class="section">
+    <h3>Accept Friend Request</h3>
+    <input id="acceptUsername" placeholder="Username">
+    <button id="acceptBtn">Accept</button>
+    <div id="acceptStatus"></div>
+  </div>
+
+  <div class="section">
+    <h3>Reject Friend Request</h3>
+    <input id="rejectUsername" placeholder="Username">
+    <button id="rejectBtn">Reject</button>
+    <div id="rejectStatus"></div>
+  </div>
+
+  <div class="section">
+    <h3>Delete Friend</h3>
+    <input id="deleteUsername" placeholder="Username">
+    <button id="deleteBtn">Delete</button>
+    <div id="deleteStatus"></div>
+  </div>
+
+  <div class="section">
+    <h3>Friends List</h3>
+    <button id="refreshBtn">Refresh List</button>
+    <ul id="friendsList"></ul>
+  </div>
+
+  <script>
+    document.getElementById('sendBtn').addEventListener('click', async () => {
+      const username = document.getElementById('sendUsername').value;
+      const res = await fetch(`/api/me/friends/${username}/request`, { method: 'POST' });
+      const data = await res.json();
+      document.getElementById('sendStatus').textContent = data.message || JSON.stringify(data);
+    });
+
+    document.getElementById('acceptBtn').addEventListener('click', async () => {
+      const username = document.getElementById('acceptUsername').value;
+      const res = await fetch(`/api/me/friends/${username}/accept`, { method: 'POST' });
+      const data = await res.json();
+      document.getElementById('acceptStatus').textContent = data.message || JSON.stringify(data);
+    });
+
+    document.getElementById('rejectBtn').addEventListener('click', async () => {
+      const username = document.getElementById('rejectUsername').value;
+      const res = await fetch(`/api/me/friends/${username}/reject`, { method: 'POST' });
+      const data = await res.json();
+      document.getElementById('rejectStatus').textContent = data.message || JSON.stringify(data);
+    });
+
+    document.getElementById('deleteBtn').addEventListener('click', async () => {
+      const username = document.getElementById('deleteUsername').value;
+      const res = await fetch(`/api/me/friends/${username}`, { method: 'DELETE' });
+      const data = await res.json();
+      document.getElementById('deleteStatus').textContent = data.message || JSON.stringify(data);
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', async () => {
+      const res = await fetch(`/api/me/friends`);
+      const data = await res.json();
+      const list = document.getElementById('friendsList');
+      list.innerHTML = '';
+      data.friends?.forEach(f => {
+        const li = document.createElement('li');
+        li.textContent = f.username;
+        list.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>
