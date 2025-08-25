@@ -49,7 +49,6 @@ export async function patchMeName(req, reply) {
     }
     const updatedUser = findUserById(req.server.db, id);
     if (!updatedUser) {
-      req.log.error(error);
       return reply.code(500).send({ message: "Internal server error" });
     }
     await reissueJwtAndSetCookie({
@@ -63,7 +62,6 @@ export async function patchMeName(req, reply) {
     if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
       return reply.code(409).send({ message: "Username already exists" });
     }
-    req.log.error(error);
     return reply.code(500).send({ message: "Internal server error" });
   }
 }
@@ -149,6 +147,7 @@ export async function deleteMe(req, reply) {
     }
     const { success } = deleteUser(req.server.db, id);
     if (success) {
+      await delAvatar(user);
       return logoutUser(req, reply);
     }
     return reply.code(304).send({ message: "No changes made" });
@@ -164,8 +163,11 @@ export async function putUserAvatar(req, reply) {
 
   const data = await req.file();
   if (!data) return reply.code(400).send({ message: "No file uploaded" });
-  if (data.mimetype !== "image/png")
-    return reply.code(415).send({ message: "Only PNG files are allowed" });
+  const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
+  if (!allowedTypes.includes(data.mimetype))
+    return reply
+      .code(415)
+      .send({ message: "Only PNG, JPEG, and JPG files are allowed" });
 
   const avatarDir = path.join(
     __dirname,
@@ -177,7 +179,11 @@ export async function putUserAvatar(req, reply) {
   );
   fs.mkdirSync(avatarDir, { recursive: true });
 
-  const avatarPath = path.join(avatarDir, `${user.id}.png`);
+  let ext = ".png";
+  if (data.mimetype === "image/jpeg" || data.mimetype === "image/jpg") {
+    ext = ".jpg";
+  }
+  const avatarPath = path.join(avatarDir, `${user.id}${ext}`);
   await new Promise((resolve, reject) => {
     const writeStream = fs.createWriteStream(avatarPath);
     data.file.pipe(writeStream);
@@ -199,15 +205,34 @@ export async function deleteUserAvatar(req, reply) {
     "avatars",
     `${user.id}.png`
   );
+  const status = await delAvatar(user);
+  if (status.message !== "Success") {
+    return reply.code(500).send(status);
+  }
+  reply.send({ message: "Avatar deleted successfully" });
+}
 
-  try {
-    await fs.promises.unlink(avatarPath);
-    return reply.send({ message: "Avatar deleted successfully" });
-  } catch (err) {
-    if (err.code === "ENOENT") {
-      return reply.code(404).send({ message: "No avatar found for this user" });
+export async function delAvatar(user) {
+  const avatarDir = path.join(process.cwd(), "public", "uploads", "avatars");
+  const possibleExtensions = [".png", ".jpg"];
+  let deleted = false;
+
+  for (const ext of possibleExtensions) {
+    const avatarPath = path.join(avatarDir, `${user.id}${ext}`);
+    try {
+      await fs.promises.unlink(avatarPath);
+      deleted = true;
+    } catch (err) {
+      if (err.code !== "ENOENT") {
+        console.error(err);
+        return { message: "Error deleting avatar" };
+      }
     }
-    console.error(err);
-    return reply.code(500).send({ message: "Error deleting avatar" });
+  }
+
+  if (deleted) {
+    return { message: "Success" };
+  } else {
+    return { message: "No avatar found for this user" };
   }
 }

@@ -48,6 +48,12 @@ await app.register(fastifyRedis, {
   // password: 'supersecret'
 });
 
+await app.register(fastifyMultipart, {
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+});
+
 // Register CORS to allow frontend requests
 await app.register(fastifyCors, {
   origin: [
@@ -87,7 +93,6 @@ await app.register(fastifyHelmet, {
   },
 });
 
-await app.register(fastifyMultipart);
 await app.register(fastifyWebsocket);
 await app.register(dbPlugin);
 await app.register(authPlugin);

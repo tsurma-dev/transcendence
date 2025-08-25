@@ -12,7 +12,6 @@ const statusDiv = document.getElementById('status');
 uploadBtn.addEventListener('click', () => {
   const file = fileInput.files[0];
   if (!file) return statusDiv.textContent = 'Please select a PNG file.';
-  if (file.type !== 'image/png') return statusDiv.textContent = 'Only PNG files are allowed.';
 
   const formData = new FormData();
   formData.append('file', file);
