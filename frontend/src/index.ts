@@ -1249,6 +1249,9 @@ class LoggedInLandingScreen extends Component {
   setupEvents(): void {
     // Load online users count
     this.loadOnlineUsersCount()
+    
+    // Load current user and update welcome message
+    this.loadCurrentUser()
 
     const startSinglePlayerBtn = this.element?.querySelector('#startSinglePlayerBtn') as HTMLButtonElement
     const startTournamentBtn = this.element?.querySelector('#startTournamentBtn') as HTMLButtonElement
@@ -1293,6 +1296,32 @@ class LoggedInLandingScreen extends Component {
     } catch (error) {
       console.error('Error loading online users count:', error)
       onlineUsersElement.textContent = 'Offline mode'
+    }
+  }
+
+  private async loadCurrentUser(): Promise<void> {
+    const welcomeUsernameElement = this.element?.querySelector('#welcomeUsername')
+    if (!welcomeUsernameElement) {
+      console.error('welcomeUsername element not found')
+      return
+    }
+
+    console.log('Loading current user for welcome message...')
+    try {
+      const user = await this.apiService.getCurrentUser()
+      console.log('Current user for welcome:', user)
+      
+      if (user && user.username) {
+        console.log('Setting welcome username to:', user.username)
+        welcomeUsernameElement.textContent = user.username
+      } else {
+        console.log('No user data or username found, keeping default')
+        welcomeUsernameElement.textContent = 'User'
+      }
+    } catch (error) {
+      console.error('Error loading current user for welcome:', error)
+      // Keep the default "User" text if there's an error
+      welcomeUsernameElement.textContent = 'User'
     }
   }
 
