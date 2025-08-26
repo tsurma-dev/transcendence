@@ -462,6 +462,7 @@ class AppRouter {
     this.routes.set('/start', { component: StartPageScreen })
     this.routes.set('/login', { component: LoginScreen })
     this.routes.set('/register', { component: RegisterScreen })
+    this.routes.set('/landing', { component: LoggedInLandingScreen })
     this.routes.set('/profile', { component: UserProfileScreen })
     this.routes.set('/settings', { component: UserSettingsScreen })
     this.routes.set('/match-history', { component: MatchHistoryScreen })
@@ -563,6 +564,8 @@ class AppRouter {
         return '/login'
       case 'RegisterScreen':
         return '/register'
+      case 'LoggedInLandingScreen':
+        return '/landing'
       case 'UserProfileScreen':
         return '/profile'
       case 'UserSettingsScreen':
@@ -1009,9 +1012,9 @@ class LoginScreen extends Component {
       })
 
       if (response.ok) {
-        // Login successful, navigate to player setup
+        // Login successful, navigate to logged-in landing page
         App.getInstance().setUserLoggedIn(true)
-        this.router.navigateTo(PlayerSetupScreen)
+        this.router.navigateTo(LoggedInLandingScreen)
       } else {
         const error = await response.json().catch(async () => {
           const text = await response.text()
@@ -1214,6 +1217,58 @@ class LoggedOutScreen extends Component {
 
   setupEvents(): void {
     // Global button is managed by App class
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
+  }
+}
+
+/**
+ * Logged-in Landing Page Screen
+ * This screen is shown when logged-in users successfully log in
+ * It provides options for single player game, tournament, and profile access
+ */
+class LoggedInLandingScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('loggedInLandingTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+      
+      // Show user menu for authenticated users
+      App.getInstance().setUserLoggedIn(true)
+    }
+    return div
+  }
+
+  setupEvents(): void {
+    const startSinglePlayerBtn = this.element?.querySelector('#startSinglePlayerBtn') as HTMLButtonElement
+    const startTournamentBtn = this.element?.querySelector('#startTournamentBtn') as HTMLButtonElement
+    const userProfileLandingBtn = this.element?.querySelector('#userProfileLandingBtn') as HTMLButtonElement
+
+    if (startSinglePlayerBtn) {
+      startSinglePlayerBtn.addEventListener('click', () => {
+        // TODO: Implement single player game navigation
+        console.log('Single player game - not implemented yet')
+      })
+    }
+
+    if (startTournamentBtn) {
+      startTournamentBtn.addEventListener('click', () => {
+        // TODO: Implement tournament navigation
+        console.log('Tournament mode - not implemented yet')
+      })
+    }
+
+    if (userProfileLandingBtn) {
+      userProfileLandingBtn.addEventListener('click', () => {
+        this.router.navigateTo(UserProfileScreen)
+      })
+    }
   }
 
   cleanup(): void {
