@@ -1232,6 +1232,7 @@ class LoggedOutScreen extends Component {
 class LoggedInLandingScreen extends Component {
   private templateManager = TemplateManager.getInstance()
   private router = AppRouter.getInstance()
+  private apiService = new ApiService()
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('loggedInLandingTemplate')
@@ -1246,6 +1247,9 @@ class LoggedInLandingScreen extends Component {
   }
 
   setupEvents(): void {
+    // Load online users count
+    this.loadOnlineUsersCount()
+
     const startSinglePlayerBtn = this.element?.querySelector('#startSinglePlayerBtn') as HTMLButtonElement
     const startTournamentBtn = this.element?.querySelector('#startTournamentBtn') as HTMLButtonElement
     const userProfileLandingBtn = this.element?.querySelector('#userProfileLandingBtn') as HTMLButtonElement
@@ -1268,6 +1272,27 @@ class LoggedInLandingScreen extends Component {
       userProfileLandingBtn.addEventListener('click', () => {
         this.router.navigateTo(UserProfileScreen)
       })
+    }
+  }
+
+  private async loadOnlineUsersCount(): Promise<void> {
+    const onlineUsersElement = this.element?.querySelector('#onlineUsersCount')
+    if (!onlineUsersElement) {
+      console.error('onlineUsersCount element not found')
+      return
+    }
+
+    console.log('Starting to load online users count...')
+    onlineUsersElement.textContent = 'Loading...'
+
+    try {
+      const count = await this.apiService.getOnlineUsersCount()
+      const userText = count === 1 ? 'user' : 'users'
+      onlineUsersElement.textContent = `${count} ${userText} online`
+      console.log('Successfully updated online users count:', count)
+    } catch (error) {
+      console.error('Error loading online users count:', error)
+      onlineUsersElement.textContent = 'Offline mode'
     }
   }
 
@@ -1303,9 +1328,6 @@ class PlayerSetupScreen extends Component {
 
     if (!player1Input || !player2Input || !startBtn) return
 
-    // Load online users count
-    this.loadOnlineUsersCount()
-
     // Load current user and set as Player 1 default
     this.loadCurrentUser()
 
@@ -1338,27 +1360,6 @@ class PlayerSetupScreen extends Component {
 
     player1Input.addEventListener('keypress', handleEnter)
     player2Input.addEventListener('keypress', handleEnter)
-  }
-
-  private async loadOnlineUsersCount(): Promise<void> {
-    const onlineUsersElement = this.element?.querySelector('#onlineUsersCount')
-    if (!onlineUsersElement) {
-      console.error('onlineUsersCount element not found')
-      return
-    }
-
-    console.log('Starting to load online users count...')
-    onlineUsersElement.textContent = 'Loading...'
-
-    try {
-      const count = await this.apiService.getOnlineUsersCount()
-      const userText = count === 1 ? 'user' : 'users'
-      onlineUsersElement.textContent = `${count} ${userText} online`
-      console.log('Successfully updated online users count:', count)
-    } catch (error) {
-      console.error('Error loading online users count:', error)
-      onlineUsersElement.textContent = 'Offline mode'
-    }
   }
 
   private async loadCurrentUser(): Promise<void> {
