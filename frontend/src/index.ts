@@ -1254,6 +1254,7 @@ class LoggedInLandingScreen extends Component {
     this.loadCurrentUser()
 
     const startSinglePlayerBtn = this.element?.querySelector('#startSinglePlayerBtn') as HTMLButtonElement
+    const start2PlayerBtn = this.element?.querySelector('#start2PlayerBtn') as HTMLButtonElement
     const startTournamentBtn = this.element?.querySelector('#startTournamentBtn') as HTMLButtonElement
     const userProfileLandingBtn = this.element?.querySelector('#userProfileLandingBtn') as HTMLButtonElement
 
@@ -1261,6 +1262,12 @@ class LoggedInLandingScreen extends Component {
       startSinglePlayerBtn.addEventListener('click', () => {
         // TODO: Implement single player game navigation
         console.log('Single player game - not implemented yet')
+      })
+    }
+
+    if (start2PlayerBtn) {
+      start2PlayerBtn.addEventListener('click', () => {
+        this.router.navigateTo(PlayerSetupScreen)
       })
     }
 
