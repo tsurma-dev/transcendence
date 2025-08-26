@@ -2284,7 +2284,7 @@ class App {
     // Start Game menu button
     document.getElementById('startGameMenuBtn')?.addEventListener('click', () => {
       this.userMenuDropdown?.classList.add('hidden')
-      this.router.navigateTo(PlayerSetupScreen)
+      this.router.navigateTo(LoggedInLandingScreen)
     })
     document.getElementById('logoutMenuBtn')?.addEventListener('click', () => {
       this.userMenuDropdown?.classList.add('hidden')
