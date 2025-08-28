@@ -656,10 +656,35 @@ class PongGame {
   private player2Score: number = 0
   private onScoreUpdate?: (player1Score: number, player2Score: number) => void
 
+  private socket = new WebSocket("wss://127.0.0.1:8443/ws/pong");
+
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')!
     this.setupEventListeners()
+    this.setupWS()
+  }
+
+  private setupWS(): void {
+    this.socket.onopen = () => {
+      console.log("Connected to server via wss")
+      // TODO: work out logic with rooms
+      this.socket.send(JSON.stringify({ action: "join", roomId: "42" }))
+    }
+
+    this.socket.onmessage = (event) => {
+      console.log("received ws msg: " + event.data)
+      const data = JSON.parse(event.data)
+      if (data.action == "update") {
+        switch (data.object) {
+          case "paddle":
+            this.leftPaddleY = data.y
+            break
+          default:
+            console.warn("Received an unknown object update:", data.object)
+        }
+      }
+    }
   }
 
   private setupEventListeners(): void {
@@ -695,8 +720,14 @@ class PongGame {
     // Move paddles
     if (this.keys['w'] && this.leftPaddleY > 0) this.leftPaddleY -= this.paddleSpeed
     if (this.keys['s'] && this.leftPaddleY + this.paddleHeight < this.HEIGHT) this.leftPaddleY += this.paddleSpeed
-    if (this.keys['ArrowUp'] && this.rightPaddleY > 0) this.rightPaddleY -= this.paddleSpeed
-    if (this.keys['ArrowDown'] && this.rightPaddleY + this.paddleHeight < this.HEIGHT) this.rightPaddleY += this.paddleSpeed
+    if (this.keys['ArrowUp'] && this.rightPaddleY > 0) {
+      this.rightPaddleY -= this.paddleSpeed
+      this.socket.send(JSON.stringify({ action: "update", object: "paddle", y: this.rightPaddleY }))
+    }
+    if (this.keys['ArrowDown'] && this.rightPaddleY + this.paddleHeight < this.HEIGHT) {
+      this.rightPaddleY += this.paddleSpeed
+      this.socket.send(JSON.stringify({ action: "update", object: "paddle", y: this.rightPaddleY }))
+    }
 
     // Move ball
     this.ballX += this.ballSpeedX

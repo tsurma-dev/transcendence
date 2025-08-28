@@ -1,34 +1,50 @@
-import {
-  createMatch,
-  addPlayerToMatch,
-  completeMatch,
-} from "../models/matchModel";
+// import {
+//   createMatch,
+//   addPlayerToMatch,
+//   completeMatch,
+// } from "../models/matchModel";
 
 const rooms = new Map();
+// TODO: temporally while rooms are not supported in UI
+rooms.set("42", { players: [] });
 
-export function handlePongWebSocket(connection) {
-  connection.socket.once("message", (msg) => {
+export function handlePongWebSocket(socket) {
+  socket.on("message", (msg) => {
+    console.log("received ws msg: " + msg);
+
     let data;
     try {
       data = JSON.parse(msg.toString());
     } catch {
-      connection.socket.send(JSON.stringify({ message: "Invalid JSON" }));
-      connection.socket.close();
+      socket.send(JSON.stringify({ message: "Invalid JSON" }));
+      socket.close();
       return;
     }
 
     switch (data.action) {
       case "create":
-        createRoom(connection.socket);
+        createRoom(socket);
         break;
       case "join":
-        joinRoom(connection.socket, data.roomId);
+        joinRoom(socket, data.roomId);
+        break;
+      case "update":
+        forwardUpdate(socket, data);
         break;
       default:
-        connection.socket.send(JSON.stringify({ message: "Unknown action" }));
-        connection.socket.close();
+        socket.send(JSON.stringify({ message: "Unknown action" }));
+        socket.close();
     }
   });
+}
+
+function forwardUpdate(socket, data) {
+  // TODO: include roomId into data
+  const room = rooms.get("42")
+  const otherPlayer = room.players.filter((s) => s !== socket)
+  if (otherPlayer.length === 1) {
+    otherPlayer[0].send(JSON.stringify(data))
+  }
 }
 
 function createRoom(socket) {
@@ -61,7 +77,10 @@ function setupCloseHandler(roomId, socket) {
     if (!room) return;
     room.players = room.players.filter((s) => s !== socket);
     if (room.players.length === 0) {
-      rooms.delete(roomId);
+      // TODO: temporally while rooms are not supported in UI
+      if (roomId != "42") {
+        rooms.delete(roomId);
+      }
     }
   });
 }
