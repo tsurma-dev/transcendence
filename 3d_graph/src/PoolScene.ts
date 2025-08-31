@@ -6,13 +6,22 @@ import {
   Vector3,
   HemisphericLight,
   MeshBuilder,
+  StandardMaterial,
   DirectionalLight,
+  PointLight,
   ShadowGenerator,
   Vector4,
   SceneLoader,
   UtilityLayerRenderer,
   LightGizmo,
-  Sound
+  Sound,
+  Color3,
+  HDRCubeTexture,
+  CSG,
+  PBRMaterial,
+  Texture,
+  ImageProcessingConfiguration,
+  GlowLayer
 } from "@babylonjs/core";
 
 import "@babylonjs/loaders/glTF";
@@ -35,7 +44,9 @@ export class PoolScene {
 
   // Camera and lighting
   private light!: DirectionalLight;
+  private hemilight!: HemisphericLight;
   private shadowGenerator!: ShadowGenerator;
+  private poolLights: PointLight[] = [];
 
   // Game objects
   private duck: Duck;
@@ -173,18 +184,34 @@ export class PoolScene {
     const scene: Scene = new Scene(this.engine);
     const materials: Materials = new Materials(scene);
 
+    // --- ADD GLOW LAYER FOR EMISSIVE EFFECTS ---
+    const glowLayer = new GlowLayer("glow", scene);
+    glowLayer.intensity = 0.8;
+
+    // --- IMAGE PROCESSING TO FIX GREY LOOK ---
+    // This acts like post-processing to enhance colors and contrast.
+    scene.imageProcessingConfiguration.toneMappingEnabled = true;
+    scene.imageProcessingConfiguration.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
+    scene.imageProcessingConfiguration.exposure = 1.5;
+
+
     this._createCamera(scene);
     this._createLights(scene);
     this._createPool(scene, materials);
     this._createLadders(scene);
     this._createWater(scene, materials);
+    this._createSkybox(scene);
 
+    // --- GIZMOS ---
     if (process.env.NODE_ENV === "development") {
       Inspector.Show(scene, {});
 
       const utilLayer = new UtilityLayerRenderer(scene);
       const lightGizmo = new LightGizmo(utilLayer);
       lightGizmo.light = this.light;
+
+      const hemiLightGizmo = new LightGizmo(utilLayer);
+      hemiLightGizmo.light = this.hemilight;
     }
     return scene;
   }
@@ -196,7 +223,7 @@ export class PoolScene {
 		// camera.speed = 0.25;
 		const camera = new ArcRotateCamera("camera", 0, 0, -10, new Vector3(0, 0, 0), scene);
 		camera.attachControl();
-		camera.setTarget(Vector3.Zero());
+		camera.setTarget(new Vector3(0, 0, -1.5));
 		camera.setPosition(new Vector3(0, 10, -10));
 		// Camera limits
 		camera.lowerBetaLimit = Math.PI / 8;
@@ -212,16 +239,21 @@ export class PoolScene {
 	_createLights(scene: Scene): void {
 		//Lights
 		this.light = new DirectionalLight("light", new Vector3(-0.5, -1, 0), scene);
-		const light2 = new HemisphericLight("HemiLight", new Vector3(0, 1, 0), scene);
+		this.hemilight = new HemisphericLight("HemiLight", new Vector3(0, 1, 0), scene);
 		this.light.position = new Vector3(0, 3, 0);
-		this.light.intensity = 0.7;
-		light2.intensity = 0.4;
+		this.light.intensity = 0.5;
+		this.hemilight.intensity = 0.2;
 		// Shadow
 		this.shadowGenerator = new ShadowGenerator(2048, this.light);
 		this.shadowGenerator.useBlurExponentialShadowMap = true;
 		this.shadowGenerator.bias = 0.002;
 		this.shadowGenerator.normalBias = 0.02;
 	}
+
+  _createSkybox(scene: Scene): void {
+      const skyboxTexture = new HDRCubeTexture("/textures/skybox.hdr", scene, 512);
+      scene.createDefaultSkybox(skyboxTexture, true, 1000);
+    }
 
 	_createPool(scene: Scene, materials: Materials): void {
 		const tileScale: number = 3.5;
@@ -237,7 +269,7 @@ export class PoolScene {
 		floor.receiveShadows = true;
 
 		// --- FRONT/BACK WALLS ---
-		const backWallWidth = GAME_CONFIG.TABLE_WIDTH + GAME_CONFIG.WALL_THICKNESS;
+		const backWallWidth = GAME_CONFIG.TABLE_WIDTH + 2 * GAME_CONFIG.WALL_THICKNESS;
 		const backWallHeight = GAME_CONFIG.WALL_HEIGHT;
 		const backWallDepth = GAME_CONFIG.WALL_THICKNESS;
 
@@ -258,7 +290,7 @@ export class PoolScene {
 		}, scene);
 		backWall.position.set(0, GAME_CONFIG.FLOOR_LEVEL + GAME_CONFIG.WALL_HEIGHT / 2, -(GAME_CONFIG.TABLE_DEPTH / 2) - GAME_CONFIG.WATER_EXTRA_SPACE);
 		backWall.material = materials.poolMaterial;
-		backWall.receiveShadows = true;
+		// backWall.receiveShadows = true;
 
 		const frontWall = backWall.clone("frontWall");
 		frontWall.position.z = GAME_CONFIG.TABLE_DEPTH / 2 + GAME_CONFIG.WATER_EXTRA_SPACE;
@@ -283,33 +315,140 @@ export class PoolScene {
 			faceUV: sideWallUV,
 			wrap: true
 		}, scene);
-		leftWall.position.set(-(GAME_CONFIG.TABLE_WIDTH / 2), GAME_CONFIG.FLOOR_LEVEL + leftWallHeight / 2, 0);
+		leftWall.position.set(-(GAME_CONFIG.TABLE_WIDTH / 2 + GAME_CONFIG.WALL_THICKNESS / 2), GAME_CONFIG.FLOOR_LEVEL + leftWallHeight / 2, 0);
 		leftWall.material = materials.poolMaterial;
-		leftWall.receiveShadows = true;
+		// leftWall.receiveShadows = true;
 
 		const rightWall = leftWall.clone("rightWall");
-		rightWall.position.x = GAME_CONFIG.TABLE_WIDTH / 2;
-	}
+		rightWall.position.x = GAME_CONFIG.TABLE_WIDTH / 2 + GAME_CONFIG.WALL_THICKNESS / 2;
 
-	_createLadders(scene: Scene): void {
-		SceneLoader.ImportMeshAsync(
-			"",
-			"/pool_ladder/",
-			"scene.gltf", // "Pool ladder" (https://skfb.ly/oR8xJ) by Conception3D is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
-			scene
-		).then((result) => {
-			const ladder1Root = result.meshes[0];
-			// Add all visible parts of the first ladder to the shadow generator
+    // --- POOL LIGHTS ---
+    const lightBoxMaterial = new StandardMaterial("lightBoxMat", scene);
+    lightBoxMaterial.emissiveColor = new Color3(1, 1, 0.7); // Make it glow
+    lightBoxMaterial.disableLighting = true; // The box itself should not be affected by other lights
+
+    const numLightsPerSide = 3;
+    const lightYPosition = GAME_CONFIG.WATER_LEVEL - 1;
+    const wallLength = GAME_CONFIG.TABLE_DEPTH + 2*GAME_CONFIG.WATER_EXTRA_SPACE;
+    const lightSpacing = wallLength / (numLightsPerSide + 1);
+
+    for (let i = 0; i < numLightsPerSide; i++) {
+        const zPos = -wallLength / 2 + (i + 1) * lightSpacing;
+        // --- Left Side Light ---
+        const leftLightBoxPosition = new Vector3(-(GAME_CONFIG.TABLE_WIDTH / 2 + 0.05), lightYPosition, zPos);
+
+        const leftLightBox = MeshBuilder.CreateBox(`leftLightBox_${i}`, {
+            width: 0.2,
+            height: 0.3,
+            depth: 0.5
+        }, scene);
+        leftLightBox.material = lightBoxMaterial;
+        leftLightBox.position = leftLightBoxPosition;
+
+        const leftLightPosition = new Vector3(leftLightBoxPosition.x + 0.15, lightYPosition, zPos);
+        const leftPoolLight = new PointLight(`leftPoolLight_${i}`, leftLightPosition, scene);
+        leftPoolLight.diffuse = new Color3(1, 1, 0.7);
+        leftPoolLight.intensity = 0.4;
+        leftPoolLight.range = 5;
+        this.poolLights.push(leftPoolLight);
+
+        // --- Right Side Light ---
+        const rightLightBoxPosition = new Vector3((GAME_CONFIG.TABLE_WIDTH / 2) + 0.05, lightYPosition, zPos);
+
+        const rightLightBox = leftLightBox.clone(`rightLightBox_${i}`);
+        rightLightBox.position = rightLightBoxPosition;
+
+        // Position the actual light slightly in front of the box
+        const rightLightPosition = new Vector3(rightLightBoxPosition.x - 0.15, lightYPosition, zPos);
+        const rightPoolLight = new PointLight(`rightPoolLight_${i}`, rightLightPosition, scene);
+        rightPoolLight.diffuse = new Color3(1, 1, 0.7);
+        rightPoolLight.intensity = 0.4;
+        rightPoolLight.range = 5;
+        this.poolLights.push(rightPoolLight);
+    }
+
+    // // --- ADD POOL WALLS AS SHADOW CASTERS ---
+    // this.shadowGenerator.addShadowCaster(backWall, true);
+    // this.shadowGenerator.addShadowCaster(frontWall, true);
+    // this.shadowGenerator.addShadowCaster(leftWall, true);
+    // this.shadowGenerator.addShadowCaster(rightWall, true);
+
+    // --- SURROUNDING GROUND WITH HOLE (CSG) ---
+
+    // 1. Clone the new pavement PBR material and scale its textures.
+    const groundMaterial = materials.pavementMaterial.clone("surroundingGroundMat");
+    const groundTextureScale = 12; // How many times to repeat the texture
+
+    // This helper array scales all textures present on the PBR material
+    // --- FIX: Use 'metallicTexture' which contains the ARM map ---
+    const texturesToScale = ['albedoTexture', 'bumpTexture', 'metallicTexture'];
+    texturesToScale.forEach(texName => {
+        const texture = groundMaterial[texName as keyof PBRMaterial] as Texture | null;
+        if (texture) {
+            texture.uScale = groundTextureScale;
+            texture.vScale = groundTextureScale;
+        }
+    });
+
+    // 2. Create a thin box for the ground plane. A box is needed for CSG operations.
+    const groundWidth = 50;
+    const groundHeight = 50;
+    const ground = MeshBuilder.CreateBox("groundCSG", {width: groundWidth, height: 0.1, depth: groundHeight}, scene);
+    ground.position.y = GAME_CONFIG.FLOOR_LEVEL + GAME_CONFIG.WALL_HEIGHT - 0.2;
+
+    // 3. Create a "cutter" mesh that is the exact shape of the pool's outer walls.
+    const poolCutter = MeshBuilder.CreateBox("poolCutterCSG", {
+          width: GAME_CONFIG.TABLE_WIDTH + 2 * GAME_CONFIG.WALL_THICKNESS,
+          height: 5, // Height just needs to be large enough to cut through the ground
+          depth: GAME_CONFIG.TABLE_DEPTH + 2 * GAME_CONFIG.WATER_EXTRA_SPACE + 2 * GAME_CONFIG.WALL_THICKNESS
+      }, scene);
+      poolCutter.position.y = ground.position.y; // Align vertically with the ground
+
+
+      // 4. Convert both temporary meshes to CSG objects.
+      const groundCSG = CSG.FromMesh(ground);
+      const cutterCSG = CSG.FromMesh(poolCutter);
+
+      // 5. Subtract the cutter from the ground.
+      const groundWithHoleCSG = groundCSG.subtract(cutterCSG);
+
+      // 6. Convert the result back to a standard mesh, applying the scaled material.
+      const surroundingGround = groundWithHoleCSG.toMesh("surroundingGround", groundMaterial, scene);
+      surroundingGround.receiveShadows = true;
+
+      // 7. Dispose of the original temporary meshes to free up memory.
+      ground.dispose();
+      poolCutter.dispose();
+    }
+
+    _createLadders(scene: Scene): void {
+        SceneLoader.ImportMeshAsync(
+            "",
+            "/pool_ladder/",
+            "scene.gltf",
+            scene
+        ).then((result) => {
+            const ladder1Root = result.meshes[0];
+
+            // --- CREATE A CUSTOM LADDER MATERIAL ---
+            const ladderMaterial = new StandardMaterial("ladderMat", scene);
+            ladderMaterial.diffuseColor = new Color3(0.7, 0.7, 0.7); // Grey color
+            ladderMaterial.specularColor = new Color3(0.2, 0.2, 0.2); // Low specular
+            ladderMaterial.emissiveColor = new Color3(0, 0, 0); // No emissive glow
+
+            // Add all visible parts of the first ladder to the shadow generator
             ladder1Root.getChildMeshes().forEach(mesh => {
                 this.shadowGenerator.addShadowCaster(mesh, true);
+                mesh.receiveShadows = true;
+                // --- OVERRIDE THE IMPORTED MATERIAL ---
+                mesh.material = ladderMaterial;
             });
 
             // Position and rotate the entire first ladder hierarchy
             ladder1Root.scaling.scaleInPlace(1);
-            ladder1Root.position = new Vector3(-1.8, 0.16, 4.5);
+            ladder1Root.position = new Vector3(-(GAME_CONFIG.TABLE_WIDTH / 2 - 0.1), 0.16, GAME_CONFIG.TABLE_DEPTH / 2 + 0.5);
             ladder1Root.rotationQuaternion = null;
             ladder1Root.rotation.y = Math.PI / 2;
-
 
             // Create second ladder
             const ladder2Root = ladder1Root.instantiateHierarchy();
@@ -317,10 +456,13 @@ export class PoolScene {
                 // Add all visible parts of the second ladder to the shadow generator
                 ladder2Root.getChildMeshes().forEach(mesh => {
                     this.shadowGenerator.addShadowCaster(mesh, true);
+                    mesh.receiveShadows = true;
+                    // --- APPLY THE SAME MATERIAL TO THE SECOND LADDER ---
+                    mesh.material = ladderMaterial;
                 });
 
                 // Position and rotate the entire second ladder hierarchy
-                ladder2Root.position = new Vector3(1.8, 0.16, -4.5);
+                ladder2Root.position = new Vector3(GAME_CONFIG.TABLE_WIDTH / 2 - 0.1, 0.16, -(GAME_CONFIG.TABLE_DEPTH / 2 + 0.5));
                 ladder2Root.rotationQuaternion = null;
                 ladder2Root.rotation.y = -Math.PI / 2;
             }

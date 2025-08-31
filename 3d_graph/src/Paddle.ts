@@ -30,9 +30,9 @@ export class Paddle {
   paddleMaterial.diffuseColor = new Color3(color.x, color.y, color.z);
   this.mesh.material = paddleMaterial;
 
-  // Enable shadows for the paddle.
+  // // Enable shadows for the paddle.
   shadowGenerator.addShadowCaster(this.mesh);
-  this.mesh.receiveShadows = true;
+  // this.mesh.receiveShadows = false;
   }
 
   // Update the paddle's position based on the game state.
