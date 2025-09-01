@@ -5,14 +5,14 @@ export const RENDERING_SETTINGS = {
   EXPOSURE: 1.5,
   GLOW_INTENSITY: 0.8,
   GROUND_SIZE: 30,
-  GROUND_TILE_SIZE: 6,
+  GROUND_TILE_SIZE: 5.9,
   TILE_SCALE: 3.5
 } as const;
 
 export const LIGHT_SETTINGS = {
   DIRECTIONAL_INTENSITY: 0.5,
   DIRECTIONAL_DIRECTION: new Vector3(-0.5, -1, 0),
-  DIRECTIONAL_POSITION: new Vector3(0, 5, 0),
+  DIRECTIONAL_POSITION: new Vector3(2, 5, 2),
   HEMISPHERE_INTENSITY: 0.2,
   HEMISPHERE_DIRECTION: new Vector3(0, 1, 0), // Reflection direction
   POOL_LIGHT_INTENSITY: 0.4,
@@ -23,6 +23,6 @@ export const LIGHT_SETTINGS = {
 
 export const CAMERA_SETTINGS = {
   TARGET: new Vector3(0, 0, -1.5),
-  POSITION: new Vector3(0, 10, -10),
+  POSITION: new Vector3(0, 6, -8),
   WHEEL_PRECISION: 50
 } as const;
