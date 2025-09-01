@@ -1,0 +1,28 @@
+import { Vector3, Color3 } from "@babylonjs/core";
+
+export const RENDERING_SETTINGS = {
+  SHADOW_MAP_SIZE: 2048,
+  EXPOSURE: 1.5,
+  GLOW_INTENSITY: 0.8,
+  GROUND_SIZE: 30,
+  GROUND_TILE_SIZE: 6,
+  TILE_SCALE: 3.5
+} as const;
+
+export const LIGHT_SETTINGS = {
+  DIRECTIONAL_INTENSITY: 0.5,
+  DIRECTIONAL_DIRECTION: new Vector3(-0.5, -1, 0),
+  DIRECTIONAL_POSITION: new Vector3(0, 5, 0),
+  HEMISPHERE_INTENSITY: 0.2,
+  HEMISPHERE_DIRECTION: new Vector3(0, 1, 0), // Reflection direction
+  POOL_LIGHT_INTENSITY: 0.4,
+  POOL_LIGHT_RANGE: 5,
+  POOL_LIGHT_DIFFUSE: new Color3(1, 1, 0.7),
+  NUM_LIGHTS_PER_SIDE: 3
+} as const;
+
+export const CAMERA_SETTINGS = {
+  TARGET: new Vector3(0, 0, -1.5),
+  POSITION: new Vector3(0, 10, -10),
+  WHEEL_PRECISION: 50
+} as const;
