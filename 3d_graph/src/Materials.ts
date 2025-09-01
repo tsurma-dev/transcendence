@@ -2,8 +2,8 @@ import { Scene, StandardMaterial, Color3, Texture, PBRMaterial } from "@babylonj
 
 export class Materials {
   private scene: Scene;
-  public readonly poolMaterial: StandardMaterial;
-  public readonly waterMaterial: StandardMaterial;
+  public readonly poolMaterial: PBRMaterial;
+  public readonly waterMaterial: PBRMaterial;
   public readonly pavementMaterial: PBRMaterial;
   public readonly lightBoxMaterial: StandardMaterial;
   public readonly ladderMaterial: StandardMaterial;
@@ -19,12 +19,12 @@ export class Materials {
   }
 
 	createScaledFloorMaterial(name: string, width: number, height: number, tileScale: number) {
-	const floorMaterial: StandardMaterial = this.poolMaterial.clone(name);
+	const floorMaterial: PBRMaterial = this.poolMaterial.clone(name);
 	const uScale: number = width / tileScale;
 	const vScale: number = height / tileScale;
-	if (floorMaterial.diffuseTexture instanceof Texture) {
-		floorMaterial.diffuseTexture.uScale = uScale;
-		floorMaterial.diffuseTexture.vScale = vScale;
+	if (floorMaterial.albedoTexture instanceof Texture) {
+		floorMaterial.albedoTexture.uScale = uScale;
+		floorMaterial.albedoTexture.vScale = vScale;
 	}
 	if (floorMaterial.bumpTexture instanceof Texture) {
 		floorMaterial.bumpTexture.uScale = uScale;
@@ -38,25 +38,28 @@ export class Materials {
 	return floorMaterial;
 	}
 
- 	private _createPoolMaterial(): StandardMaterial {
-    const poolMat = new StandardMaterial("poolMat", this.scene);
-    const diffuseTex = new Texture("/textures/tiles_diff.jpg", this.scene);
-    poolMat.diffuseTexture = diffuseTex;
-    const normalTex = new Texture("/textures/tiles_nor.jpg", this.scene);
-    poolMat.bumpTexture = normalTex;
-    poolMat.invertNormalMapX = true;
-    poolMat.invertNormalMapY = true;
-    const aoTex = new Texture("/textures/tiles_ao.jpg", this.scene);
-    poolMat.ambientTexture = aoTex;
-    poolMat.specularColor = new Color3(0.1, 0.1, 0.1);  // making the material more matte
+  private _createPoolMaterial(): PBRMaterial {
+    const poolMat = new PBRMaterial("poolMat", this.scene);
+    poolMat.albedoTexture = new Texture("/textures/tiles_diff.jpg", this.scene);
+    poolMat.albedoColor = new Color3(1, 1, 1);
+    poolMat.bumpTexture = new Texture("/textures/tiles_nor.jpg", this.scene);
+    poolMat.bumpTexture.level = 1;
+    poolMat.ambientTexture = new Texture("/textures/tiles_ao.jpg", this.scene); // Your AO texture
+    poolMat.metallic = 0.0; 
+    poolMat.roughness = 0.9;
+    poolMat.reflectionTexture = this.scene.environmentTexture; // reflects the skybox
     poolMat.freeze();
     return poolMat;
   }
 
-  private _createWaterMaterial(): StandardMaterial {
-    const waterMaterial = new StandardMaterial("waterMaterial", this.scene);
-    waterMaterial.diffuseColor = new Color3(0.6, 0.8, 1);
-    waterMaterial.alpha = 0.5;
+  private _createWaterMaterial(): PBRMaterial {
+    const waterMaterial = new PBRMaterial("waterMaterial", this.scene);
+    waterMaterial.albedoColor = new Color3(0.2, 0.5, 0.9); // Base color
+    waterMaterial.metallic = 0.0;
+    waterMaterial.roughness = 0.05; // Low roughness for sharp reflections
+    waterMaterial.alpha = 0.5; // transparency
+    waterMaterial.reflectionTexture = this.scene.environmentTexture;
+    waterMaterial.reflectivityColor = new Color3(0.2, 0.4, 0.7); // Controls reflection tint
     return waterMaterial;
   }
 
@@ -65,15 +68,15 @@ export class Materials {
     pavementMat.albedoTexture = new Texture("/textures/pavement_diff.jpg", this.scene);   // Albedo (diffuse) texture is the base color
     pavementMat.albedoColor = new Color3(1, 1, 1);
     pavementMat.bumpTexture = new Texture("/textures/pavement_nor.jpg", this.scene);  // Bump (normal) texture adds surface detail
-    pavementMat.bumpTexture.level = 2.0; // Increase normal map intensity
+    pavementMat.bumpTexture.level = 2.
     // pavementMat.invertNormalMapX = true;
     // pavementMat.invertNormalMapY = true;
     pavementMat.metallicTexture = new Texture("/textures/pavement_arm.jpg", this.scene); // Ambient Occlusion, Roughness, Metallic (ARM texture)
     pavementMat.useAmbientOcclusionFromMetallicTextureRed = true;
     pavementMat.useRoughnessFromMetallicTextureGreen = true;
     pavementMat.useMetallnessFromMetallicTextureBlue = true;
-    pavementMat.metallic = 0.0; // Pavement isn't metallic
-    pavementMat.roughness = 1; // Pavement is rough
+    pavementMat.metallic = 0.0;
+    pavementMat.roughness = 0.9;
     pavementMat.freeze();
     return pavementMat;
   }
