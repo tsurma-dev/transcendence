@@ -40,4 +40,5 @@ export class Paddle {
     this.mesh.position.x = state.x;
     this.mesh.position.z = state.z;
   }
+
 }

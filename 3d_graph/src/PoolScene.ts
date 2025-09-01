@@ -1,33 +1,25 @@
 import {
   Scene,
   Engine,
-//   FreeCamera,
   ArcRotateCamera,
   Vector3,
   HemisphericLight,
   MeshBuilder,
-  StandardMaterial,
   DirectionalLight,
   PointLight,
   ShadowGenerator,
   Vector4,
   SceneLoader,
-  UtilityLayerRenderer,
-  LightGizmo,
   Sound,
-  Color3,
   HDRCubeTexture,
-  CSG,
-  PBRMaterial,
-  Texture,
   ImageProcessingConfiguration,
   GlowLayer
 } from "@babylonjs/core";
 
 import "@babylonjs/loaders/glTF";
-import { Inspector } from "@babylonjs/inspector";
 
 import { GAME_CONFIG } from "../../shared/GameConfig"
+import { RENDERING_SETTINGS, LIGHT_SETTINGS, CAMERA_SETTINGS } from "./constants";
 import { Materials } from "./Materials";
 import { Duck } from "./Duck";
 import { Paddle } from "./Paddle";
@@ -45,8 +37,8 @@ export class PoolScene {
   // Camera and lighting
   private light!: DirectionalLight;
   private hemilight!: HemisphericLight;
-  private shadowGenerator!: ShadowGenerator;
   private poolLights: PointLight[] = [];
+  private shadowGenerator!: ShadowGenerator;
 
   // Game objects
   private duck: Duck;
@@ -67,11 +59,13 @@ export class PoolScene {
   private keyUpHandler: (e: KeyboardEvent) => void;
   private resizeHandler: () => void;
 
+  // -------------------
   // --- CONSTRUCTOR ---
+  // -------------------
   // Sets up the entire scene, connects to the server, and starts the render loop.
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.engine = new Engine(this.canvas, true);
+    this.engine = new Engine(this.canvas, true); // Antialiasing is enabled (edges look smoother, less jagged)
     this.scene = this.CreateScene();
 
     // 1. Initialize sounds
@@ -80,8 +74,20 @@ export class PoolScene {
 
     // 2. Initialize Game Objects
     this.duck = new Duck(this.scene, this.shadowGenerator);
-    this.bottomPaddle = new Paddle("bottomPaddle", this.scene, new Vector3(0, 0, 1), new Vector3(0, GAME_CONFIG.WATER_LEVEL, -GAME_CONFIG.TABLE_DEPTH / 2 - GAME_CONFIG.PADDLE_DEPTH), this.shadowGenerator);
-    this.topPaddle = new Paddle("topPaddle", this.scene, new Vector3(1, 0, 0), new Vector3(0, GAME_CONFIG.WATER_LEVEL, GAME_CONFIG.TABLE_DEPTH / 2 + GAME_CONFIG.PADDLE_DEPTH), this.shadowGenerator);
+    this.bottomPaddle = new Paddle(
+      "bottomPaddle",
+      this.scene,
+      new Vector3(0, 0, 1), // blue
+      new Vector3(0, GAME_CONFIG.WATER_LEVEL, -GAME_CONFIG.TABLE_DEPTH / 2 - GAME_CONFIG.PADDLE_DEPTH / 2),
+      this.shadowGenerator
+    );
+    this.topPaddle = new Paddle(
+      "topPaddle",
+      this.scene,
+      new Vector3(1, 0, 0), // red
+      new Vector3(0, GAME_CONFIG.WATER_LEVEL, GAME_CONFIG.TABLE_DEPTH / 2 + GAME_CONFIG.PADDLE_DEPTH / 2),
+      this.shadowGenerator
+    );
 
     // 3. Connect to Server and Set Handlers
     this.client = new GameClient(GAME_CONFIG.SERVER_URL);
@@ -113,11 +119,13 @@ export class PoolScene {
   }
 
 
-  // --- MAIN UPDATE LOOP ---
+  // --------------------------------
+  // !!! --- MAIN UPDATE LOOP --- !!!
+  // --------------------------------
   //  Receives state from the server and updates the scene.
   private updateFromState(state: GameState): void {
 
-    // Map paddles on the first valid state update
+    // Map paddles on the first valid state update (when we have 2 players)
     if (!this.arePaddlesMapped && Object.keys(state.players).length === 2) {
       this.mapPaddlesFromServerState(state);
     }
@@ -178,101 +186,92 @@ export class PoolScene {
   }
 
 
+  // -------------------------------
   // --- SCENE CREATION METHODS  ---
+  // -------------------------------
+  // Creates and configures the entire 3D scene.
 
-  CreateScene(): Scene {
+  private CreateScene(): Scene {
     const scene: Scene = new Scene(this.engine);
     const materials: Materials = new Materials(scene);
 
-    // --- ADD GLOW LAYER FOR EMISSIVE EFFECTS ---
-    const glowLayer = new GlowLayer("glow", scene);
-    glowLayer.intensity = 0.8;
+    // Configure scene post-processing
+    this._configurePostProcessing(scene);
 
-    // --- IMAGE PROCESSING TO FIX GREY LOOK ---
-    // This acts like post-processing to enhance colors and contrast.
-    scene.imageProcessingConfiguration.toneMappingEnabled = true;
-    scene.imageProcessingConfiguration.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
-    scene.imageProcessingConfiguration.exposure = 1.5;
-
-
+    // Create scene elements
     this._createCamera(scene);
     this._createLights(scene);
     this._createPool(scene, materials);
-    this._createLadders(scene);
+    this._createLadders(scene, materials);
     this._createWater(scene, materials);
     this._createSkybox(scene);
 
-    // --- GIZMOS ---
-    if (process.env.NODE_ENV === "development") {
-      Inspector.Show(scene, {});
-
-      const utilLayer = new UtilityLayerRenderer(scene);
-      const lightGizmo = new LightGizmo(utilLayer);
-      lightGizmo.light = this.light;
-
-      const hemiLightGizmo = new LightGizmo(utilLayer);
-      hemiLightGizmo.light = this.hemilight;
-    }
     return scene;
   }
 
-	 _createCamera(scene: Scene): void {
-		// // Free camera for testing:
-		// const camera = new FreeCamera("camera", new Vector3(0, 1, -5), scene);
-		// camera.attachControl();
-		// camera.speed = 0.25;
-		const camera = new ArcRotateCamera("camera", 0, 0, -10, new Vector3(0, 0, 0), scene);
-		camera.attachControl();
-		camera.setTarget(new Vector3(0, 0, -1.5));
-		camera.setPosition(new Vector3(0, 10, -10));
-		// Camera limits
-		camera.lowerBetaLimit = Math.PI / 8;
-		camera.upperBetaLimit = Math.PI / 2.2;
-		camera.lowerRadiusLimit = 5;
-		camera.upperRadiusLimit = 20;
-		camera.lowerAlphaLimit = -Math.PI;
-		camera.upperAlphaLimit = 0;
-		// Limit the camera zoom speed
-		camera.wheelPrecision = 50;
-	 }
+  private _configurePostProcessing(scene: Scene): void {
+    const glowLayer = new GlowLayer("glow", scene);
+    glowLayer.intensity = RENDERING_SETTINGS.GLOW_INTENSITY;
 
-	_createLights(scene: Scene): void {
-		//Lights
-		this.light = new DirectionalLight("light", new Vector3(-0.5, -1, 0), scene);
-		this.hemilight = new HemisphericLight("HemiLight", new Vector3(0, 1, 0), scene);
-		this.light.position = new Vector3(0, 3, 0);
-		this.light.intensity = 0.5;
-		this.hemilight.intensity = 0.2;
-		// Shadow
-		this.shadowGenerator = new ShadowGenerator(2048, this.light);
-		this.shadowGenerator.useBlurExponentialShadowMap = true;
-		this.shadowGenerator.bias = 0.002;
-		this.shadowGenerator.normalBias = 0.02;
+    scene.imageProcessingConfiguration.toneMappingEnabled = true; // Enables tone mapping, which is a post-processing step that remaps HDR (high dynamic range) colors to the displayable range of your monitor. This makes lighting and colors look more natural and less washed out, especially when using HDR textures or physically based rendering (PBR) materials.
+    scene.imageProcessingConfiguration.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES; // Sets the tone mapping algorithm to ACES Filmic, which is a high-quality, film-like tone mapping curve. It produces more cinematic, realistic color and contrast than the default.
+    scene.imageProcessingConfiguration.exposure = RENDERING_SETTINGS.EXPOSURE; // Controls the overall brightness of the scene after tone mapping. Can be tweaked to make scene brighter or darker.
+  }
+
+  private _createCamera(scene: Scene): void {
+    const camera = new ArcRotateCamera("camera", 0, 0, 1, CAMERA_SETTINGS.TARGET, scene);
+    camera.setPosition(CAMERA_SETTINGS.POSITION);
+		camera.attachControl();
+		camera.wheelPrecision = CAMERA_SETTINGS.WHEEL_PRECISION;
 	}
 
-  _createSkybox(scene: Scene): void {
-      const skyboxTexture = new HDRCubeTexture("/textures/skybox.hdr", scene, 512);
-      scene.createDefaultSkybox(skyboxTexture, true, 1000);
-    }
+	private _createLights(scene: Scene): void {
+		//Lights
+		this.light = new DirectionalLight("light", LIGHT_SETTINGS.DIRECTIONAL_DIRECTION, scene);
+		this.hemilight = new HemisphericLight("HemiLight", LIGHT_SETTINGS.HEMISPHERE_DIRECTION, scene);
+		this.light.position =LIGHT_SETTINGS.DIRECTIONAL_POSITION;
+		this.light.intensity = LIGHT_SETTINGS.DIRECTIONAL_INTENSITY;
+		this.hemilight.intensity = LIGHT_SETTINGS.HEMISPHERE_INTENSITY;
+		// Shadow
+		this.shadowGenerator = new ShadowGenerator(RENDERING_SETTINGS.SHADOW_MAP_SIZE, this.light);
+		this.shadowGenerator.useBlurExponentialShadowMap = true; // produces soft, realistic shadows with smooth edges (better than hard-edged shadows).
+		this.shadowGenerator.bias = 0.002; // prevent "shadow acne" (self-shadowing artifacts)
+		this.shadowGenerator.normalBias = 0.02; // Sets the normal bias to further reduce shadow artifacts, especially on surfaces at grazing angle
+	}
 
-	_createPool(scene: Scene, materials: Materials): void {
-		const tileScale: number = 3.5;
-		// --- FLOOR ---
-		const floorWidth = GAME_CONFIG.TABLE_WIDTH + GAME_CONFIG.WALL_THICKNESS;
-		const floorHeight = GAME_CONFIG.TABLE_DEPTH + 2*GAME_CONFIG.WATER_EXTRA_SPACE + GAME_CONFIG.WALL_THICKNESS;
-		const floor = MeshBuilder.CreateGround("poolFloor", {
-			width: floorWidth,
-			height: floorHeight
-		}, scene);
-		floor.material = materials.createScaledFloorMaterial("floorMat", floorWidth, floorHeight, tileScale);
+	private _createSkybox(scene: Scene): void {
+		const skyboxTexture = new HDRCubeTexture("/textures/skybox.hdr", scene, 512);
+		scene.createDefaultSkybox(skyboxTexture, true, 1000);
+    scene.environmentTexture = skyboxTexture; // enables correct reflections and lighting for PBR materials.
+	}
+
+  // ---POOL ---
+	private _createPool(scene: Scene, materials: Materials): void {
+    this._createPoolFloor(scene, materials);
+    this._createPoolWalls(scene, materials);
+    this._createPoolLights(scene, materials);
+    this._createSurroundingGround(scene, materials);
+  }
+
+  private _createPoolFloor(scene: Scene, materials: Materials): void {
+    const floorWidth = GAME_CONFIG.TABLE_WIDTH + 2 * GAME_CONFIG.WALL_THICKNESS;
+    const floorHeight = GAME_CONFIG.TABLE_DEPTH + 2 * GAME_CONFIG.WATER_EXTRA_SPACE + 2 * GAME_CONFIG.WALL_THICKNESS;
+    const floor = MeshBuilder.CreateGround("poolFloor", {
+        width: floorWidth,
+        height: floorHeight
+    }, scene);
+		floor.material = materials.createScaledFloorMaterial("floorMat", floorWidth, floorHeight, RENDERING_SETTINGS.TILE_SCALE);
 		floor.position.y = GAME_CONFIG.FLOOR_LEVEL;
 		floor.receiveShadows = true;
+    floor.freezeWorldMatrix();
+  }
 
-		// --- FRONT/BACK WALLS ---
+  private _createPoolWalls(scene: Scene, materials: Materials): void {
+    const tileScale = RENDERING_SETTINGS.TILE_SCALE;
+    // --- FRONT/BACK WALLS ---
 		const backWallWidth = GAME_CONFIG.TABLE_WIDTH + 2 * GAME_CONFIG.WALL_THICKNESS;
 		const backWallHeight = GAME_CONFIG.WALL_HEIGHT;
 		const backWallDepth = GAME_CONFIG.WALL_THICKNESS;
-
 		const backWallUV: Vector4[] = new Array(6);
 		backWallUV[0] = new Vector4(0, 0, backWallWidth / tileScale, backWallHeight / tileScale);
 		backWallUV[1] = new Vector4(0, 0, backWallWidth / tileScale, backWallHeight / tileScale);
@@ -280,7 +279,6 @@ export class PoolScene {
 		backWallUV[3] = new Vector4(0, 0, backWallDepth / tileScale, backWallHeight / tileScale);
 		backWallUV[4] = new Vector4(0, 0, backWallWidth / tileScale, backWallDepth / tileScale);
 		backWallUV[5] = new Vector4(0, 0, backWallWidth / tileScale, backWallDepth / tileScale);
-
 		const backWall = MeshBuilder.CreateBox("backWall", {
 			width: backWallWidth,
 			height: backWallHeight,
@@ -288,18 +286,16 @@ export class PoolScene {
 			faceUV: backWallUV,
 			wrap: true
 		}, scene);
-		backWall.position.set(0, GAME_CONFIG.FLOOR_LEVEL + GAME_CONFIG.WALL_HEIGHT / 2, -(GAME_CONFIG.TABLE_DEPTH / 2) - GAME_CONFIG.WATER_EXTRA_SPACE);
+		backWall.position.set(0, GAME_CONFIG.FLOOR_LEVEL + GAME_CONFIG.WALL_HEIGHT / 2, -(GAME_CONFIG.TABLE_DEPTH / 2) - GAME_CONFIG.WATER_EXTRA_SPACE - GAME_CONFIG.WALL_THICKNESS / 2);
 		backWall.material = materials.poolMaterial;
-		// backWall.receiveShadows = true;
-
-		const frontWall = backWall.clone("frontWall");
-		frontWall.position.z = GAME_CONFIG.TABLE_DEPTH / 2 + GAME_CONFIG.WATER_EXTRA_SPACE;
-
+    backWall.freezeWorldMatrix();
+		const frontWall = backWall.createInstance("frontWall");
+		frontWall.position.z = GAME_CONFIG.TABLE_DEPTH / 2 + GAME_CONFIG.WATER_EXTRA_SPACE + GAME_CONFIG.WALL_THICKNESS / 2;
+    frontWall.freezeWorldMatrix();
 		// --- SIDE WALLS ---
-		const leftWallDepth = GAME_CONFIG.TABLE_DEPTH + 2*GAME_CONFIG.WATER_EXTRA_SPACE - GAME_CONFIG.WALL_THICKNESS;
+		const leftWallDepth = GAME_CONFIG.TABLE_DEPTH + 2 * GAME_CONFIG.WATER_EXTRA_SPACE ;
 		const leftWallHeight = GAME_CONFIG.WALL_HEIGHT;
 		const leftWallWidth = GAME_CONFIG.WALL_THICKNESS;
-
 		const sideWallUV: Vector4[] = new Array(6);
 		sideWallUV[0] = new Vector4(0, 0, leftWallWidth / tileScale, leftWallHeight / tileScale);
 		sideWallUV[1] = new Vector4(0, 0, leftWallWidth / tileScale, leftWallHeight / tileScale);
@@ -307,7 +303,6 @@ export class PoolScene {
 		sideWallUV[3] = new Vector4(0, 0, leftWallDepth / tileScale, leftWallHeight / tileScale);
 		sideWallUV[4] = new Vector4(0, 0, leftWallWidth / tileScale, leftWallDepth / tileScale);
 		sideWallUV[5] = new Vector4(0, 0, leftWallWidth / tileScale, leftWallDepth / tileScale);
-
 		const leftWall = MeshBuilder.CreateBox("leftWall", {
 			width: leftWallWidth,
 			height: leftWallHeight,
@@ -317,161 +312,163 @@ export class PoolScene {
 		}, scene);
 		leftWall.position.set(-(GAME_CONFIG.TABLE_WIDTH / 2 + GAME_CONFIG.WALL_THICKNESS / 2), GAME_CONFIG.FLOOR_LEVEL + leftWallHeight / 2, 0);
 		leftWall.material = materials.poolMaterial;
-		// leftWall.receiveShadows = true;
-
-		const rightWall = leftWall.clone("rightWall");
+    leftWall.freezeWorldMatrix();
+		const rightWall = leftWall.createInstance("rightWall");
 		rightWall.position.x = GAME_CONFIG.TABLE_WIDTH / 2 + GAME_CONFIG.WALL_THICKNESS / 2;
+    rightWall.freezeWorldMatrix();
+  }
 
-    // --- POOL LIGHTS ---
-    const lightBoxMaterial = new StandardMaterial("lightBoxMat", scene);
-    lightBoxMaterial.emissiveColor = new Color3(1, 1, 0.7); // Make it glow
-    lightBoxMaterial.disableLighting = true; // The box itself should not be affected by other lights
-
-    const numLightsPerSide = 3;
+  private _createPoolLights(scene: Scene, materials: Materials): void {
+    const numLightsPerSide = LIGHT_SETTINGS.NUM_LIGHTS_PER_SIDE;
     const lightYPosition = GAME_CONFIG.WATER_LEVEL - 1;
-    const wallLength = GAME_CONFIG.TABLE_DEPTH + 2*GAME_CONFIG.WATER_EXTRA_SPACE;
+    const wallLength = GAME_CONFIG.TABLE_DEPTH + 2 * GAME_CONFIG.WATER_EXTRA_SPACE;
     const lightSpacing = wallLength / (numLightsPerSide + 1);
-
     for (let i = 0; i < numLightsPerSide; i++) {
-        const zPos = -wallLength / 2 + (i + 1) * lightSpacing;
-        // --- Left Side Light ---
-        const leftLightBoxPosition = new Vector3(-(GAME_CONFIG.TABLE_WIDTH / 2 + 0.05), lightYPosition, zPos);
-
-        const leftLightBox = MeshBuilder.CreateBox(`leftLightBox_${i}`, {
-            width: 0.2,
-            height: 0.3,
-            depth: 0.5
-        }, scene);
-        leftLightBox.material = lightBoxMaterial;
-        leftLightBox.position = leftLightBoxPosition;
-
-        const leftLightPosition = new Vector3(leftLightBoxPosition.x + 0.15, lightYPosition, zPos);
-        const leftPoolLight = new PointLight(`leftPoolLight_${i}`, leftLightPosition, scene);
-        leftPoolLight.diffuse = new Color3(1, 1, 0.7);
-        leftPoolLight.intensity = 0.4;
-        leftPoolLight.range = 5;
-        this.poolLights.push(leftPoolLight);
-
-        // --- Right Side Light ---
-        const rightLightBoxPosition = new Vector3((GAME_CONFIG.TABLE_WIDTH / 2) + 0.05, lightYPosition, zPos);
-
-        const rightLightBox = leftLightBox.clone(`rightLightBox_${i}`);
-        rightLightBox.position = rightLightBoxPosition;
-
-        // Position the actual light slightly in front of the box
-        const rightLightPosition = new Vector3(rightLightBoxPosition.x - 0.15, lightYPosition, zPos);
-        const rightPoolLight = new PointLight(`rightPoolLight_${i}`, rightLightPosition, scene);
-        rightPoolLight.diffuse = new Color3(1, 1, 0.7);
-        rightPoolLight.intensity = 0.4;
-        rightPoolLight.range = 5;
-        this.poolLights.push(rightPoolLight);
+      const zPos = -wallLength / 2 + (i + 1) * lightSpacing;
+      // Left
+      const leftBoxPos = new Vector3(-(GAME_CONFIG.TABLE_WIDTH / 2 + 0.05), lightYPosition, zPos);
+      const leftBox = MeshBuilder.CreateBox(`leftLightBox_${i}`, { width: 0.2, height: 0.3, depth: 0.5 }, scene);
+      leftBox.material = materials.lightBoxMaterial;
+      leftBox.position = leftBoxPos;
+      leftBox.isPickable = false;
+      leftBox.freezeWorldMatrix();
+      const leftLight = new PointLight(`leftPoolLight_${i}`, leftBoxPos.add(new Vector3(0.15, 0, 0)), scene);
+      leftLight.diffuse = LIGHT_SETTINGS.POOL_LIGHT_DIFFUSE;
+      leftLight.intensity = LIGHT_SETTINGS.POOL_LIGHT_INTENSITY;
+      leftLight.range = LIGHT_SETTINGS.POOL_LIGHT_RANGE;
+      this.poolLights.push(leftLight);
+      // Right (instance)
+      const rightBoxPos = new Vector3((GAME_CONFIG.TABLE_WIDTH / 2) + 0.05, lightYPosition, zPos);
+      const rightBox = leftBox.createInstance(`rightLightBox_${i}`);
+      rightBox.position = rightBoxPos;
+      rightBox.freezeWorldMatrix();
+      const rightLight = new PointLight(`rightPoolLight_${i}`, rightBoxPos.add(new Vector3(-0.15, 0, 0)), scene);
+      rightLight.diffuse = LIGHT_SETTINGS.POOL_LIGHT_DIFFUSE;
+      rightLight.intensity = LIGHT_SETTINGS.POOL_LIGHT_INTENSITY;
+      rightLight.range = LIGHT_SETTINGS.POOL_LIGHT_RANGE;
+      this.poolLights.push(rightLight);
     }
+  }
 
-    // // --- ADD POOL WALLS AS SHADOW CASTERS ---
-    // this.shadowGenerator.addShadowCaster(backWall, true);
-    // this.shadowGenerator.addShadowCaster(frontWall, true);
-    // this.shadowGenerator.addShadowCaster(leftWall, true);
-    // this.shadowGenerator.addShadowCaster(rightWall, true);
+  private _createSurroundingGround(scene: Scene, materials: Materials): void {
+    const groundSize = RENDERING_SETTINGS.GROUND_SIZE;
+    const poolWidth = GAME_CONFIG.TABLE_WIDTH + 2 * GAME_CONFIG.WALL_THICKNESS;
+    const poolDepth = GAME_CONFIG.TABLE_DEPTH + 2 * GAME_CONFIG.WATER_EXTRA_SPACE + 2 * GAME_CONFIG.WALL_THICKNESS;
+    const groundY = GAME_CONFIG.FLOOR_LEVEL + GAME_CONFIG.WALL_HEIGHT - 0.3;
+    const desiredTileSize = RENDERING_SETTINGS.GROUND_TILE_SIZE;
+    const globalOriginX = -groundSize / 2;
+    const globalOriginZ = -groundSize / 2;
+    // --- Front strip ---
+    const frontWidth = groundSize;
+    const frontHeight = (groundSize - poolDepth) / 2;
+    const frontGround = MeshBuilder.CreateGround("frontGround", { width: frontWidth, height: frontHeight }, scene);
+    const frontOriginX = -frontWidth / 2;
+    const frontOriginZ = poolDepth / 2 + (groundSize - poolDepth) / 4 - frontHeight / 2;
+    const frontUOffset = (frontOriginX - globalOriginX) / desiredTileSize;
+    const frontVOffset = (frontOriginZ - globalOriginZ) / desiredTileSize;
+    frontGround.position.set(0, groundY, poolDepth / 2 + (groundSize - poolDepth) / 4);
+    frontGround.material = materials.cloneAndScalePavementMaterial(
+      "frontGroundMat",
+      frontWidth / desiredTileSize,
+      frontHeight / desiredTileSize,
+      frontUOffset,
+      frontVOffset
+    );
+    frontGround.isPickable = false;
+    frontGround.receiveShadows = false;
+    frontGround.freezeWorldMatrix();
+    // --- Back strip ---
+    const backWidth = groundSize;
+    const backHeight = (groundSize - poolDepth) / 2;
+    const backGround = MeshBuilder.CreateGround("backGround", { width: backWidth, height: backHeight }, scene);
+    const backOriginX = -backWidth / 2;
+    const backOriginZ = -poolDepth / 2 - (groundSize - poolDepth) / 4 - backHeight / 2;
+    const backUOffset = (backOriginX - globalOriginX) / desiredTileSize;
+    const backVOffset = (backOriginZ - globalOriginZ) / desiredTileSize;
+    backGround.position.set(0, groundY, -poolDepth / 2 - (groundSize - poolDepth) / 4);
+    backGround.material = materials.cloneAndScalePavementMaterial(
+      "backGroundMat",
+      backWidth / desiredTileSize,
+      backHeight / desiredTileSize,
+      backUOffset,
+      backVOffset
+    );
+    backGround.isPickable = false;
+    backGround.receiveShadows = false;
+    backGround.freezeWorldMatrix();
+    // --- Left strip ---
+    const leftWidth = (groundSize - poolWidth) / 2;
+    const leftHeight = poolDepth;
+    const leftGround = MeshBuilder.CreateGround("leftGround", { width: leftWidth, height: leftHeight }, scene);
+    const leftOriginX = -poolWidth / 2 - (groundSize - poolWidth) / 4 - leftWidth / 2;
+    const leftOriginZ = -leftHeight / 2;
+    const leftUOffset = (leftOriginX - globalOriginX) / desiredTileSize;
+    const leftVOffset = (leftOriginZ - globalOriginZ) / desiredTileSize;
+    leftGround.position.set(-poolWidth / 2 - (groundSize - poolWidth) / 4, groundY, 0);
+    leftGround.material = materials.cloneAndScalePavementMaterial(
+      "leftGroundMat",
+      leftWidth / desiredTileSize,
+      leftHeight / desiredTileSize,
+      leftUOffset,
+      leftVOffset
+    );
+    leftGround.isPickable = false;
+    leftGround.receiveShadows = false;
+    leftGround.freezeWorldMatrix();
+    // --- Right strip ---
+    const rightWidth = (groundSize - poolWidth) / 2;
+    const rightHeight = poolDepth;
+    const rightGround = MeshBuilder.CreateGround("rightGround", { width: rightWidth, height: rightHeight }, scene);
+    const rightOriginX = poolWidth / 2 + (groundSize - poolWidth) / 4 - rightWidth / 2;
+    const rightOriginZ = -rightHeight / 2;
+    const rightUOffset = (rightOriginX - globalOriginX) / desiredTileSize;
+    const rightVOffset = (rightOriginZ - globalOriginZ) / desiredTileSize;
+    rightGround.position.set(poolWidth / 2 + (groundSize - poolWidth) / 4, groundY, 0);
+    rightGround.material = materials.cloneAndScalePavementMaterial(
+      "rightGroundMat",
+      rightWidth / desiredTileSize,
+      rightHeight / desiredTileSize,
+      rightUOffset,
+      rightVOffset
+    );
+    rightGround.isPickable = false;
+    rightGround.receiveShadows = false;
+    rightGround.freezeWorldMatrix();
+  }
 
-    // --- SURROUNDING GROUND WITH HOLE (CSG) ---
-
-    // 1. Clone the new pavement PBR material and scale its textures.
-    const groundMaterial = materials.pavementMaterial.clone("surroundingGroundMat");
-    const groundTextureScale = 12; // How many times to repeat the texture
-
-    // This helper array scales all textures present on the PBR material
-    // --- FIX: Use 'metallicTexture' which contains the ARM map ---
-    const texturesToScale = ['albedoTexture', 'bumpTexture', 'metallicTexture'];
-    texturesToScale.forEach(texName => {
-        const texture = groundMaterial[texName as keyof PBRMaterial] as Texture | null;
-        if (texture) {
-            texture.uScale = groundTextureScale;
-            texture.vScale = groundTextureScale;
-        }
+  private _createLadders(scene: Scene, materials: Materials): void {
+    SceneLoader.ImportMeshAsync(
+      "",
+      "/pool_ladder/",
+      "scene.gltf",
+      scene
+    ).then((result) => {
+      const ladder1Root = result.meshes[0];
+      const ladderMaterial = materials.ladderMaterial;
+      ladder1Root.getChildMeshes().forEach(mesh => {
+        mesh.material = ladderMaterial;
+      });
+      ladder1Root.position = new Vector3(-(GAME_CONFIG.TABLE_WIDTH / 2 - 0.1), 0.16, GAME_CONFIG.TABLE_DEPTH / 2 + 0.5);
+      ladder1Root.rotationQuaternion = null;
+      ladder1Root.rotation.y = Math.PI / 2;
+      ladder1Root.freezeWorldMatrix();
+      // 2nd ladder
+      const ladder2Root = ladder1Root.instantiateHierarchy();
+      if (ladder2Root) {
+        ladder2Root.getChildMeshes().forEach(mesh => {
+          mesh.material = ladderMaterial
+        });
+        ladder2Root.position = new Vector3(GAME_CONFIG.TABLE_WIDTH / 2 - 0.1, 0.16, -(GAME_CONFIG.TABLE_DEPTH / 2 + 0.5));
+        ladder2Root.rotationQuaternion = null;
+        ladder2Root.rotation.y = -Math.PI / 2;
+        ladder2Root.freezeWorldMatrix();
+      }
     });
+  }
 
-    // 2. Create a thin box for the ground plane. A box is needed for CSG operations.
-    const groundWidth = 50;
-    const groundHeight = 50;
-    const ground = MeshBuilder.CreateBox("groundCSG", {width: groundWidth, height: 0.1, depth: groundHeight}, scene);
-    ground.position.y = GAME_CONFIG.FLOOR_LEVEL + GAME_CONFIG.WALL_HEIGHT - 0.2;
-
-    // 3. Create a "cutter" mesh that is the exact shape of the pool's outer walls.
-    const poolCutter = MeshBuilder.CreateBox("poolCutterCSG", {
-          width: GAME_CONFIG.TABLE_WIDTH + 2 * GAME_CONFIG.WALL_THICKNESS,
-          height: 5, // Height just needs to be large enough to cut through the ground
-          depth: GAME_CONFIG.TABLE_DEPTH + 2 * GAME_CONFIG.WATER_EXTRA_SPACE + 2 * GAME_CONFIG.WALL_THICKNESS
-      }, scene);
-      poolCutter.position.y = ground.position.y; // Align vertically with the ground
-
-
-      // 4. Convert both temporary meshes to CSG objects.
-      const groundCSG = CSG.FromMesh(ground);
-      const cutterCSG = CSG.FromMesh(poolCutter);
-
-      // 5. Subtract the cutter from the ground.
-      const groundWithHoleCSG = groundCSG.subtract(cutterCSG);
-
-      // 6. Convert the result back to a standard mesh, applying the scaled material.
-      const surroundingGround = groundWithHoleCSG.toMesh("surroundingGround", groundMaterial, scene);
-      surroundingGround.receiveShadows = true;
-
-      // 7. Dispose of the original temporary meshes to free up memory.
-      ground.dispose();
-      poolCutter.dispose();
-    }
-
-    _createLadders(scene: Scene): void {
-        SceneLoader.ImportMeshAsync(
-            "",
-            "/pool_ladder/",
-            "scene.gltf",
-            scene
-        ).then((result) => {
-            const ladder1Root = result.meshes[0];
-
-            // --- CREATE A CUSTOM LADDER MATERIAL ---
-            const ladderMaterial = new StandardMaterial("ladderMat", scene);
-            ladderMaterial.diffuseColor = new Color3(0.7, 0.7, 0.7); // Grey color
-            ladderMaterial.specularColor = new Color3(0.2, 0.2, 0.2); // Low specular
-            ladderMaterial.emissiveColor = new Color3(0, 0, 0); // No emissive glow
-
-            // Add all visible parts of the first ladder to the shadow generator
-            ladder1Root.getChildMeshes().forEach(mesh => {
-                this.shadowGenerator.addShadowCaster(mesh, true);
-                mesh.receiveShadows = true;
-                // --- OVERRIDE THE IMPORTED MATERIAL ---
-                mesh.material = ladderMaterial;
-            });
-
-            // Position and rotate the entire first ladder hierarchy
-            ladder1Root.scaling.scaleInPlace(1);
-            ladder1Root.position = new Vector3(-(GAME_CONFIG.TABLE_WIDTH / 2 - 0.1), 0.16, GAME_CONFIG.TABLE_DEPTH / 2 + 0.5);
-            ladder1Root.rotationQuaternion = null;
-            ladder1Root.rotation.y = Math.PI / 2;
-
-            // Create second ladder
-            const ladder2Root = ladder1Root.instantiateHierarchy();
-            if (ladder2Root) {
-                // Add all visible parts of the second ladder to the shadow generator
-                ladder2Root.getChildMeshes().forEach(mesh => {
-                    this.shadowGenerator.addShadowCaster(mesh, true);
-                    mesh.receiveShadows = true;
-                    // --- APPLY THE SAME MATERIAL TO THE SECOND LADDER ---
-                    mesh.material = ladderMaterial;
-                });
-
-                // Position and rotate the entire second ladder hierarchy
-                ladder2Root.position = new Vector3(GAME_CONFIG.TABLE_WIDTH / 2 - 0.1, 0.16, -(GAME_CONFIG.TABLE_DEPTH / 2 + 0.5));
-                ladder2Root.rotationQuaternion = null;
-                ladder2Root.rotation.y = -Math.PI / 2;
-            }
-		});
-	}
-
-	_createWater(scene: Scene, materials: Materials): void {
-		const waterPlane = MeshBuilder.CreateGround("waterPlane", { width: GAME_CONFIG.TABLE_WIDTH, height: GAME_CONFIG.TABLE_DEPTH + 2*GAME_CONFIG.WATER_EXTRA_SPACE}, scene);
-		waterPlane.material = materials.waterMaterial;
+  _createWater(scene: Scene, materials: Materials): void {
+    const waterPlane = MeshBuilder.CreateGround("waterPlane", { width: GAME_CONFIG.TABLE_WIDTH, height: GAME_CONFIG.TABLE_DEPTH + 2*GAME_CONFIG.WATER_EXTRA_SPACE}, scene);
+    waterPlane.material = materials.waterMaterial;
 		waterPlane.position.y = GAME_CONFIG.WATER_LEVEL;
 	}
 
@@ -479,12 +476,11 @@ export class PoolScene {
   // Cleans up all resources to prevent memory leaks.
   // This should be called when the game component is unmounted.
   dispose(): void {
-    // 1. Remove all window event listeners
+  // Remove event listeners
     window.removeEventListener("keydown", this.keyDownHandler);
     window.removeEventListener("keyup", this.keyUpHandler);
     window.removeEventListener("resize", this.resizeHandler);
-
-    // 2. Dispose of the Babylon scene and engine
+    // Dispose scene and engine
     this.scene.dispose();
     this.engine.dispose();
   }
