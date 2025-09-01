@@ -32,7 +32,6 @@ export class Paddle {
 
   // // Enable shadows for the paddle.
   shadowGenerator.addShadowCaster(this.mesh);
-  // this.mesh.receiveShadows = false;
   }
 
   // Update the paddle's position based on the game state.

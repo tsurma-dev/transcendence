@@ -40,7 +40,6 @@ export class Duck {
   }
 
   // Scales and positions the duck model based on its bounding box.
-  // This is a private helper method: part of the duck's internal setup.
   private _setupMesh(mesh: AbstractMesh, shadowGenerator: ShadowGenerator): void {
     const childMeshes = mesh.getChildMeshes();
     if (childMeshes.length === 0) {
@@ -76,6 +75,5 @@ export class Duck {
 
     // Add all children to the shadow generator for correct shadows
     shadowGenerator.addShadowCaster(mesh, true);
-    mesh.receiveShadows = true;
   }
 }

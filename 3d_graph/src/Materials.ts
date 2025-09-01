@@ -18,7 +18,6 @@ export class Materials {
     this.ladderMaterial = this._createLadderMaterial();
   }
 
-
 	createScaledFloorMaterial(name: string, width: number, height: number, tileScale: number) {
 	const floorMaterial: StandardMaterial = this.poolMaterial.clone(name);
 	const uScale: number = width / tileScale;
@@ -35,6 +34,7 @@ export class Materials {
 		floorMaterial.ambientTexture.uScale = uScale;
 		floorMaterial.ambientTexture.vScale = vScale;
 	}
+  floorMaterial.freeze();
 	return floorMaterial;
 	}
 
@@ -49,6 +49,7 @@ export class Materials {
     const aoTex = new Texture("/textures/tiles_ao.jpg", this.scene);
     poolMat.ambientTexture = aoTex;
     poolMat.specularColor = new Color3(0.1, 0.1, 0.1);  // making the material more matte
+    poolMat.freeze();
     return poolMat;
   }
 
@@ -56,7 +57,6 @@ export class Materials {
     const waterMaterial = new StandardMaterial("waterMaterial", this.scene);
     waterMaterial.diffuseColor = new Color3(0.6, 0.8, 1);
     waterMaterial.alpha = 0.5;
-
     return waterMaterial;
   }
 
@@ -74,6 +74,7 @@ export class Materials {
     pavementMat.useMetallnessFromMetallicTextureBlue = true;
     pavementMat.metallic = 0.0; // Pavement isn't metallic
     pavementMat.roughness = 1; // Pavement is rough
+    pavementMat.freeze();
     return pavementMat;
   }
 
