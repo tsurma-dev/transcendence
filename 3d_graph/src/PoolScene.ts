@@ -237,7 +237,8 @@ export class PoolScene {
 		this.shadowGenerator.useBlurExponentialShadowMap = true; // produces soft, realistic shadows with smooth edges (better than hard-edged shadows).
 		this.shadowGenerator.bias = 0.002; // prevent "shadow acne" (self-shadowing artifacts)
 		this.shadowGenerator.normalBias = 0.02; // Sets the normal bias to further reduce shadow artifacts, especially on surfaces at grazing angle
-	}
+    this.shadowGenerator.darkness = 0.0; // 0.0 (black) to 1.0 (no shadow)
+  }
 
 	private _createSkybox(scene: Scene): void {
 		const skyboxTexture = new HDRCubeTexture("/textures/skybox.hdr", scene, 512);
@@ -288,9 +289,11 @@ export class PoolScene {
 		}, scene);
 		backWall.position.set(0, GAME_CONFIG.FLOOR_LEVEL + GAME_CONFIG.WALL_HEIGHT / 2, -(GAME_CONFIG.TABLE_DEPTH / 2) - GAME_CONFIG.WATER_EXTRA_SPACE - GAME_CONFIG.WALL_THICKNESS / 2);
 		backWall.material = materials.poolMaterial;
+    this.shadowGenerator.addShadowCaster(backWall);
     backWall.freezeWorldMatrix();
 		const frontWall = backWall.createInstance("frontWall");
 		frontWall.position.z = GAME_CONFIG.TABLE_DEPTH / 2 + GAME_CONFIG.WATER_EXTRA_SPACE + GAME_CONFIG.WALL_THICKNESS / 2;
+    this.shadowGenerator.addShadowCaster(frontWall);
     frontWall.freezeWorldMatrix();
 		// --- SIDE WALLS ---
 		const leftWallDepth = GAME_CONFIG.TABLE_DEPTH + 2 * GAME_CONFIG.WATER_EXTRA_SPACE ;
@@ -312,9 +315,11 @@ export class PoolScene {
 		}, scene);
 		leftWall.position.set(-(GAME_CONFIG.TABLE_WIDTH / 2 + GAME_CONFIG.WALL_THICKNESS / 2), GAME_CONFIG.FLOOR_LEVEL + leftWallHeight / 2, 0);
 		leftWall.material = materials.poolMaterial;
+    this.shadowGenerator.addShadowCaster(leftWall);
     leftWall.freezeWorldMatrix();
 		const rightWall = leftWall.createInstance("rightWall");
 		rightWall.position.x = GAME_CONFIG.TABLE_WIDTH / 2 + GAME_CONFIG.WALL_THICKNESS / 2;
+    this.shadowGenerator.addShadowCaster(rightWall);
     rightWall.freezeWorldMatrix();
   }
 
@@ -375,7 +380,7 @@ export class PoolScene {
       frontVOffset
     );
     frontGround.isPickable = false;
-    frontGround.receiveShadows = false;
+    frontGround.receiveShadows = true;
     frontGround.freezeWorldMatrix();
     // --- Back strip ---
     const backWidth = groundSize;
@@ -394,7 +399,7 @@ export class PoolScene {
       backVOffset
     );
     backGround.isPickable = false;
-    backGround.receiveShadows = false;
+    backGround.receiveShadows = true;
     backGround.freezeWorldMatrix();
     // --- Left strip ---
     const leftWidth = (groundSize - poolWidth) / 2;
@@ -413,7 +418,7 @@ export class PoolScene {
       leftVOffset
     );
     leftGround.isPickable = false;
-    leftGround.receiveShadows = false;
+    leftGround.receiveShadows = true;
     leftGround.freezeWorldMatrix();
     // --- Right strip ---
     const rightWidth = (groundSize - poolWidth) / 2;
@@ -432,7 +437,7 @@ export class PoolScene {
       rightVOffset
     );
     rightGround.isPickable = false;
-    rightGround.receiveShadows = false;
+    rightGround.receiveShadows = true;
     rightGround.freezeWorldMatrix();
   }
 
