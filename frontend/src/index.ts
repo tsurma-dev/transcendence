@@ -2,13 +2,13 @@
 * =================================
 * FILE STRUCTURE AND EXECUTION FLOW
 * =================================
-* 
+*
 * This file is located in the `src` directory of the frontend. This is where you can make
 * changes to the Typescript used in the application.
-* 
+*
 * The file is structured to support a scalable Single Page Application (SPA) architecture
 * and follows the common Js/Ts module pattern where:
-* 
+*
 * - Imports at to the top of the file
 * - Classes and functions in the middle
 * - Initialization/execution code at the bottom
@@ -16,7 +16,7 @@
 * "What" (class definitions, function declarations etc.)is separated from "How" (execution logic).
 * When the browser loads the script, it needs all classes and functions to be defined before it
 * can execute the initialization code.
-* 
+*
 * Current file structure:
 * 1. ApiService: Handles backend communication
 * 2. Component: Base abstract class for all components
@@ -26,10 +26,10 @@
 * 6. Screen Components: UI components - Individual screens for the app (StartPage, QuickPlaySetup, Login, Register, PlayerSetup, GameScreen etc)
 * 7. App: Main application class that initializes everything and manages the global state
 * 8. Initialization code: Sets up the app when the DOM (Document Object Model) is ready
-* 
+*
 * When running the application, this file is transpiled to JavaScript and bundled with other files in
 * the dist directory. The output file is then linked in the index.html file.
-* 
+*
 * Do not edit index.js in the dist directory directly, as it is a generated file.
 */
 
@@ -85,7 +85,7 @@ class ApiService {
       })
 
       console.log('getCurrentUser response status:', response.status)
-      
+
       if (response.ok) {
         const user = await response.json()
         console.log('getCurrentUser response data:', user)
@@ -112,7 +112,7 @@ class ApiService {
       })
 
       console.log('Logout response status:', response.status)
-      
+
       if (response.ok) {
         console.log('Logout successful')
         return true
@@ -139,7 +139,7 @@ class ApiService {
       })
 
       const result = await response.json().catch(() => ({}))
-      
+
       if (response.ok) {
         return { success: true }
       } else {
@@ -164,7 +164,7 @@ class ApiService {
       })
 
       const result = await response.json().catch(() => ({}))
-      
+
       if (response.ok) {
         return { success: true }
       } else {
@@ -189,7 +189,7 @@ class ApiService {
       })
 
       const result = await response.json().catch(() => ({}))
-      
+
       if (response.ok) {
         return { success: true }
       } else {
@@ -205,7 +205,7 @@ class ApiService {
     try {
       // Get 2FA status from current user data
       const user = await this.getCurrentUser()
-      
+
       if (user) {
         return { success: true, enabled: Boolean(user.twoFAEnabled) }
       } else {
@@ -225,7 +225,7 @@ class ApiService {
       })
 
       const result = await response.json().catch(() => ({}))
-      
+
       if (response.ok) {
         return { success: true, qrCode: result.qrCodeUrl, secret: result.secret }
       } else {
@@ -249,7 +249,7 @@ class ApiService {
       })
 
       const result = await response.json().catch(() => ({}))
-      
+
       if (response.ok) {
         return { success: true }
       } else {
@@ -293,7 +293,7 @@ class ApiService {
       })
 
       const result = await response.json().catch(() => ({}))
-      
+
       if (response.ok) {
         return { success: true }
       } else {
@@ -327,7 +327,7 @@ class ApiService {
       console.log('Upload response status:', response.status, response.statusText)
 
       const result = await response.json().catch(() => ({}))
-      
+
       if (response.ok) {
         return { success: true, message: result.message || 'Avatar uploaded successfully!' }
       } else {
@@ -352,7 +352,7 @@ class ApiService {
       console.log('Delete response status:', response.status, response.statusText)
 
       const result = await response.json().catch(() => ({}))
-      
+
       if (response.ok) {
         return { success: true, message: result.message || 'Avatar deleted successfully!' }
       } else {
@@ -485,9 +485,9 @@ class AppRouter {
     const path = window.location.pathname
     const search = window.location.search
     const state = event.state
-    
+
     console.log('PopState event:', { path, search, state })
-    
+
     // Handle navigation based on current URL
     const routeInfo = this.routes.get(path)
     if (routeInfo) {
@@ -502,12 +502,12 @@ class AppRouter {
 
   private parseArgumentsFromUrl(path: string, search: string, state: any): any[] {
     const urlParams = new URLSearchParams(search)
-    
+
     // Use stored state if available, otherwise parse from URL
     if (state?.args) {
       return state.args
     }
-    
+
     // Parse arguments based on the route
     switch (path) {
       case '/game':
@@ -515,11 +515,11 @@ class AppRouter {
         const player2 = urlParams.get('p2') ? decodeURIComponent(urlParams.get('p2')!) : 'Player 2'
         const isQuickPlay = urlParams.get('mode') === 'quick'
         return [player1, player2, isQuickPlay]
-      
+
       case '/logged-out':
         const username = urlParams.get('user') ? decodeURIComponent(urlParams.get('user')!) : 'User'
         return [username]
-      
+
       default:
         return []
     }
@@ -527,22 +527,22 @@ class AppRouter {
 
   navigateTo(componentClass: new(...args: any[]) => Component, ...args: any[]): void {
     this.isNavigating = true
-    
+
     // Determine the URL path for this component
     const path = this.getPathForComponent(componentClass, ...args)
-    
+
     // Update browser history
-    const state = { 
+    const state = {
       componentName: componentClass.name,
       args: args.length > 0 ? args : undefined
     }
-    
+
     // Push new state to history
     window.history.pushState(state, '', path)
-    
+
     // Render the component
     this.renderComponent(componentClass, ...args)
-    
+
     this.isNavigating = false
   }
 
@@ -596,7 +596,7 @@ class AppRouter {
     const path = window.location.pathname
     const search = window.location.search
     const routeInfo = this.routes.get(path)
-    
+
     if (routeInfo) {
       const args = this.parseArgumentsFromUrl(path, search, null)
       this.renderComponent(routeInfo.component, ...args)
@@ -612,7 +612,7 @@ class AppRouter {
     const path = window.location.pathname
     const search = window.location.search
     const routeInfo = this.routes.get(path)
-    
+
     return {
       path: path,
       component: routeInfo ? routeInfo.component.name : null,
@@ -656,7 +656,7 @@ class PongGame {
   private player2Score: number = 0
   private onScoreUpdate?: (player1Score: number, player2Score: number) => void
 
-  private socket = new WebSocket("wss://127.0.0.1:8443/ws/pong");
+  private socket = new WebSocket("wss://localhost:8443/ws/pong");
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -835,7 +835,7 @@ class StartPageScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
-      
+
       // Hide the user menu wrapper entirely on the start page
       const wrapper = document.getElementById('userMenuWrapper')
       if (wrapper) wrapper.style.display = 'none'
@@ -888,7 +888,7 @@ class QuickPlaySetupScreen extends Component {
       // Remove the online users count and logout button for quick play
       const onlineUsersDiv = div.querySelector('#onlineUsersCount')?.closest('.text-center')
       if (onlineUsersDiv) onlineUsersDiv.remove()
-      
+
       // Back button toggle now handled by setUserLoggedIn
       App.getInstance().setUserLoggedIn(false)
     }
@@ -953,7 +953,7 @@ class LoginScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
-      
+
       // Back button toggle now handled by setUserLoggedIn
       App.getInstance().setUserLoggedIn(false)
     }
@@ -1051,7 +1051,7 @@ class LoginScreen extends Component {
           const text = await response.text()
           return { message: text }
         })
-        
+
         // Check if the error indicates 2FA is required
         if (response.status === 401 && !loginData.TwoFAToken) {
           // Check if error message suggests 2FA is needed
@@ -1063,7 +1063,7 @@ class LoginScreen extends Component {
             return
           }
         }
-        
+
         this.showError(error.message || 'Login failed')
       }
     } catch (error) {
@@ -1075,12 +1075,12 @@ class LoginScreen extends Component {
   private showCredentialsSection(): void {
     const credentialsSection = this.element?.querySelector('#loginCredentialsSection')
     const twoFASection = this.element?.querySelector('#twoFAVerificationSection')
-    
+
     if (credentialsSection && twoFASection) {
       credentialsSection.classList.remove('hidden')
       twoFASection.classList.add('hidden')
     }
-    
+
     this.requiresTwoFA = false
   }
 
@@ -1088,11 +1088,11 @@ class LoginScreen extends Component {
     const credentialsSection = this.element?.querySelector('#loginCredentialsSection')
     const twoFASection = this.element?.querySelector('#twoFAVerificationSection')
     const twoFAInput = this.element?.querySelector('#twoFACode') as HTMLInputElement
-    
+
     if (credentialsSection && twoFASection) {
       credentialsSection.classList.add('hidden')
       twoFASection.classList.remove('hidden')
-      
+
       // Focus on 2FA input
       if (twoFAInput) {
         setTimeout(() => twoFAInput.focus(), 100)
@@ -1187,7 +1187,7 @@ class RegisterScreen extends Component {
             </button>
           `
           errorDiv.classList.remove('hidden')
-          
+
           // Add click handler for login link
           const goToLoginBtn = errorDiv.querySelector('#goToLoginBtn')
           if (goToLoginBtn) {
@@ -1234,7 +1234,7 @@ class LoggedOutScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
-      
+
       // Update the message to include the username
       const heading = div.querySelector('h1')
       if (heading) {
@@ -1270,7 +1270,7 @@ class LoggedInLandingScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
-      
+
       // Show user menu for authenticated users
       App.getInstance().setUserLoggedIn(true)
     }
@@ -1280,7 +1280,7 @@ class LoggedInLandingScreen extends Component {
   setupEvents(): void {
     // Load online users count
     this.loadOnlineUsersCount()
-    
+
     // Load current user and update welcome message
     this.loadCurrentUser()
 
@@ -1348,7 +1348,7 @@ class LoggedInLandingScreen extends Component {
     try {
       const user = await this.apiService.getCurrentUser()
       console.log('Current user for welcome:', user)
-      
+
       if (user && user.username) {
         console.log('Setting welcome username to:', user.username)
         welcomeUsernameElement.textContent = user.username
@@ -1381,7 +1381,7 @@ class PlayerSetupScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
-      
+
       // Show user menu for authenticated users
       App.getInstance().setUserLoggedIn(true)
     }
@@ -1440,7 +1440,7 @@ class PlayerSetupScreen extends Component {
     try {
       const user = await this.apiService.getCurrentUser()
       console.log('API response:', user)
-      
+
       if (user && user.username) {
         console.log('Setting Player 1 name to:', user.username)
         player1Input.value = user.username
@@ -1486,7 +1486,7 @@ class GameScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
-      
+
       // Set the global button state based on quick play or authenticated mode
       if (this.isQuickPlay) {
         App.getInstance().setUserLoggedIn(false)
@@ -1551,7 +1551,7 @@ class UserProfileScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
-      
+
       // Show user menu for authenticated users
       App.getInstance().setUserLoggedIn(true)
     }
@@ -1570,7 +1570,7 @@ class UserProfileScreen extends Component {
     const avatarStatusMessage = this.element?.querySelector('#avatarStatusMessage') as HTMLElement
     const userSettingsBtn = this.element?.querySelector('#userSettingsBtn') as HTMLButtonElement
     const matchHistoryBtn = this.element?.querySelector('#matchHistoryBtn') as HTMLButtonElement
-    
+
     // Avatar menu elements
     const avatarMenuBtn = this.element?.querySelector('#avatarMenuBtn') as HTMLButtonElement
     const avatarMenuDropdown = this.element?.querySelector('#avatarMenuDropdown') as HTMLElement
@@ -1585,7 +1585,7 @@ class UserProfileScreen extends Component {
         if (profileUsername) profileUsername.textContent = this.user.username
         if (profileEmail) profileEmail.textContent = this.user.email
         if (profileJoinedDate) profileJoinedDate.textContent = this.user.createdAt || 'Unknown'
-        
+
         // Load user avatar and set up avatar state tracking
         if (profileAvatar && this.user.username) {
           await this.loadUserAvatar(profileAvatar, this.user.username)
@@ -1682,7 +1682,7 @@ class UserProfileScreen extends Component {
     try {
       // Check if user is online by trying to get current user data
       const currentUser = await this.apiService.getCurrentUser()
-      
+
       if (currentUser && currentUser.username) {
         // User is online
         onlineStatusDot.className = 'w-3 h-3 rounded-full mr-2 bg-green-400 animate-pulse'
@@ -1706,28 +1706,28 @@ class UserProfileScreen extends Component {
   private async loadUserAvatar(avatarImg: HTMLImageElement, username: string): Promise<void> {
     // Load the avatar from backend
     const avatarUrl = this.apiService.getAvatarUrl(username)
-    
+
     console.log('Loading avatar for user:', username, 'URL:', avatarUrl)
-    
+
     return new Promise((resolve) => {
       // Create a test image to load the avatar
       const testImg = new Image()
-      
+
       testImg.onload = () => {
         console.log('Avatar loaded successfully')
         // Set the avatar image
         avatarImg.src = avatarUrl
-        
+
         // Initially assume no custom avatar - this will be set to true only after uploads
         // or we could check localStorage for a flag that tracks custom avatar status
         const hasCustomAvatarFlag = localStorage.getItem(`hasCustomAvatar_${username}`)
         this.hasCustomAvatar = hasCustomAvatarFlag === 'true'
         this.updateDeleteButtonVisibility()
-        
+
         console.log('Avatar loaded, custom avatar status:', this.hasCustomAvatar)
         resolve()
       }
-      
+
       testImg.onerror = () => {
         console.log('Failed to load avatar, using default')
         // Avatar failed to load, keep default and assume no custom avatar
@@ -1735,17 +1735,17 @@ class UserProfileScreen extends Component {
         this.updateDeleteButtonVisibility()
         resolve()
       }
-      
+
       // Load the avatar
       testImg.src = avatarUrl
     })
   }
 
   private async handleAvatarUpload(
-    file: File, 
-    avatarImg: HTMLImageElement, 
-    statusDiv: HTMLElement, 
-    progressBar: HTMLProgressElement, 
+    file: File,
+    avatarImg: HTMLImageElement,
+    statusDiv: HTMLElement,
+    progressBar: HTMLProgressElement,
     messageDiv: HTMLElement
   ): Promise<void> {
     if (!this.user) return
@@ -1768,21 +1768,21 @@ class UserProfileScreen extends Component {
       }, 100)
 
       const result = await this.apiService.uploadAvatar(file)
-      
+
       console.log('Avatar upload result:', result)
-      
+
       clearInterval(progressInterval)
       progressBar.value = 100
 
       if (result.success) {
         messageDiv.textContent = result.message || 'Avatar uploaded successfully!'
         messageDiv.className = 'mt-1 text-green-600 font-mono text-sm font-bold'
-        
+
         // Reload avatar image with cache-busting
         const newAvatarUrl = `${this.apiService.getAvatarUrl(this.user.username)}?t=${Date.now()}`
-        
+
         console.log('Reloading avatar after upload with URL:', newAvatarUrl)
-        
+
         // Create a test image to verify the new avatar loaded successfully
         const testImg = new Image()
         testImg.onload = () => {
@@ -1800,7 +1800,7 @@ class UserProfileScreen extends Component {
           // Keep the current avatar if the new one fails to load
         }
         testImg.src = newAvatarUrl
-        
+
         // Hide status after success
         setTimeout(() => {
           statusDiv.classList.add('hidden')
@@ -1860,13 +1860,13 @@ class UserProfileScreen extends Component {
 
     try {
       const result = await this.apiService.deleteAvatar()
-      
+
       console.log('Avatar delete result:', result)
 
       if (result.success) {
         messageDiv.textContent = result.message || 'Avatar deleted successfully!'
         messageDiv.className = 'mt-1 text-green-600 font-mono text-sm font-bold'
-        
+
         // Reset to default avatar
         avatarImg.src = 'images/default_avatar.jpg'
         this.hasCustomAvatar = false
@@ -1875,7 +1875,7 @@ class UserProfileScreen extends Component {
           localStorage.removeItem(`hasCustomAvatar_${this.user.username}`)
         }
         this.updateDeleteButtonVisibility()
-        
+
         // Hide status after success
         setTimeout(() => {
           statusDiv.classList.add('hidden')
@@ -1909,7 +1909,7 @@ class UserSettingsScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
-      
+
       // Show user menu for authenticated users
       App.getInstance().setUserLoggedIn(true)
     }
@@ -2001,13 +2001,13 @@ class UserSettingsScreen extends Component {
     const password = formData.get('password') as string
 
     const result = await this.apiService.updatePassword(password)
-    
+
     if (result.success) {
       responseDiv.textContent = 'Password updated successfully! You have been logged out for security. Redirecting to login...'
       responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
       responseDiv.classList.remove('hidden')
       form.reset()
-      
+
       // User is logged out after password change for security
       setTimeout(() => {
         App.getInstance().setUserLoggedIn(false)
@@ -2025,7 +2025,7 @@ class UserSettingsScreen extends Component {
     const email = formData.get('email') as string
 
     const result = await this.apiService.updateEmail(email)
-    
+
     if (result.success) {
       responseDiv.textContent = 'Email updated successfully!'
       responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
@@ -2043,7 +2043,7 @@ class UserSettingsScreen extends Component {
     const username = formData.get('username') as string
 
     const result = await this.apiService.updateUsername(username)
-    
+
     if (result.success) {
       responseDiv.textContent = 'Username updated successfully!'
       responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
@@ -2061,12 +2061,12 @@ class UserSettingsScreen extends Component {
     const password = formData.get('password') as string
 
     const result = await this.apiService.deleteAccount(password)
-    
+
     if (result.success) {
       responseDiv.textContent = 'Account deleted successfully. Redirecting...'
       responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
       responseDiv.classList.remove('hidden')
-      
+
       // Redirect to start page after successful deletion
       setTimeout(() => {
         App.getInstance().setUserLoggedIn(false)
@@ -2118,14 +2118,14 @@ class UserSettingsScreen extends Component {
         qrCodeContainer.innerHTML = `<img src="${result.qrCode}" alt="2FA QR Code" class="max-w-full" />`
         manualSecret.textContent = result.secret
         qrCodeSection.classList.remove('hidden')
-        
+
         // Hide enable button
         const enable2FABtn = this.element?.querySelector('#enable2FABtn') as HTMLButtonElement
         if (enable2FABtn) {
           enable2FABtn.classList.add('hidden')
         }
       }
-      
+
       this.showResponse(responseDiv, 'Scan the QR code with your authenticator app and enter the verification code.', 'success')
     } else {
       this.showResponse(responseDiv, result.message || 'Failed to enable 2FA', 'error')
@@ -2144,17 +2144,17 @@ class UserSettingsScreen extends Component {
 
     if (result.success) {
       this.showResponse(responseDiv, '2FA has been successfully enabled!', 'success')
-      
+
       // Hide QR code section and show disable button
       const qrCodeSection = this.element?.querySelector('#qrCodeSection') as HTMLElement
       const disable2FABtn = this.element?.querySelector('#disable2FABtn') as HTMLButtonElement
-      
+
       if (qrCodeSection) qrCodeSection.classList.add('hidden')
       if (disable2FABtn) disable2FABtn.classList.remove('hidden')
-      
+
       // Update status
       await this.load2FAStatus()
-      
+
       // Clear verification code
       const codeInput = this.element?.querySelector('#verificationCode') as HTMLInputElement
       if (codeInput) codeInput.value = ''
@@ -2177,13 +2177,13 @@ class UserSettingsScreen extends Component {
 
   private showResponse(responseDiv: HTMLElement, message: string, type: 'success' | 'error'): void {
     if (!responseDiv) return
-    
+
     responseDiv.textContent = message
-    responseDiv.className = type === 'success' ? 
-      'text-green-600 text-left mt-2 font-mono' : 
+    responseDiv.className = type === 'success' ?
+      'text-green-600 text-left mt-2 font-mono' :
       'text-red-600 text-left mt-2 font-mono'
     responseDiv.classList.remove('hidden')
-    
+
     // Auto-hide success messages after 5 seconds
     if (type === 'success') {
       setTimeout(() => {
@@ -2211,7 +2211,7 @@ class MatchHistoryScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
-      
+
       // Show user menu for authenticated users
       App.getInstance().setUserLoggedIn(true)
     }
@@ -2327,8 +2327,8 @@ class App {
         this.userProfileName!.textContent = user?.username || 'User'
       })
     }
-        
-   
+
+
     // Initialize the router and handle initial route based on current URL
     this.router.handleInitialRoute()
     console.log('App initialized, handling initial route')
@@ -2339,7 +2339,7 @@ class App {
       // Get current user before logout to display username
       const currentUser = await this.apiService.getCurrentUser()
       const username = currentUser?.username || 'User'
-      
+
       // Handle logout
       const success = await this.apiService.logout()
       if (success) {
@@ -2404,7 +2404,7 @@ class App {
       })
     }
   }
-  
+
 }
 
 // Initialize when DOM is loaded
