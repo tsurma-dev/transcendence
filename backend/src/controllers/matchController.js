@@ -5,6 +5,7 @@
 // } from "../models/matchModel";
 
 const rooms = new Map();
+//key: roomId, value: { players: { id, socket1 }, gameInstance }
 // TODO: temporally while rooms are not supported in UI
 rooms.set("42", { players: [] });
 
