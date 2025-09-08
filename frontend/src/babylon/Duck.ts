@@ -6,8 +6,8 @@ import {
 	ShadowGenerator
  } from "@babylonjs/core";
 
-import { GAME_CONFIG } from "../../shared/GameConfig";
-import type { DuckState } from "../../shared/types";
+import { GAME_CONFIG } from "@shared/GameConfig";
+import type { DuckState } from "@shared/types";
 
 
 export class Duck {

@@ -1,4 +1,4 @@
-import type { ServerToClient, ClientToServer, Snapshot, InputMessage } from "../../shared/protocol";
+import type { ServerToClient, ClientToServer, Snapshot, InputMessage } from "@shared/protocol";
 
 export class GameClient {
   private ws: WebSocket;
