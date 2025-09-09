@@ -11,6 +11,7 @@
     "concurrently": "^9.2.0"
   },
   "dependencies": {
-    "@fastify/multipart": "^9.0.3"
+    "@fastify/multipart": "^9.0.3",
+    "vite": "^7.1.5"
   }
 }
