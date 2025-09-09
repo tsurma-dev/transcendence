@@ -1,6 +1,6 @@
 export const GAME_CONFIG = {
   VERSION: 1,
-  SERVER_URL: "ws://localhost:8080",
+  SERVER_URL: "ws://localhost:8443",
   TICK_RATE: 60,                  // How often the server updates the game state internally. Common values: 30–60 ticks/sec.
   SNAPSHOT_RATE: 20,              // How often the server sends state snapshots to clients. Common values: 10–30 snapshots/sec.
   TABLE_WIDTH: 4,

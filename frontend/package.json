@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "npm run build && npx serve dist --single",
+    "dev": "vite",
+    "build": "vite build",
     "build:css": "npx postcss src/index.css -o dist/output.css",
     "build:ts": "npx tsc",
-	"copy:html": "cp src/index.html dist/index.html",
-	"copy:assets": "cp -r src/assets/* dist/",
-    "build": "npm run build:css && npm run build:ts && npm run copy:html && npm run copy:assets",
+    "copy:html": "cp src/index.html dist/index.html",
+    "copy:assets": "cp -r src/assets/* dist/",
     "serve": "npx serve dist --single"
   },
   "keywords": [],
@@ -17,10 +17,16 @@
   "description": "",
   "devDependencies": {
     "autoprefixer": "^10.4.21",
-    "postcss": "^8.4.37",
-    "postcss-cli": "^11.0.1",
-    "tailwindcss": "^3.4.4",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^10.1.0",
+    "serve": "^10.0.2",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
-    "serve": "^14.2.4"
+    "vite": "^7.1.5"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^8.26.0",
+    "@babylonjs/loaders": "^8.26.0",
+    "@babylonjs/materials": "^8.26.0"
   }
 }

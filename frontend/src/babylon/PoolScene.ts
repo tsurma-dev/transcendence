@@ -18,14 +18,14 @@ import {
 
 import "@babylonjs/loaders/glTF";
 
-import { GAME_CONFIG } from "../../shared/GameConfig"
+import { GAME_CONFIG } from "@shared/GameConfig"
 import { RENDERING_SETTINGS, LIGHT_SETTINGS, CAMERA_SETTINGS } from "./constants";
 import { Materials } from "./Materials";
 import { Duck } from "./Duck";
 import { Paddle } from "./Paddle";
 import { GameClient } from "./GameClient";
-import type { Snapshot } from "../../shared/protocol";
-import type {PlayerId, GameState, CollisionEvent} from "../../shared/types";
+import type { Snapshot } from "@shared/protocol";
+import type {PlayerId, GameState, CollisionEvent} from "@shared/types";
 
 
 export class PoolScene {

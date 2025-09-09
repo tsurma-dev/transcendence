@@ -8,8 +8,8 @@ import {
 	ShadowGenerator
 } from "@babylonjs/core";
 
-import { GAME_CONFIG } from "../../shared/GameConfig";
-import type { PlayerState } from "../../shared/types";
+import { GAME_CONFIG } from "@shared/GameConfig";
+import type { PlayerState } from "@shared/types";
 
 export class Paddle {
   public mesh: AbstractMesh;
