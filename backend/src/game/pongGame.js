@@ -1,48 +1,51 @@
-import { gameProperties } from "./gameProperties";
+import { gameProperties } from "./gameProperties.js";
 
-class PongGame {
-	constructor(player1Id, player2Id, roomId) {
-		//this.width = gameProperties.GAME_WIDTH;
-		//this.height = gameProperties.GAME_HEIGHT;
-		this.player1Id = player1Id;
-		this.player2Id = player2Id;
-		this.roomId = roomId;
+export class Game {
+	constructor(gameState) {
 		this.ball = {
 			x: gameProperties.GAME_WIDTH / 2,
 			y: gameProperties.GAME_HEIGHT / 2,
 			radius: gameProperties.BALL_SIZE / 2,
 			speedX: 5,
 			speedY: 3,
+			collision: null, // "paddle1", "paddle2", "wall"
 		};
-		//this.paddleWidth = gameProperties.PADDLE_WIDTH;
-		//this.paddleHeight = gameProperties.PADDLE_HEIGHT;
 		this.paddle1 = {
 			x: 0 + gameProperties.PADDLE_WIDTH,
 			y: gameProperties.GAME_HEIGHT / 2 - gameProperties.PADDLE_HEIGHT / 2,
 			speed: gameProperties.PADDLE_SPEED,
+			direction: 0,
 		};
 		this.paddle2 = {
 			x: gameProperties.GAME_WIDTH - gameProperties.PADDLE_WIDTH,
 			y: gameProperties.GAME_HEIGHT / 2 - this.paddleHeight / 2,
 			speed: gameProperties.PADDLE_SPEED,
+			direction: 0,
 		};
 		this.score = {
-			left: 0,
-			right: 0,
+			player1: 0,
+			player2: 0,
 		};
+		this.gameState = gameState;
+		this.ballCount = 0;
 	}
 
 	resetBall() {
+		if (this.ballCount >= gameProperties.BALL_COUNT) {
+			this.gameState = "game-over";
+			return;
+		}
+		this.ballCount += 1;
 		this.ball.x = gameProperties.GAME_WIDTH / 2;
 		this.ball.y = gameProperties.GAME_HEIGHT / 2;
 		this.ball.speedX = (Math.random() > 0.5 ? 1 : -1) * 5;
 		this.ball.speedY = (Math.random() > 0.5 ? 1 : -1) * 5;
 	}
 
-	movePaddle(paddle, direction) {
-		if (direction === 'up') {
+	movePaddle(paddle) {
+		if (paddle.direction === -1) {
 			paddle.y = Math.max(gameProperties.PADDLE_HEIGHT / 2, paddle.y - paddle.speed);
-		} else if (direction === 'down') {
+		} else if (paddle.direction === 1) {
 			paddle.y = Math.min(gameProperties.GAME_HEIGHT - gameProperties.PADDLE_HEIGHT / 2, paddle.y + paddle.speed);
 		}
 	}
@@ -52,9 +55,14 @@ class PongGame {
 		this.ball.x += this.ball.speedX;
 		this.ball.y += this.ball.speedY;
 
+		// Move paddles
+		this.movePaddle(this.paddle1);
+		this.movePaddle(this.paddle2);
+
 		// Ball collision with top/bottom
 		if (this.ball.y - this.ball.radius < 0 || this.ball.y + this.ball.radius > gameProperties.GAME_HEIGHT) {
 			this.ball.speedY *= -1;
+			this.ball.collision = "wall";
 		}
 
 		// Ball collision with paddles
@@ -65,6 +73,7 @@ class PongGame {
 		) {
 			this.ball.speedX *= -1;
 			this.ball.x = this.paddle1.x + gameProperties.PADDLE_WIDTH / 2 + this.ball.radius;
+			this.ball.collision = "paddle1";
 		}
 
 		if (
@@ -74,6 +83,7 @@ class PongGame {
 		) {
 			this.ball.speedX *= -1;
 			this.ball.x = this.paddle2.x - this.ball.radius;
+			this.ball.collision = "paddle2";
 		}
 
 		// Score update
@@ -96,4 +106,4 @@ class PongGame {
 	}
 }
 
-module.exports = PongGame;
+//module.exports = Game;

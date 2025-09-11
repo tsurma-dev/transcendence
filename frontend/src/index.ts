@@ -657,6 +657,8 @@ class PongGame {
   private onScoreUpdate?: (player1Score: number, player2Score: number) => void
 
   private socket = new WebSocket("wss://localhost:8443/ws/pong");
+  private roomId: string = "42" // TODO: dynamic room IDs
+  private playerId: string = "" // TODO: assign player IDs based on server response
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -667,29 +669,64 @@ class PongGame {
 
   private setupWS(): void {
     this.socket.onopen = () => {
-      console.log("Connected to server via wss")
-      // TODO: work out logic with rooms
-      this.socket.send(JSON.stringify({ action: "join", roomId: "42" }))
+        console.log("Connected to server via wss")
+        // TODO: work out logic with rooms
+        this.socket.send(JSON.stringify({ action: "join", roomId: "42" }))
     }
 
     this.socket.onmessage = (event) => {
-      console.log("received ws msg: " + event.data)
-      const data = JSON.parse(event.data)
-      if (data.action == "update") {
-        switch (data.object) {
-          case "paddle":
-            this.leftPaddleY = data.y
-            break
-          default:
-            console.warn("Received an unknown object update:", data.object)
+        const data = JSON.parse(event.data)
+        if (data) {
+            switch (data.type) {
+                case "room-joined":
+                    console.log("received ws msg: " + event.data)
+                    this.roomId = data.roomId
+                    this.playerId = data.playerId
+                    this.socket.send(JSON.stringify({ action: "play", roomId: this.roomId }))
+                    break
+                case "game-start":
+                    console.log("received ws msg: " + event.data)
+                    //this.start()
+                    break
+                case "game-state":
+                    this.ballX = data.ballPosX
+                    this.ballY = data.ballPosY
+                    this.leftPaddleY = data.paddle1Y
+                    this.rightPaddleY = data.paddle2Y
+                    this.player1Score = data.P1Score
+                    this.player2Score = data.P2Score
+                    break
+                case "end-game":
+                    console.log("received ws msg: " + event.data)
+                    //this.stop()
+                    //this.cleanup()
+                    break
+                default:
+                    console.warn("Received an unknown object update:", data.object)
         }
-      }
+        }
     }
   }
 
   private setupEventListeners(): void {
-    const handleKeyDown = (e: KeyboardEvent) => { this.keys[e.key] = true }
-    const handleKeyUp = (e: KeyboardEvent) => { this.keys[e.key] = false }
+    const handleKeyDown = (e: KeyboardEvent) => {
+        //this.keys[e.key] = true
+        if (e.key === 'ArrowUp' && this.rightPaddleY > 0) {
+        this.socket.send(JSON.stringify({ action: "update", roomId: this.roomId,
+        playerId: this.playerId, direction: -1 }))
+        }
+        else if (e.key === 'ArrowDown' && this.rightPaddleY + this.paddleHeight < this.HEIGHT) {
+        this.socket.send(JSON.stringify({ action: "update", roomId: this.roomId,
+        playerId: this.playerId, direction: 1 }))
+        }
+    }
+    const handleKeyUp = (e: KeyboardEvent) => {
+        //this.keys[e.key] = false
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            this.socket.send(JSON.stringify({ action: "update", roomId: this.roomId,
+            playerId: this.playerId, direction: 0 }))
+        }
+    }
 
     window.addEventListener('keydown', handleKeyDown)
     window.addEventListener('keyup', handleKeyUp)
@@ -801,7 +838,7 @@ class PongGame {
 
   private gameLoop(): void {
     if (this.isRunning) {
-      this.update()
+      //this.update()
       this.draw()
       this.animationId = requestAnimationFrame(() => this.gameLoop())
     }
