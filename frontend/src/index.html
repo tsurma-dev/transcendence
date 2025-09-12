@@ -43,10 +43,10 @@ Do not edit files in the dist directory, as they are generated files.
     </button>
     <!-- Dropdown Menu -->
     <div id="userMenuDropdown" class="hidden mt-2 w-40 bg-white border border-gray-300 rounded shadow-lg">
-      <button id="profileMenuBtn" class="block w-full text-left px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 font-mono uppercase tracking-wider">Profile</button>
-      <button id="settingsMenuBtn" class="block w-full text-left px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 font-mono uppercase tracking-wider">Settings</button>
-      <button id="startGameMenuBtn" class="block w-full text-left px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 font-mono uppercase tracking-wider">Start Game</button>
-      <button id="logoutMenuBtn" class="block w-full text-left px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 font-mono uppercase tracking-wider">Log Out</button>
+      <button id="profileMenuBtn" class="menu-btn-blue">Profile</button>
+      <button id="settingsMenuBtn" class="menu-btn-blue">Settings</button>
+      <button id="startGameMenuBtn" class="menu-btn-blue">Start Game</button>
+      <button id="logoutMenuBtn" class="menu-btn-blue">Log Out</button>
     </div>
     <!-- Back to Start Button for non-logged-in users -->
     <button
@@ -63,7 +63,7 @@ Do not edit files in the dist directory, as they are generated files.
 
   <!-- Start Page template -->
   <template id="startPageTemplate">
-    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-lg w-full text-center">
+    <div class="container-main-pink max-w-lg">
       <div class="text-center mb-8">
         <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">_|_|_|      _|_|    _|      _|    _|_|_|
 _|    _|  _|    _|  _|_|    _|  _|      
@@ -77,7 +77,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         <!-- Quick Play Button -->
         <button 
           id="quickPlayBtn"
-          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider"
+          class="btn-green"
         >
           Quick Play
         </button>
@@ -85,7 +85,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         <!-- Login Button -->
         <button 
           id="loginBtn"
-          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider"
+          class="btn-green"
         >
           Login
         </button>
@@ -93,7 +93,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         <!-- Register Button -->
         <button 
           id="registerBtn"
-          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider"
+          class="btn-green"
         >
           Register
         </button>
@@ -103,7 +103,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 
   <!-- Login template -->
   <template id="loginTemplate">
-    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono tracking-wider p-8 max-w-lg w-full text-center">
+    <div class="container-main-pink max-w-lg">
       <div class="text-center mb-8">
         <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">_|_|_|      _|_|    _|      _|    _|_|_|
 _|    _|  _|    _|  _|_|    _|  _|      
@@ -116,11 +116,11 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       <div id="loginCredentialsSection">
         <form id="loginForm" class="space-y-4">
           <input type="email" name="email" placeholder="Email" required 
-              class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+              class="input-white" />
           <input type="password" name="password" placeholder="Password" required 
-              class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+              class="input-white" />
           <button type="submit" 
-              class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+              class="btn-green">
             Login
           </button>
         </form>
@@ -139,9 +139,9 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         <form id="twoFAVerificationForm" class="space-y-4">
           <input type="text" id="twoFACode" name="twoFACode" placeholder="Enter 6-digit code" required 
               maxlength="6" pattern="[0-9]{6}" autocomplete="off"
-              class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono text-center text-2xl tracking-widest" />
+              class="input-white text-center text-2xl tracking-widest" />
           <button type="submit" 
-              class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+              class="btn-green">
             Verify Code
           </button>
         </form>
@@ -157,7 +157,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 
   <!-- Register template -->
   <template id="registerTemplate">
-    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono tracking-wider p-8 max-w-lg w-full text-center">
+    <div class="container-main-pink max-w-lg">
       <div class="text-center mb-8">
         <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">_|_|_|      _|_|    _|      _|    _|_|_|
 _|    _|  _|    _|  _|_|    _|  _|      
@@ -167,13 +167,13 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       </div>
       <form id="registerForm" class="space-y-4">
         <input type="text" name="username" placeholder="Username" required maxlength="15" 
-            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+            class="input-white" />
         <input type="email" name="email" placeholder="Email" required 
-            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+            class="input-white" />
         <input type="password" name="password" placeholder="Password" required 
-            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+            class="input-white" />
         <button type="submit" 
-            class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+            class="btn-green">
           Register
         </button>
       </form>
@@ -186,7 +186,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 
   <!-- Logged out template -->
   <template id="loggedOutTemplate">
-    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-lg w-full text-center">
+    <div class="container-main-pink max-w-lg">
       <h1 class="text-4xl font-bold text-white mb-4 drop-shadow-lg">
         User successfully logged out
       </h1>
@@ -198,7 +198,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 
   <!-- User profile template -->
   <template id="userProfileTemplate">
-    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-lg w-full text-center">
+    <div class="container-main-pink max-w-lg">
       <h1 class="text-4xl font-bold text-white mb-4 drop-shadow-lg">
         User Profile
       </h1>
@@ -255,12 +255,12 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       <div class="space-y-4">
         <button 
           id="matchHistoryBtn"
-          class="w-full px-6 py-4 bg-gradient-to-b from-purple-400 to-purple-600 hover:from-purple-300 hover:to-purple-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          class="btn-purple">
           Match History
         </button>
         <button 
           id="userSettingsBtn"
-          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          class="btn-green">
           User Settings
         </button>
       </div>
@@ -269,7 +269,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 
   <!-- User settings template -->
   <template id="userSettingsTemplate">
-    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-2xl w-full text-center">
+    <div class="container-main-pink max-w-2xl">
       <h1 class="text-4xl font-bold text-white mb-4 drop-shadow-lg">
         User Settings
       </h1>
@@ -278,10 +278,10 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         <label class="block mb-2">
           New Password:
           <input type="password" name="password" required 
-            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+            class="input-white" />
         </label>
         <button type="submit" 
-          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          class="btn-green">
           Update Password
         </button>
         <div id="passwordResponse" class="text-black text-left mt-2 hidden"></div>
@@ -291,10 +291,10 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         <label class="block mb-2">
           New Email:
           <input type="email" name="email" required 
-            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+            class="input-white" />
         </label>
         <button type="submit" 
-          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150  font-mono uppercase tracking-wider">
+          class="btn-green">
           Update Email
         </button>
         <div id="emailResponse" class="text-black text-left mt-2 hidden"></div>
@@ -304,10 +304,10 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         <label class="block mb-2">
           New Username:
           <input type="text" name="username" required maxlength="15"
-            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+            class="input-white" />
         </label>
         <button type="submit" 
-          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          class="btn-green">
           Update Username
         </button>
         <div id="usernameResponse" class="text-black text-left mt-2 hidden"></div>
@@ -322,7 +322,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           <!-- Enable 2FA Button (shown when 2FA is disabled) -->
           <button 
             id="enable2FABtn"
-            class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider hidden">
+            class="btn-blue hidden">
             Enable 2FA
           </button>
           
@@ -343,7 +343,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
               id="verificationCode" 
               placeholder="Enter 6-digit code from your app" 
               maxlength="6"
-              class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono mb-4" />
+              class="input-white mb-4" />
             <button 
               id="verify2FABtn"
               class="w-full px-6 py-4 bg-gradient-to-b from-green-400 to-green-600 hover:from-green-300 hover:to-green-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
@@ -358,10 +358,10 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         <label class="block mb-2">
           Confirm Password:
           <input type="password" name="password" required 
-            class="w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono" />
+            class="input-white" />
         </label>
         <button type="submit" 
-          class="w-full px-6 py-4 bg-gradient-to-b from-red-400 to-red-600 hover:from-red-300 hover:to-red-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px rgba(0,0,0,1)] hover:translate  -x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          class="btn-red">
           Delete My Account
         </button>
         <div id="deleteResponse" class="text-black text-left mt-2 hidden"></div>
@@ -371,7 +371,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 
   <!-- Match History template -->
   <template id="matchHistoryTemplate">
-    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-4xl w-full text-center">
+    <div class="container-main-pink max-w-4xl">
       <h1 class="text-4xl font-bold text-white mb-6 drop-shadow-lg">
         Match History
       </h1>
@@ -452,7 +452,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 
   <!-- Player Setup Template -->
   <template id="playerSetupTemplate">
-    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-2xl w-full relative">
+    <div class="container-main-pink max-w-2xl relative">
 
       <div class="text-center mb-8">
         <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">_|_|_|      _|_|    _|      _|    _|_|_|
@@ -471,7 +471,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
             id="player1Name" 
             placeholder="Enter your name" 
             maxlength="15"
-            class="w-full p-4 rounded-none bg-white/90 text-gray-800 text-center font-semibold text-lg border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono"
+            class="input-white text-center font-semibold text-lg"
           >
           <div class="text-black text-center mt-3 text-sm font-mono uppercase tracking-wider">
             Controls: <span class="font-semibold">W</span> / <span class="font-semibold">S</span>
@@ -486,7 +486,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
             id="player2Name" 
             placeholder="Enter your name" 
             maxlength="15"
-            class="w-full p-4 rounded-none bg-white/90 text-gray-800 text-center font-semibold text-lg border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono"
+            class="input-white text-center font-semibold text-lg"
           >
           <div class="text-black text-center mt-3 text-sm font-mono uppercase tracking-wider">
             Controls: <span class="font-semibold">↑</span> / <span class="font-semibold">↓</span>
@@ -498,7 +498,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         <button 
           id="startGameBtn" 
           disabled
-          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          class="btn-green">
           START GAME
         </button>
       </div>
@@ -507,7 +507,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 
   <!-- Game Screen Template -->
   <template id="gameScreenTemplate">
-    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-4xl w-full relative">
+    <div class="container-main-pink max-w-4xl relative">
       
       <!-- Players Display with Scores -->
       <div class="flex justify-between items-center mb-6">
@@ -549,7 +549,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 </html>
   <!-- Logged-in Landing Page template -->
   <template id="loggedInLandingTemplate">
-    <div class="bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 max-w-lg w-full text-center">
+    <div class="container-main-pink max-w-lg">
       
       <!-- Online Users Counter -->
       <div class="text-center mb-4">
@@ -567,7 +567,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       <div class="space-y-4">
         <button 
           id="startSinglePlayerBtn"
-          class="w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          class="btn-green">
           Start Single Player Game
         </button>
         <button 
@@ -577,12 +577,12 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         </button>
         <button 
           id="startTournamentBtn"
-          class="w-full px-6 py-4 bg-gradient-to-b from-purple-400 to-purple-600 hover:from-purple-300 hover:to-purple-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          class="btn-purple">
           Start Tournament
         </button>
         <button 
           id="userProfileLandingBtn"
-          class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          class="btn-blue">
           User Profile
         </button>
       </div>
