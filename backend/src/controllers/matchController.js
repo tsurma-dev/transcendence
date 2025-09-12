@@ -36,6 +36,9 @@ export function handlePongWebSocket(socket) {
 		break;
 		case "update":
 		//forwardUpdate(socket, data);
+		console.log("Updating player " + data.playerId + " in room " + data.roomId + " with direction " + data.direction);
+		if (typeof(data.direction) !== "number")
+			console.log("Invalid direction: " + data.direction);
 		updatePlayer(data.roomId, data.playerId, data.direction);
 		break;
 		default:
@@ -68,8 +71,9 @@ function updatePlayer(roomId, playerId, direction) {
 //set new Game instance to room and send "game-start" to both players
 function startGame(roomId) {
 	const room = rooms.get(roomId);
-	if (!room || room.game) return;
-	if (!room.player1.socket || !room.player2.socket) return;
+	//if (!room || room.game) return;
+	//if (!room.player1.socket || !room.player2.socket) return;
+	console.log("Starting game in room " + roomId);
 	room.game = new Game("running");
 	const startState = {
 		type: "game-start",
@@ -77,7 +81,8 @@ function startGame(roomId) {
 	};
 	room.player1.socket.send(JSON.stringify(startState));
 	room.player2.socket.send(JSON.stringify(startState));
-	if (rooms.length === 1) {
+	console.log("rooms count: " + rooms.size);
+	if (rooms.size === 1) {
 		roomsLoop(rooms);
 	}
 }
@@ -140,10 +145,10 @@ function createRoom(socket) {
 }
 
 function joinRoom(socket, roomId) {
-  if (!roomId) {
-	roomId = createRoom(socket);
-	return;
-  }
+//   if (!roomId) {
+// 	roomId = createRoom(socket);
+// 	return;
+//   }
   const room = rooms.get(roomId);
   if (!room) {
     socket.send(JSON.stringify({ message: "Room not found or error occurred" }));
@@ -161,6 +166,7 @@ function joinRoom(socket, roomId) {
 	room.player2.socket = socket;
 	room.player2.id = "second";
 	socket.send(JSON.stringify({ type: "room-joined", room: roomId, playerId: "second" }));
+	startGame("42");
 	//setupCloseHandler(roomId, socket);
 	return;
   }

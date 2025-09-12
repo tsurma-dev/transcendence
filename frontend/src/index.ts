@@ -682,7 +682,7 @@ class PongGame {
                     console.log("received ws msg: " + event.data)
                     this.roomId = data.roomId
                     this.playerId = data.playerId
-                    this.socket.send(JSON.stringify({ action: "play", roomId: this.roomId }))
+                    //this.socket.send(JSON.stringify({ action: "play", roomId: this.roomId }))
                     break
                 case "game-start":
                     console.log("received ws msg: " + event.data)
@@ -696,10 +696,9 @@ class PongGame {
                     this.player1Score = data.P1Score
                     this.player2Score = data.P2Score
                     break
-                case "end-game":
+                case "game-over":
                     console.log("received ws msg: " + event.data)
-                    //this.stop()
-                    //this.cleanup()
+                    this.cleanup()
                     break
                 default:
                     console.warn("Received an unknown object update:", data.object)
@@ -711,19 +710,19 @@ class PongGame {
   private setupEventListeners(): void {
     const handleKeyDown = (e: KeyboardEvent) => {
         //this.keys[e.key] = true
-        if (e.key === 'ArrowUp' && this.rightPaddleY > 0) {
-        this.socket.send(JSON.stringify({ action: "update", roomId: this.roomId,
+        if (e.key === 'ArrowUp') {
+        this.socket.send(JSON.stringify({ action: "update", roomId: "42",
         playerId: this.playerId, direction: -1 }))
         }
-        else if (e.key === 'ArrowDown' && this.rightPaddleY + this.paddleHeight < this.HEIGHT) {
-        this.socket.send(JSON.stringify({ action: "update", roomId: this.roomId,
+        else if (e.key === 'ArrowDown') {
+        this.socket.send(JSON.stringify({ action: "update", roomId: "42",
         playerId: this.playerId, direction: 1 }))
         }
     }
     const handleKeyUp = (e: KeyboardEvent) => {
         //this.keys[e.key] = false
         if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-            this.socket.send(JSON.stringify({ action: "update", roomId: this.roomId,
+            this.socket.send(JSON.stringify({ action: "update", roomId: "42",
             playerId: this.playerId, direction: 0 }))
         }
     }

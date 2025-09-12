@@ -12,13 +12,13 @@ export class Game {
 		};
 		this.paddle1 = {
 			x: 0 + gameProperties.PADDLE_WIDTH,
-			y: gameProperties.GAME_HEIGHT / 2 - gameProperties.PADDLE_HEIGHT / 2,
+			y: gameProperties.GAME_HEIGHT / 2,
 			speed: gameProperties.PADDLE_SPEED,
 			direction: 0,
 		};
 		this.paddle2 = {
 			x: gameProperties.GAME_WIDTH - gameProperties.PADDLE_WIDTH,
-			y: gameProperties.GAME_HEIGHT / 2 - this.paddleHeight / 2,
+			y: gameProperties.GAME_HEIGHT / 2,
 			speed: gameProperties.PADDLE_SPEED,
 			direction: 0,
 		};
@@ -48,6 +48,7 @@ export class Game {
 		} else if (paddle.direction === 1) {
 			paddle.y = Math.min(gameProperties.GAME_HEIGHT - gameProperties.PADDLE_HEIGHT / 2, paddle.y + paddle.speed);
 		}
+		return paddle.y;
 	}
 
 	update() {
@@ -56,8 +57,12 @@ export class Game {
 		this.ball.y += this.ball.speedY;
 
 		// Move paddles
-		this.movePaddle(this.paddle1);
-		this.movePaddle(this.paddle2);
+		console.log("Paddle1 Y before move: " + this.paddle1.y + ", direction: " + this.paddle1.direction);
+		this.paddle1.y = this.movePaddle(this.paddle1);
+		console.log("Paddle1 Y after move: " + this.paddle1.y);
+		console.log("Paddle2 Y before move: " + this.paddle2.y + ", direction: " + this.paddle2.direction);
+		this.paddle2.y = this.movePaddle(this.paddle2);
+		console.log("Paddle2 Y after move: " + this.paddle2.y);
 
 		// Ball collision with top/bottom
 		if (this.ball.y - this.ball.radius < 0 || this.ball.y + this.ball.radius > gameProperties.GAME_HEIGHT) {
