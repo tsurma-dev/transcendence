@@ -241,7 +241,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         <!-- Online status indicator -->
         <div class="flex items-center justify-center">
           <div id="onlineStatusDot" class="w-3 h-3 rounded-full mr-2 bg-green-400"></div>
-          <span id="onlineStatusText" class="text-black font-mono text-sm font-bold">Online</span>
+          <span id="onlineStatusText" class="text-content font-bold">Online</span>
         </div>
       </div>
       <!-- User information -->
@@ -337,7 +337,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           <div id="qrCodeSection" class="text-center hidden">
             <p class="text-black font-mono mb-4">Scan this QR code with your authenticator app:</p>
             <div id="qrCodeContainer" class="bg-white p-4 border-4 border-black inline-block mb-4"></div>
-            <p class="text-black font-mono text-sm mb-4">Or enter this secret manually: <span id="manualSecret" class="font-bold"></span></p>
+            <p class="text-content mb-4">Or enter this secret manually: <span id="manualSecret" class="font-bold"></span></p>
             <input 
               type="text" 
               id="verificationCode" 
@@ -398,23 +398,23 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         
         <!-- Match History Header -->
         <div class="hidden md:grid grid-cols-5 gap-4 mb-4 pb-2 border-b-2 border-black">
-          <div class="text-black font-bold text-sm font-mono uppercase">Date</div>
-          <div class="text-black font-bold text-sm font-mono uppercase">Opponent</div>
-          <div class="text-black font-bold text-sm font-mono uppercase">Score</div>
-          <div class="text-black font-bold text-sm font-mono uppercase">Result</div>
+          <div class="text-header">Date</div>
+          <div class="text-header">Opponent</div>
+          <div class="text-header">Score</div>
+          <div class="text-header">Result</div>
         </div>
 
         <!-- Match History Entries -->
         <div id="matchHistoryList" class="space-y-2">
           <!-- Match entries (placeholders) -->
           <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-3 border-2 border-gray-300 rounded-none hover:bg-gray-50">
-            <div class="text-black font-mono text-sm">
+            <div class="text-content">
               <span class="md:hidden font-bold">Date: </span>2025-08-19
             </div>
-            <div class="text-black font-mono text-sm">
+            <div class="text-content">
               <span class="md:hidden font-bold">Opponent: </span>DuckOverflow
             </div>
-            <div class="text-black font-mono text-sm">
+            <div class="text-content">
               <span class="md:hidden font-bold">Score: </span>5-1
             </div>
             <div class="text-green-600 font-mono text-sm font-bold">
@@ -423,13 +423,13 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-3 border-2 border-gray-300 rounded-none hover:bg-gray-50">
-            <div class="text-black font-mono text-sm">
+            <div class="text-content">
               <span class="md:hidden font-bold">Date: </span>2025-08-18
             </div>
-            <div class="text-black font-mono text-sm">
+            <div class="text-content">
               <span class="md:hidden font-bold">Opponent: </span>PongMaster
             </div>
-            <div class="text-black font-mono text-sm">
+            <div class="text-content">
               <span class="md:hidden font-bold">Score: </span>2-5
             </div>
             <div class="text-red-600 font-mono text-sm font-bold">

@@ -62,4 +62,13 @@
     .indicator-offline {
       @apply w-2 h-2 bg-red-400 rounded-full mr-2;
     }
+
+  /* General content text styling */
+  .text-content {
+    @apply text-black font-mono text-sm;
+  }
+
+  .text-header {
+    @apply text-black font-bold text-sm font-mono uppercase;
+  }
 }
