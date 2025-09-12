@@ -13,4 +13,43 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Additional custom styles can be added here if needed */
+/* ================================= */
+/* CUSTOM UTILITY CLASSES FOR REPEATED PATTERNS */
+/* ================================= */
+
+@layer components {
+  /* 1. Green gradient button, for main actions */
+  .btn-green {
+    @apply w-full px-6 py-4 bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 text-black font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider;
+  }
+
+  /* Blue button, for navigation and secondary actions */
+  .btn-blue {
+    @apply w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider;
+  }
+
+  /* Red button, for actions like delete/logout */
+  .btn-red {
+    @apply w-full px-6 py-4 bg-gradient-to-b from-red-400 to-red-600 hover:from-red-300 hover:to-red-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider;
+  }
+
+  /* Purple button, for special features */
+  .btn-purple {
+    @apply w-full px-6 py-4 bg-gradient-to-b from-purple-400 to-purple-600 hover:from-purple-300 hover:to-purple-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider;
+  }
+
+  /* 2. Rose/Pink screen container */
+  .container-main-pink {
+    @apply bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 w-full text-center;
+  }
+
+  /* 3. White input field */
+  .input-white {
+    @apply w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono;
+  }
+
+  /* 4. Blue menu button navigation bar */
+  .menu-btn-blue {
+    @apply px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 font-mono uppercase tracking-wider;
+  }
+}
