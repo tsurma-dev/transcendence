@@ -1659,12 +1659,12 @@ class UserProfileScreen extends Component {
 
       if (currentUser && currentUser.username) {
         // User is online
-        onlineStatusDot.className = 'w-3 h-3 rounded-full mr-2 bg-green-400 animate-pulse'
+        onlineStatusDot.className = 'indicator-online'
         onlineStatusText.textContent = 'Online'
         onlineStatusText.className = 'text-green-600 font-mono text-sm font-bold'
       } else {
         // User is offline or not authenticated
-        onlineStatusDot.className = 'w-3 h-3 rounded-full mr-2 bg-red-400'
+        onlineStatusDot.className = 'indicator-offline'
         onlineStatusText.textContent = 'Offline'
         onlineStatusText.className = 'text-red-600 font-mono text-sm font-bold'
       }
