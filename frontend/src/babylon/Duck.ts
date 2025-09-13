@@ -29,7 +29,7 @@ export class Duck {
 
   // Updates the duck's position and rotation based on the game state.
   // This method is called every frame with the latest state from the server.
-  public updateFromState(state: DuckState): void {
+  public updatePosition(state: DuckState): void {
     // If the mesh hasn't finished loading yet, do nothing.
     if (!this.mesh) {
       return;

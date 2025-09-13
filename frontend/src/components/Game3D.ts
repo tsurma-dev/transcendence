@@ -3,7 +3,10 @@ import { PoolScene } from '../babylon/PoolScene'
 export class Game3DComponent {
   private poolScene: PoolScene | null = null
   private canvas: HTMLCanvasElement
-  constructor(private container: HTMLElement) {
+  private playerNumber: 1 | 2
+
+  constructor(private container: HTMLElement, playerNumber: 1 | 2 = 1) {
+    this.playerNumber = playerNumber
     this.canvas = document.createElement('canvas')
     this.canvas.id = 'babylon3dCanvas'
     this.canvas.style.width = '100%'

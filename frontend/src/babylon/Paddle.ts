@@ -35,9 +35,8 @@ export class Paddle {
   }
 
   // Update the paddle's position based on the game state.
-  public updateFromState(state: PlayerState): void {
+  public updatePosition(state: PlayerState): void {
     this.mesh.position.x = state.x;
-    this.mesh.position.z = state.z;
   }
 
 }

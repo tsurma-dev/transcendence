@@ -3,7 +3,13 @@ import { GameState } from "./types";
 export type ServerToClient =
   | { type: "hello"; payload: { version: number; yourId: string } }
   | { type: "state"; payload: Snapshot }
+  | { type: "playerAssignment"; payload: PlayerAssignmentPayload }
   | { type: "pong"; payload: { t: number } };
+
+export type PlayerAssignmentPayload = {
+  playerName: string;
+  position: 1 | 2;
+};
 
 export type Snapshot = {
   version: number;           // = GAME_CONFIG.VERSION
