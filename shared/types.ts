@@ -1,50 +1,60 @@
 // Coordinate in the XZ plane
 export type Vec2 = { x: number; z: number };
-// Unique identifier for a player
-export type PlayerId = string;
+
+// Unique identifier for a player (their unique name)
+export type PlayerName = string;
 
 // Duck position and direction
 export type DuckState = Vec2 & { dir: number }; // radians
-// Player position
-export type PlayerState = Vec2;
 
-/**
- * Represents the overall status of the game.
- * - 'waiting': Before the game starts.
- * - 'playing': The game is in progress.
- * - 'finished': The game has ended.
- */
+// Player information including position and paddle location
+export type PlayerState = {
+  x: number;           // Paddle position
+  position: 1 | 2;     // Which paddle they control (bottom or top)
+};
+
+// Overall game status
 export type GameStatus = 'waiting' | 'playing' | 'finished';
 
-/**
- * Describes the type of collision that occurred.
- * This allows the frontend to play different sounds.
- */
+// Gametype (Local or Online)
+export type GameType = 'local' | 'online';
+
+
+// --- EVENTS ---
+
+// Different types of collisions that can occur in the game
+// Different sounds can be played based on the type of collision
 export type CollisionType = 'wall' | 'paddle';
 
-/**
- * A discrete event that happens in the game. The backend sends these
- * to the frontend so it can react with sounds or visual effects.
- */
 export type CollisionEvent = {
   type: 'collision';
   collisionType: CollisionType;
 };
 
-// Future event types can be added here, e.g., ScoreEvent, PowerUpEvent, etc.
-export type GameEvent = CollisionEvent;
+export type ScoreEvent = {
+  type: 'score';
+  player: PlayerName;
+  points: number;
+};
+
+export type GameEvent = CollisionEvent | ScoreEvent;
 
 export type GameState = {
-  // Positional data
-  duck: DuckState;
-  players: Record<PlayerId, PlayerState>;
+  // Player data - maps player name to their state
+  players: Record<PlayerName, PlayerState>;
 
-  // Score data
-  scores: Record<PlayerId, number>;
+  // Score data - maps player name to their score
+  scores: Record<PlayerName, number>;
+
+  // Duck state
+  duck: DuckState;
+
+  // Game type (Local or Online)
+  gameType: GameType;
 
   // Overall game status
   status: GameStatus;
-  winner?: PlayerId; // present if status === 'finished'
+  winner?: PlayerName; // present if status === 'finished'
 
   // A list of events that occurred in the last tick
   events: GameEvent[];

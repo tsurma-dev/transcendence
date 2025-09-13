@@ -25,7 +25,7 @@ import { Duck } from "./Duck";
 import { Paddle } from "./Paddle";
 import { GameClient } from "./GameClient";
 import type { Snapshot } from "@shared/protocol";
-import type {PlayerId, GameState, CollisionEvent} from "@shared/types";
+import type {GameState} from "@shared/types";
 
 
 export class PoolScene {
@@ -39,13 +39,13 @@ export class PoolScene {
   private hemilight!: HemisphericLight;
   private poolLights: PointLight[] = [];
   private shadowGenerator!: ShadowGenerator;
+  private camera!: ArcRotateCamera;
+  private cameraPositioned = false;
 
   // Game objects
   private duck: Duck;
-  private bottomPaddle: Paddle;
-  private topPaddle: Paddle;
-  private paddles: Map<PlayerId, Paddle> = new Map(); // Maps server ID to a paddle object
-  private arePaddlesMapped = false; // Flag to ensure mapping only happens once
+  private Paddle1: Paddle;
+  private Paddle2: Paddle;
 
   // Client and State
   private client: GameClient;
@@ -74,15 +74,15 @@ export class PoolScene {
 
     // 2. Initialize Game Objects
     this.duck = new Duck(this.scene, this.shadowGenerator);
-    this.bottomPaddle = new Paddle(
-      "bottomPaddle",
+    this.Paddle1 = new Paddle(
+      "Paddle1",
       this.scene,
       new Vector3(0, 0, 1), // blue
       new Vector3(0, GAME_CONFIG.WATER_LEVEL, -GAME_CONFIG.TABLE_DEPTH / 2 - GAME_CONFIG.PADDLE_DEPTH / 2),
       this.shadowGenerator
     );
-    this.topPaddle = new Paddle(
-      "topPaddle",
+    this.Paddle2 = new Paddle(
+      "Paddle2",
       this.scene,
       new Vector3(1, 0, 0), // red
       new Vector3(0, GAME_CONFIG.WATER_LEVEL, GAME_CONFIG.TABLE_DEPTH / 2 + GAME_CONFIG.PADDLE_DEPTH / 2),
@@ -125,66 +125,70 @@ export class PoolScene {
   //  Receives state from the server and updates the scene.
   private updateFromState(state: GameState): void {
 
-    // Map paddles on the first valid state update (when we have 2 players)
-    if (!this.arePaddlesMapped && Object.keys(state.players).length === 2) {
-      this.mapPaddlesFromServerState(state);
+    // Update camera position for online game
+    if (!this.cameraPositioned && state.gameType === 'online') {
+      this._updateCameraPosition(state);
     }
 
     // Update duck position
-    this.duck.updateFromState(state.duck);
+    this.duck.updatePosition(state.duck);
 
-    // Update paddles positions
-    for (const playerId in state.players) {
-      const playerState = state.players[playerId];
-      const paddle = this.paddles.get(playerId);
-      if (paddle) {
-        paddle.updateFromState(playerState);
+      // Update paddles based on their position field
+    const playerNames = Object.keys(state.players);
+    for (let i = 0; i < playerNames.length; i++) {
+      const playerName = playerNames[i];
+      const playerState = state.players[playerName];
+
+      if (playerState.position === 1) {
+        this.Paddle1.updatePosition(playerState);
+      } else if (playerState.position === 2) {
+        this.Paddle2.updatePosition(playerState);
       }
-    };
+    }
 
-    // Play sounds
-    state.events.forEach((event: CollisionEvent) => {
-      if (event.type === 'collision') {
-        if (event.collisionType === 'wall') {
-          this.wallHitSound.play();
-        } else if (event.collisionType === 'paddle') {
-          this.paddleHitSound.play();
-        }
+    // Handle events (score, sounds)
+    const events = state.events;
+    for (let i = 0; i < events.length; i++) {
+      const event = events[i];
+      switch (event.type) {
+        case 'collision':
+          if (event.collisionType === 'wall') {
+            this.wallHitSound.play();
+          } else if (event.collisionType === 'paddle') {
+            this.paddleHitSound.play();
+          }
+          break;
+
+        case 'score':
+          console.log(event.player + ' scored ' + event.points + ' points!');
+          // TODO: Add score display in UI
+          break;
       }
-    });
+    }
 
-    // Handle UI updates (scores (?), game status)
-    // Example: document.getElementById('score1').innerText = state.scores['player1']; --TODO
+    // Game status
     if (state.status === 'finished') {
-      if (state.winner === this.client.playerId) {
+      if (state.winner === this.client.playerName) {
         console.log("Game Over: You WIN!");
-        // showWinScreen(); -- TODO
+        // TODO: Show win screen
       } else {
         console.log("Game Over: You Lose.");
-        // showLoseScreen(); --TODO
+        // TODO: Show lose screen
       }
     }
   }
 
-  // --- HELPER METHODS ---
-  // Maps the two paddles to the player IDs received from the server.
-  // This is done only once, on the first valid state update.
-  private mapPaddlesFromServerState(state: GameState): void {
-    const playerIds = Object.keys(state.players) as PlayerId[];
-    const player1State = state.players[playerIds[0]];
+  private _updateCameraPosition(state: GameState): void {
 
-    if (player1State.z < 0) {
-      this.paddles.set(playerIds[0], this.bottomPaddle);
-      this.paddles.set(playerIds[1], this.topPaddle);
-    } else {
-      this.paddles.set(playerIds[0], this.topPaddle);
-      this.paddles.set(playerIds[1], this.bottomPaddle);
+    if (state.players.playerState.position === 1 && this.client.playerPosition === 1) {
+      this.camera.setPosition(CAMERA_SETTINGS.POSITION1);
+      this.camera.setTarget(CAMERA_SETTINGS.TARGET1);
+    } else if (state.players.playerState.position === 2 && this.client.playerPosition === 2) {
+      this.camera.setPosition(CAMERA_SETTINGS.POSITION2);
+      this.camera.setTarget(CAMERA_SETTINGS.TARGET2);
     }
-
-    this.arePaddlesMapped = true;
-    console.log("Paddles dynamically mapped to server IDs:", this.paddles);
+    this.cameraPositioned = true;
   }
-
 
   // -------------------------------
   // --- SCENE CREATION METHODS  ---
@@ -218,12 +222,13 @@ export class PoolScene {
     scene.imageProcessingConfiguration.exposure = RENDERING_SETTINGS.EXPOSURE; // Controls the overall brightness of the scene after tone mapping. Can be tweaked to make scene brighter or darker.
   }
 
+
   private _createCamera(scene: Scene): void {
-    const camera = new ArcRotateCamera("camera", 0, 0, 1, CAMERA_SETTINGS.TARGET, scene);
-    camera.setPosition(CAMERA_SETTINGS.POSITION);
-		camera.attachControl();
-		camera.wheelPrecision = CAMERA_SETTINGS.WHEEL_PRECISION;
-	}
+    this.camera = new ArcRotateCamera("camera", 0, 0, 1, CAMERA_SETTINGS.TARGET_LOCAL, scene);
+    this.camera.setPosition(CAMERA_SETTINGS.POSITION_LOCAL);
+    this.camera.attachControl(this.canvas);
+    this.camera.wheelPrecision = CAMERA_SETTINGS.WHEEL_PRECISION;
+  }
 
 	private _createLights(scene: Scene): void {
 		//Lights

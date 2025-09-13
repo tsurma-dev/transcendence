@@ -1,13 +1,11 @@
-import type { ServerToClient, ClientToServer, Snapshot, InputMessage } from "@shared/protocol";
+import type { ServerToClient, ClientToServer, Snapshot, InputMessage} from "@shared/protocol";
 
 export class GameClient {
   private ws: WebSocket;
   private snapshotHandler: (snap: Snapshot) => void = () => {};
-  private myId: string | null = null;
-
-  public get playerId(): string | null {
-    return this.myId;
-  }
+  private clientId: string | null = null;
+  public playerName: string | null = null;
+  public playerPosition: 1 | 2 | null = null;
 
   constructor(serverUrl: string) {
     this.ws = new WebSocket(serverUrl);
@@ -19,12 +17,10 @@ export class GameClient {
 
   private onOpen(): void {
     console.log("Connected to game server. Waiting for handshake...");
-    // The client doesn't send anything first. It waits for the server's "hello".
   }
 
   private onClose(): void {
     console.log("Disconnected from server");
-    // TODO: Show a "Disconnected" message on the UI?
   }
 
   private onMessage(event: MessageEvent): void {
@@ -38,11 +34,17 @@ export class GameClient {
 
     switch (message.type) {
       case "hello":
-        this.myId = message.payload.yourId;
-        console.log(`Handshake complete. My player ID is ${this.myId}`);
-        // Now that we're connected, we can start a ping loop
+        this.clientId = message.payload.yourId;
+        console.log(`Handshake complete. ${this.clientId} has joined!`);
+        // Start sending pings to measure latency
         this.startPingLoop();
         break;
+
+      case 'playerAssignment':
+          this.playerName = message.payload.playerName;
+          this.playerPosition = message.payload.position;
+          console.log(`Paddle ${this.playerPosition} assigned to ${this.playerName}`);
+          break;
 
       case "state":
         // The payload is the snapshot. Pass it to the handler.
