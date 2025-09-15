@@ -71,4 +71,9 @@
   .text-header {
     @apply text-black font-bold text-sm font-mono uppercase;
   }
+
+  /* Friend button base styling (color applied inline) */
+  .btn-friend {
+    @apply px-4 py-2 font-bold text-sm rounded-none border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wide;
+  }
 }
