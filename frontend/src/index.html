@@ -282,6 +282,43 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           class="btn-purple">
           Match History
         </button>
+        
+        <!-- Friends List Button with Dropdown (only visible for own profile) -->
+        <div id="friendsListContainer" class="relative">
+          <button 
+            id="friendsListBtn"
+            class="btn-blue w-full">
+            👥 Friends List
+          </button>
+          
+          <!-- Friends List Dropdown -->
+          <div id="friendsListDropdown" class="hidden absolute top-full left-0 w-full mt-1 bg-white border-2 border-black rounded shadow-lg z-10 max-h-64 overflow-y-auto">
+            <div class="p-3">
+              <!-- Friends Section -->
+              <div id="friendsSection" class="mb-4">
+                <h4 class="font-bold text-black mb-2 font-mono">Friends</h4>
+                <div id="friendsList" class="space-y-1">
+                  <!-- Friends will be loaded here -->
+                  <div class="text-gray-500 font-mono text-sm text-center py-2">
+                    No friends yet
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Pending Requests Section -->
+              <div id="pendingRequestsSection">
+                <h4 class="font-bold text-black mb-2 font-mono">Pending Requests</h4>
+                <div id="pendingRequestsList" class="space-y-1">
+                  <!-- Pending requests will be loaded here -->
+                  <div class="text-gray-500 font-mono text-sm text-center py-2">
+                    No pending requests
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         <button 
           id="userSettingsBtn"
           class="btn-green">

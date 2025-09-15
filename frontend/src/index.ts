@@ -1793,6 +1793,10 @@ class UserProfileScreen extends Component {
       // Hide settings button for other users (but keep match history visible)
       if (userSettingsBtn) userSettingsBtn.style.display = 'none'
       
+      // Hide friends list for other users
+      const friendsListContainer = this.element?.querySelector('#friendsListContainer') as HTMLElement
+      if (friendsListContainer) friendsListContainer.style.display = 'none'
+      
       // Hide avatar upload elements
       if (avatarFileInput) avatarFileInput.style.display = 'none'
       if (avatarUploadStatus) avatarUploadStatus.style.display = 'none'
@@ -1805,6 +1809,9 @@ class UserProfileScreen extends Component {
       if (friendActionContainer) {
         friendActionContainer.style.display = 'none'
       }
+      
+      // Setup friends list functionality for own profile
+      this.setupFriendsList()
     }
 
     // Handle avatar menu toggle (only for current user)
@@ -2087,6 +2094,52 @@ class UserProfileScreen extends Component {
     }
   }
 
+  private setupFriendsList(): void {
+    if (!this.element) return
+
+    const friendsListBtn = this.element.querySelector('#friendsListBtn') as HTMLElement
+    const friendsListDropdown = this.element.querySelector('#friendsListDropdown') as HTMLElement
+    const friendsList = this.element.querySelector('#friendsList') as HTMLElement
+    const pendingRequestsList = this.element.querySelector('#pendingRequestsList') as HTMLElement
+
+    if (!friendsListBtn || !friendsListDropdown) return
+
+    // Handle dropdown toggle
+    friendsListBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      
+      if (friendsListDropdown.classList.contains('hidden')) {
+        // Show dropdown and load data
+        friendsListDropdown.classList.remove('hidden')
+        this.loadFriendsListData()
+      } else {
+        // Hide dropdown
+        friendsListDropdown.classList.add('hidden')
+      }
+    })
+
+    // Close dropdown when clicking outside
+    const documentClickHandler = (e: Event) => {
+      if (!friendsListDropdown.contains(e.target as Node) && !friendsListBtn.contains(e.target as Node)) {
+        friendsListDropdown.classList.add('hidden')
+      }
+    }
+    document.addEventListener('click', documentClickHandler)
+
+    // Prevent dropdown from closing when clicking inside it
+    friendsListDropdown.addEventListener('click', (e) => {
+      e.stopPropagation()
+    })
+
+    // Store the document click handler for cleanup
+    ;(this.element as any).friendsListDocumentHandler = documentClickHandler
+  }
+
+  private loadFriendsListData(): void {
+    // Template contains default "No friends yet" and "No pending requests" text placeholders
+    console.log('Friends list dropdown opened - showing default template content')
+  }
+
   private async handleAvatarDelete(
     avatarImg: HTMLImageElement,
     statusDiv: HTMLElement,
@@ -2135,6 +2188,10 @@ class UserProfileScreen extends Component {
   }
 
   cleanup(): void {
+    // Remove friends list document click handler if it exists
+    if (this.element && (this.element as any).friendsListDocumentHandler) {
+      document.removeEventListener('click', (this.element as any).friendsListDocumentHandler)
+    }
     // Cleanup handled automatically by unmount
   }
 }
