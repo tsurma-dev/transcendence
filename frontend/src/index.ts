@@ -1478,15 +1478,29 @@ class LoggedInLandingScreen extends Component {
     if (!userProfileLinks) return
 
     userProfileLinks.forEach(link => {
-      link.addEventListener('click', (e) => {
+      link.addEventListener('click', async (e) => {
         e.preventDefault()
         e.stopPropagation()
         
         const username = (link as HTMLElement).getAttribute('data-username')
         if (username) {
           console.log('Navigating to profile for user:', username)
-          // Navigate to user profile screen with username parameter
-          this.router.navigateTo(UserProfileScreen, username)
+          
+          // Check if this is the current user's own profile
+          try {
+            const currentUser = await this.apiService.getCurrentUser()
+            if (currentUser && currentUser.username === username) {
+              // Navigate to own profile (no username parameter)
+              this.router.navigateTo(UserProfileScreen)
+            } else {
+              // Navigate to other user's profile (with username parameter)
+              this.router.navigateTo(UserProfileScreen, username)
+            }
+          } catch (error) {
+            console.error('Error checking current user:', error)
+            // Fallback: navigate to other user's profile
+            this.router.navigateTo(UserProfileScreen, username)
+          }
           
           // Close the dropdown
           const onlineUsersDropdown = this.element?.querySelector('#onlineUsersDropdown')
