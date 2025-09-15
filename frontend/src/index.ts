@@ -698,6 +698,9 @@ class PongGame {
                     break
                 case "game-over":
                     console.log("received ws msg: " + event.data)
+                    this.player1Score = data.P1Score
+                    this.player2Score = data.P2Score
+                    //this.updateScore()
                     this.cleanup()
                     break
                 default:
@@ -803,6 +806,12 @@ class PongGame {
     }
   }
 
+  private updateScore(): void {
+    if (this.onScoreUpdate) {
+      this.onScoreUpdate(this.player1Score, this.player2Score)
+    }
+  }
+
   private resetBall(): void {
     this.ballX = this.WIDTH / 2
     this.ballY = this.HEIGHT / 2
@@ -839,6 +848,7 @@ class PongGame {
     if (this.isRunning) {
       //this.update()
       this.draw()
+      this.updateScore()
       this.animationId = requestAnimationFrame(() => this.gameLoop())
     }
   }
@@ -1567,6 +1577,7 @@ class GameScreen extends Component {
   cleanup(): void {
     if (this.pongGame) {
       this.pongGame.cleanup()
+      this.pongGame = null
     }
   }
 }
