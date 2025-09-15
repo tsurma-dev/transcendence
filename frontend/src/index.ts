@@ -1784,9 +1784,8 @@ class UserProfileScreen extends Component {
       // Hide avatar menu for other users
       if (avatarMenuBtn) avatarMenuBtn.style.display = 'none'
       
-      // Hide settings and match history buttons for other users
+      // Hide settings button for other users (but keep match history visible)
       if (userSettingsBtn) userSettingsBtn.style.display = 'none'
-      if (matchHistoryBtn) matchHistoryBtn.style.display = 'none'
       
       // Hide avatar upload elements
       if (avatarFileInput) avatarFileInput.style.display = 'none'
