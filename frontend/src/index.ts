@@ -1796,6 +1796,15 @@ class UserProfileScreen extends Component {
       // Hide avatar upload elements
       if (avatarFileInput) avatarFileInput.style.display = 'none'
       if (avatarUploadStatus) avatarUploadStatus.style.display = 'none'
+      
+      // Show friend action container and buttons for other users
+      this.setupFriendButtons()
+    } else {
+      // Hide friend action container for own profile
+      const friendActionContainer = this.element?.querySelector('#friendActionContainer') as HTMLElement
+      if (friendActionContainer) {
+        friendActionContainer.style.display = 'none'
+      }
     }
 
     // Handle avatar menu toggle (only for current user)
@@ -2039,6 +2048,37 @@ class UserProfileScreen extends Component {
       } else {
         deleteAvatarBtn.style.display = 'none'
       }
+    }
+  }
+
+  private setupFriendButtons(): void {
+    if (!this.element) return
+
+    const addFriendBtn = this.element.querySelector('#addFriendBtn')
+    const friendRequestSentBtn = this.element.querySelector('#friendRequestSentBtn')
+    const alreadyFriendsBtn = this.element.querySelector('#alreadyFriendsBtn')
+    const friendActionContainer = this.element.querySelector('#friendActionContainer')
+
+    // Show friend action container for other users
+    if (friendActionContainer) {
+      (friendActionContainer as HTMLElement).style.display = 'flex'
+    }
+
+    // For now, show Add Friend button as placeholder
+    if (addFriendBtn) {
+      (addFriendBtn as HTMLElement).style.display = 'block'
+      addFriendBtn.addEventListener('click', () => {
+        console.log('Add friend clicked for:', this.targetUsername)
+        // TODO: Implement friend request logic
+      })
+    }
+
+    // Hide other buttons for now
+    if (friendRequestSentBtn) {
+      (friendRequestSentBtn as HTMLElement).style.display = 'none'
+    }
+    if (alreadyFriendsBtn) {
+      (alreadyFriendsBtn as HTMLElement).style.display = 'none'
     }
   }
 
