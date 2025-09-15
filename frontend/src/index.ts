@@ -77,6 +77,29 @@ class ApiService {
     }
   }
 
+  async getOnlineUsersList(): Promise<{id: number, username: string}[]> {
+    try {
+      console.log('Fetching online users list from:', `${this.baseUrl}/api/loggedinusers`)
+      const response = await fetch(`${this.baseUrl}/api/loggedinusers`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const users = await response.json()
+        console.log('Online users list:', users)
+        return Array.isArray(users) ? users : []
+      } else {
+        console.error('Failed to fetch online users list:', response.status, response.statusText)
+        return []
+      }
+    } catch (error) {
+      console.error('Error fetching online users list:', error)
+      return []
+    }
+  }
+
   async getCurrentUser(): Promise<{id: number, username: string, email: string, createdAt: string, twoFAEnabled?: boolean} | null> {
     try {
       console.log('Fetching current user from:', `${this.baseUrl}/api/me`)
@@ -100,6 +123,34 @@ class ApiService {
       }
     } catch (error) {
       console.error('Failed to fetch current user:', error)
+      return null
+    }
+  }
+
+  async getUserProfile(username: string): Promise<{id: number, username: string, email: string, createdAt: string, twoFAEnabled?: boolean} | null> {
+    try {
+      console.log('Fetching user profile from:', `${this.baseUrl}/api/users/${encodeURIComponent(username)}`)
+      const response = await fetch(`${this.baseUrl}/api/users/${encodeURIComponent(username)}`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      console.log('getUserProfile response status:', response.status)
+
+      if (response.ok) {
+        const user = await response.json()
+        console.log('User profile data:', user)
+        return user
+      } else {
+        console.log('getUserProfile failed with status:', response.status)
+        if (response.status === 404) {
+          console.log('User not found:', username)
+        }
+        return null
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error)
       return null
     }
   }
@@ -512,6 +563,14 @@ class AppRouter {
 
     // Parse arguments based on the route
     switch (path) {
+      case '/profile':
+        const profileUsername = urlParams.get('user') ? decodeURIComponent(urlParams.get('user')!) : undefined
+        return profileUsername ? [profileUsername] : []
+
+      case '/match-history':
+        const historyUsername = urlParams.get('user') ? decodeURIComponent(urlParams.get('user')!) : undefined
+        return historyUsername ? [historyUsername] : []
+
       case '/game':
         const player1 = urlParams.get('p1') ? decodeURIComponent(urlParams.get('p1')!) : 'Player 1'
         const player2 = urlParams.get('p2') ? decodeURIComponent(urlParams.get('p2')!) : 'Player 2'
@@ -569,11 +628,15 @@ class AppRouter {
       case 'LoggedInLandingScreen':
         return '/landing'
       case 'UserProfileScreen':
-        return '/profile'
+        // Handle username parameter for viewing other users' profiles
+        const profileUser = args[0] ? encodeURIComponent(args[0]) : undefined
+        return profileUser ? `/profile?user=${profileUser}` : '/profile'
       case 'UserSettingsScreen':
         return '/settings'
       case 'MatchHistoryScreen':
-        return '/match-history'
+        // Handle username parameter for viewing specific user's match history
+        const historyUser = args[0] ? encodeURIComponent(args[0]) : undefined
+        return historyUser ? `/match-history?user=${historyUser}` : '/match-history'
       case 'QuickPlaySetupScreen':
         return '/quick-play'
       case 'PlayerSetupScreen':
@@ -1235,6 +1298,7 @@ class LoggedInLandingScreen extends Component {
   private templateManager = TemplateManager.getInstance()
   private router = AppRouter.getInstance()
   private apiService = new ApiService()
+  private documentClickHandler?: (e: Event) => void
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('loggedInLandingTemplate')
@@ -1254,6 +1318,8 @@ class LoggedInLandingScreen extends Component {
 
     // Load current user and update welcome message
     this.loadCurrentUser()
+
+    this.setupOnlineUsersDropdown()
 
     const startSinglePlayerBtn = this.element?.querySelector('#startSinglePlayerBtn') as HTMLButtonElement
     const start2PlayerBtn = this.element?.querySelector('#start2PlayerBtn') as HTMLButtonElement
@@ -1334,8 +1400,131 @@ class LoggedInLandingScreen extends Component {
     }
   }
 
+  private setupOnlineUsersDropdown(): void {
+    const onlineUsersToggle = this.element?.querySelector('#onlineUsersToggle') as HTMLButtonElement
+    const onlineUsersDropdown = this.element?.querySelector('#onlineUsersDropdown') as HTMLElement
+
+    if (!onlineUsersToggle || !onlineUsersDropdown) {
+      console.error('Online users dropdown elements not found')
+      return
+    }
+
+    // Toggle dropdown on button click
+    onlineUsersToggle.addEventListener('click', async (e) => {
+      e.stopPropagation()
+      
+      if (onlineUsersDropdown.classList.contains('hidden')) {
+        // Show dropdown and load users
+        await this.loadOnlineUsersList()
+        onlineUsersDropdown.classList.remove('hidden')
+      } else {
+        // Hide dropdown
+        onlineUsersDropdown.classList.add('hidden')
+      }
+    })
+
+    // Close dropdown when clicking outside
+    this.documentClickHandler = (e) => {
+      if (!onlineUsersDropdown.contains(e.target as Node) && !onlineUsersToggle.contains(e.target as Node)) {
+        onlineUsersDropdown.classList.add('hidden')
+      }
+    }
+    document.addEventListener('click', this.documentClickHandler)
+
+    // Prevent dropdown from closing when clicking inside it
+    onlineUsersDropdown.addEventListener('click', (e) => {
+      e.stopPropagation()
+    })
+  }
+
+  private async loadOnlineUsersList(): Promise<void> {
+    const onlineUsersListElement = this.element?.querySelector('#onlineUsersList')
+    if (!onlineUsersListElement) {
+      console.error('onlineUsersList element not found')
+      return
+    }
+
+    // Show loading state
+    onlineUsersListElement.innerHTML = '<div class="text-center text-gray-500 font-mono text-sm">Loading users...</div>'
+
+    try {
+      const users = await this.apiService.getOnlineUsersList()
+      console.log('Online users list loaded:', users)
+
+      if (users.length === 0) {
+        onlineUsersListElement.innerHTML = '<div class="text-center text-gray-500 font-mono text-sm">No users online</div>'
+        return
+      }
+
+      // Create user list HTML
+      const userListHTML = users.map(user => `
+        <div class="flex items-center justify-between p-2 border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
+          <div class="flex items-center">
+            <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+            <button class="text-black font-mono text-sm font-semibold hover:text-blue-600 hover:underline cursor-pointer user-profile-link" data-username="${user.username}">
+              ${user.username}
+            </button>
+          </div>
+          <div class="text-green-600 font-mono text-xs font-bold">ONLINE</div>
+        </div>
+      `).join('')
+
+      onlineUsersListElement.innerHTML = userListHTML
+      
+      // Add click event listeners to user profile links
+      this.setupUserProfileLinks()
+    } catch (error) {
+      console.error('Error loading online users list:', error)
+      onlineUsersListElement.innerHTML = '<div class="text-center text-red-500 font-mono text-sm">Error loading users</div>'
+    }
+  }
+
+  private setupUserProfileLinks(): void {
+    const userProfileLinks = this.element?.querySelectorAll('.user-profile-link')
+    if (!userProfileLinks) return
+
+    userProfileLinks.forEach(link => {
+      link.addEventListener('click', async (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        
+        const username = (link as HTMLElement).getAttribute('data-username')
+        if (username) {
+          console.log('Navigating to profile for user:', username)
+          
+          // Check if this is the current user's own profile
+          try {
+            const currentUser = await this.apiService.getCurrentUser()
+            if (currentUser && currentUser.username === username) {
+              // Navigate to own profile (no username parameter)
+              this.router.navigateTo(UserProfileScreen)
+            } else {
+              // Navigate to other user's profile (with username parameter)
+              this.router.navigateTo(UserProfileScreen, username)
+            }
+          } catch (error) {
+            console.error('Error checking current user:', error)
+            // Fallback: navigate to other user's profile
+            this.router.navigateTo(UserProfileScreen, username)
+          }
+          
+          // Close the dropdown
+          const onlineUsersDropdown = this.element?.querySelector('#onlineUsersDropdown')
+          if (onlineUsersDropdown) {
+            onlineUsersDropdown.classList.add('hidden')
+          }
+        }
+      })
+    })
+  }
+
   cleanup(): void {
-    // Cleanup handled automatically by unmount
+    // Remove the document click listener to prevent memory leaks
+    if (this.documentClickHandler) {
+      document.removeEventListener('click', this.documentClickHandler)
+      this.documentClickHandler = undefined
+    }
+    // Other cleanup handled automatically by unmount
   }
 }
 
@@ -1519,6 +1708,12 @@ class UserProfileScreen extends Component {
   private apiService = new ApiService()
   private user: {id: number, username: string, email: string, createdAt: string, twoFAEnabled?: boolean} | null = null
   private hasCustomAvatar: boolean = false
+  private targetUsername?: string  // Username of the profile to view (undefined = current user)
+
+  constructor(username?: string) {
+    super()
+    this.targetUsername = username
+  }
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('userProfileTemplate')
@@ -1551,9 +1746,16 @@ class UserProfileScreen extends Component {
     const uploadAvatarBtn = this.element?.querySelector('#uploadAvatarBtn') as HTMLButtonElement
     const deleteAvatarBtn = this.element?.querySelector('#deleteAvatarBtn') as HTMLButtonElement
 
-    // Load current user data
+    // Load user data (either current user or target user)
     try {
-      this.user = await this.apiService.getCurrentUser()
+      if (this.targetUsername) {
+        // Load specific user's profile
+        this.user = await this.apiService.getUserProfile(this.targetUsername)
+      } else {
+        // Load current user's profile
+        this.user = await this.apiService.getCurrentUser()
+      }
+
       if (this.user) {
         // Populate user information
         if (profileUsername) profileUsername.textContent = this.user.username
@@ -1565,8 +1767,9 @@ class UserProfileScreen extends Component {
           await this.loadUserAvatar(profileAvatar, this.user.username)
         }
       } else {
-        // Handle case where no user is logged in
-        if (profileUsername) profileUsername.textContent = 'Not logged in'
+        // Handle case where user is not found or not logged in
+        const errorText = this.targetUsername ? `User "${this.targetUsername}" not found` : 'Not logged in'
+        if (profileUsername) profileUsername.textContent = errorText
         if (profileEmail) profileEmail.textContent = 'N/A'
         if (profileJoinedDate) profileJoinedDate.textContent = 'N/A'
         if (profileLastLogin) profileLastLogin.textContent = 'N/A'
@@ -1574,14 +1777,45 @@ class UserProfileScreen extends Component {
     } catch (error) {
       console.error('Error loading user profile:', error)
       // Show error state
-      if (profileUsername) profileUsername.textContent = 'Error loading profile'
+      const errorText = this.targetUsername ? `Error loading profile for ${this.targetUsername}` : 'Error loading profile'
+      if (profileUsername) profileUsername.textContent = errorText
       if (profileEmail) profileEmail.textContent = 'Error'
       if (profileJoinedDate) profileJoinedDate.textContent = 'Error'
       if (profileLastLogin) profileLastLogin.textContent = 'Error'
     }
 
-    // Handle avatar menu toggle
-    if (avatarMenuBtn && avatarMenuDropdown) {
+    // Hide avatar management and settings for other users' profiles
+    const isViewingOtherUser = this.targetUsername !== undefined
+    if (isViewingOtherUser) {
+      // Hide avatar menu for other users
+      if (avatarMenuBtn) avatarMenuBtn.style.display = 'none'
+      
+      // Hide settings button for other users (but keep match history visible)
+      if (userSettingsBtn) userSettingsBtn.style.display = 'none'
+      
+      // Hide friends list for other users
+      const friendsListContainer = this.element?.querySelector('#friendsListContainer') as HTMLElement
+      if (friendsListContainer) friendsListContainer.style.display = 'none'
+      
+      // Hide avatar upload elements
+      if (avatarFileInput) avatarFileInput.style.display = 'none'
+      if (avatarUploadStatus) avatarUploadStatus.style.display = 'none'
+      
+      // Show friend action container and buttons for other users
+      this.setupFriendButtons()
+    } else {
+      // Hide friend action container for own profile
+      const friendActionContainer = this.element?.querySelector('#friendActionContainer') as HTMLElement
+      if (friendActionContainer) {
+        friendActionContainer.style.display = 'none'
+      }
+      
+      // Setup friends list functionality for own profile
+      this.setupFriendsList()
+    }
+
+    // Handle avatar menu toggle (only for current user)
+    if (avatarMenuBtn && avatarMenuDropdown && !isViewingOtherUser) {
       avatarMenuBtn.addEventListener('click', (e) => {
         e.stopPropagation()
         this.toggleAvatarMenu()
@@ -1597,24 +1831,24 @@ class UserProfileScreen extends Component {
       })
     }
 
-    // Handle upload avatar button
-    if (uploadAvatarBtn && avatarFileInput) {
+    // Handle upload avatar button (only for current user)
+    if (uploadAvatarBtn && avatarFileInput && !isViewingOtherUser) {
       uploadAvatarBtn.addEventListener('click', () => {
         avatarFileInput.click()
         this.closeAvatarMenu()
       })
     }
 
-    // Handle delete avatar button
-    if (deleteAvatarBtn) {
+    // Handle delete avatar button (only for current user)
+    if (deleteAvatarBtn && !isViewingOtherUser) {
       deleteAvatarBtn.addEventListener('click', async () => {
         await this.handleAvatarDelete(profileAvatar, avatarUploadStatus, avatarStatusMessage)
         this.closeAvatarMenu()
       })
     }
 
-    // Handle avatar upload
-    if (avatarFileInput) {
+    // Handle avatar upload (only for current user)
+    if (avatarFileInput && !isViewingOtherUser) {
       avatarFileInput.addEventListener('change', async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0]
         if (file && this.user) {
@@ -1637,8 +1871,14 @@ class UserProfileScreen extends Component {
     // Handle match history button click
     if (matchHistoryBtn) {
       matchHistoryBtn.addEventListener('click', () => {
-        // Navigate to match history screen
-        this.router.navigateTo(MatchHistoryScreen)
+        // Navigate to match history screen, passing the target username
+        if (this.targetUsername) {
+          // Pass the username of the profile being viewed
+          this.router.navigateTo(MatchHistoryScreen, this.targetUsername)
+        } else {
+          // Current user's profile, no username parameter needed
+          this.router.navigateTo(MatchHistoryScreen)
+        }
       })
     }
 
@@ -1818,6 +2058,88 @@ class UserProfileScreen extends Component {
     }
   }
 
+  private setupFriendButtons(): void {
+    if (!this.element) return
+
+    const addFriendBtn = this.element.querySelector('#addFriendBtn') as HTMLElement
+    const friendRequestSentBtn = this.element.querySelector('#friendRequestSentBtn') as HTMLElement
+    const alreadyFriendsBtn = this.element.querySelector('#alreadyFriendsBtn') as HTMLElement
+    const friendActionContainer = this.element.querySelector('#friendActionContainer') as HTMLElement
+
+    // Show friend action container for other users
+    if (friendActionContainer) {
+      friendActionContainer.style.display = 'flex'
+    }
+
+    // Show Add Friend button initially
+    if (addFriendBtn) {
+      addFriendBtn.style.display = 'block'
+      addFriendBtn.addEventListener('click', () => {
+        console.log('Add friend clicked for:', this.targetUsername)
+        
+        // Hide Add Friend button and show Request Sent button
+        addFriendBtn.style.display = 'none'
+        if (friendRequestSentBtn) {
+          friendRequestSentBtn.style.display = 'block'
+        }
+      })
+    }
+
+    // Initially hide other buttons
+    if (friendRequestSentBtn) {
+      friendRequestSentBtn.style.display = 'none'
+    }
+    if (alreadyFriendsBtn) {
+      alreadyFriendsBtn.style.display = 'none'
+    }
+  }
+
+  private setupFriendsList(): void {
+    if (!this.element) return
+
+    const friendsListBtn = this.element.querySelector('#friendsListBtn') as HTMLElement
+    const friendsListDropdown = this.element.querySelector('#friendsListDropdown') as HTMLElement
+    const friendsList = this.element.querySelector('#friendsList') as HTMLElement
+    const pendingRequestsList = this.element.querySelector('#pendingRequestsList') as HTMLElement
+
+    if (!friendsListBtn || !friendsListDropdown) return
+
+    // Handle dropdown toggle
+    friendsListBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      
+      if (friendsListDropdown.classList.contains('hidden')) {
+        // Show dropdown and load data
+        friendsListDropdown.classList.remove('hidden')
+        this.loadFriendsListData()
+      } else {
+        // Hide dropdown
+        friendsListDropdown.classList.add('hidden')
+      }
+    })
+
+    // Close dropdown when clicking outside
+    const documentClickHandler = (e: Event) => {
+      if (!friendsListDropdown.contains(e.target as Node) && !friendsListBtn.contains(e.target as Node)) {
+        friendsListDropdown.classList.add('hidden')
+      }
+    }
+    document.addEventListener('click', documentClickHandler)
+
+    // Prevent dropdown from closing when clicking inside it
+    friendsListDropdown.addEventListener('click', (e) => {
+      e.stopPropagation()
+    })
+
+    // Store the document click handler for cleanup
+    ;(this.element as any).friendsListDocumentHandler = documentClickHandler
+  }
+
+  private loadFriendsListData(): void {
+    // Template contains default "No friends yet" and "No pending requests" text placeholders
+    console.log('Friends list dropdown opened - showing default template content')
+  }
+
   private async handleAvatarDelete(
     avatarImg: HTMLImageElement,
     statusDiv: HTMLElement,
@@ -1866,6 +2188,10 @@ class UserProfileScreen extends Component {
   }
 
   cleanup(): void {
+    // Remove friends list document click handler if it exists
+    if (this.element && (this.element as any).friendsListDocumentHandler) {
+      document.removeEventListener('click', (this.element as any).friendsListDocumentHandler)
+    }
     // Cleanup handled automatically by unmount
   }
 }
@@ -2179,6 +2505,12 @@ class MatchHistoryScreen extends Component {
   private templateManager = TemplateManager.getInstance()
   private router = AppRouter.getInstance()
   private apiService = new ApiService()
+  private targetUsername?: string  // Username of the profile that was being viewed
+
+  constructor(username?: string) {
+    super()
+    this.targetUsername = username
+  }
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('matchHistoryTemplate')
@@ -2198,7 +2530,13 @@ class MatchHistoryScreen extends Component {
     // Handle back to profile button
     if (backToProfileBtn) {
       backToProfileBtn.addEventListener('click', () => {
-        this.router.navigateTo(UserProfileScreen)
+        if (this.targetUsername) {
+          // Go back to specific user's profile
+          this.router.navigateTo(UserProfileScreen, this.targetUsername)
+        } else {
+          // Go back to current user's profile
+          this.router.navigateTo(UserProfileScreen)
+        }
       })
     }
 

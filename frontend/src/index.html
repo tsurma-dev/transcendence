@@ -243,6 +243,30 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           <div id="onlineStatusDot" class="w-3 h-3 rounded-full mr-2 bg-green-400"></div>
           <span id="onlineStatusText" class="text-content font-bold">Online</span>
         </div>
+        
+        <!-- Friend action buttons (only visible for other users' profiles) -->
+        <div id="friendActionContainer" class="mt-4 flex justify-center">
+          <!-- Add Friend Button -->
+          <button 
+            id="addFriendBtn"
+            class="hidden btn-friend bg-gradient-to-b from-green-400 to-green-600 hover:from-green-300 hover:to-green-500 text-white">
+            ➕ Add Friend
+          </button>
+          
+          <!-- Friend Request Sent Button -->
+          <button 
+            id="friendRequestSentBtn"
+            class="hidden btn-friend bg-gradient-to-b from-yellow-400 to-yellow-600 text-black cursor-default">
+            ⏳ Friend Request Sent
+          </button>
+          
+          <!-- Already Friends Button -->
+          <button 
+            id="alreadyFriendsBtn"
+            class="hidden btn-friend bg-gradient-to-b from-blue-400 to-blue-600 text-white cursor-default">
+            ✅ Friends
+          </button>
+        </div>
       </div>
       <!-- User information -->
       <div class="flex justify-center mb-4">
@@ -258,6 +282,43 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           class="btn-purple">
           Match History
         </button>
+        
+        <!-- Friends List Button with Dropdown (only visible for own profile) -->
+        <div id="friendsListContainer" class="relative">
+          <button 
+            id="friendsListBtn"
+            class="btn-blue w-full">
+            👥 Friends List
+          </button>
+          
+          <!-- Friends List Dropdown -->
+          <div id="friendsListDropdown" class="hidden absolute top-full left-0 w-full mt-1 bg-white border-2 border-black rounded shadow-lg z-10 max-h-64 overflow-y-auto">
+            <div class="p-3">
+              <!-- Friends Section -->
+              <div id="friendsSection" class="mb-4">
+                <h4 class="font-bold text-black mb-2 font-mono">Friends</h4>
+                <div id="friendsList" class="space-y-1">
+                  <!-- Friends will be loaded here -->
+                  <div class="text-gray-500 font-mono text-sm text-center py-2">
+                    No friends yet
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Pending Requests Section -->
+              <div id="pendingRequestsSection">
+                <h4 class="font-bold text-black mb-2 font-mono">Pending Requests</h4>
+                <div id="pendingRequestsList" class="space-y-1">
+                  <!-- Pending requests will be loaded here -->
+                  <div class="text-gray-500 font-mono text-sm text-center py-2">
+                    No pending requests
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         <button 
           id="userSettingsBtn"
           class="btn-green">
@@ -552,12 +613,26 @@ _|          _|_|    _|      _|    _|_|_|</pre>
     <div class="container-main-pink max-w-lg">
       
       <!-- Online Users Counter -->
-      <div class="text-center mb-4">
-        <div class="inline-flex items-center bg-gradient-to-b from-gray-300 to-gray-400 px-4 py-2 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider">
+      <div class="text-center mb-4 relative">
+        <button 
+          id="onlineUsersToggle"
+          class="inline-flex items-center bg-gradient-to-b from-gray-300 to-gray-400 hover:from-gray-200 hover:to-gray-300 px-4 py-2 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider cursor-pointer">
           <div class="indicator-online"></div>
           <span id="onlineUsersCount" class="text-black text-sm font-bold">
             Loading...
           </span>
+          <span class="ml-2 text-black text-xs">▾</span>
+        </button>
+        
+        <!-- Online Users Dropdown -->
+        <div id="onlineUsersDropdown" class="hidden absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-10">
+          <div class="p-4">
+            <h3 class="text-black font-mono font-bold text-sm mb-3 text-center uppercase">Currently Online</h3>
+            <div id="onlineUsersList" class="space-y-2 max-h-48 overflow-y-auto">
+              <!-- Online users will be populated here -->
+              <div class="text-center text-gray-500 font-mono text-sm">Loading users...</div>
+            </div>
+          </div>
         </div>
       </div>
 
