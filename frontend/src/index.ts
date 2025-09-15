@@ -34,7 +34,7 @@
 */
 
 import './index.css'
-import { Game3DComponent } from './components/Game3D'
+import { Game3DComponent, GameMode } from './components/Game3D'
 
 // ===========================
 // SCALABLE SPA ARCHITECTURE
@@ -1492,19 +1492,34 @@ class GameScreen extends Component {
 
     const game3DContainer = document.createElement('div')
     game3DContainer.id = 'game3DContainer'
-    game3DContainer.style.width = '800px'
-    game3DContainer.style.height = '400px'
+
+    // game3DContainer.style.width = '800px'
+    // game3DContainer.style.height = '400px'
+    // game3DContainer.style.backgroundColor = '#000'
+    // game3DContainer.className = 'border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+    // ---FULL SCREEN---
+    game3DContainer.style.position = 'fixed'
+    game3DContainer.style.top = '0'
+    game3DContainer.style.left = '0'
+    game3DContainer.style.width = '100vw'
+    game3DContainer.style.height = '100vh'
     game3DContainer.style.backgroundColor = '#000'
-    game3DContainer.className = 'border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+    game3DContainer.style.zIndex = '1000'
+
     host.appendChild(game3DContainer)
 
-    this.game3D = new Game3DComponent(game3DContainer)
+    this.game3D = new Game3DComponent(game3DContainer, this.isQuickPlay ? 'local' : 'online')
     this.game3D.initialize()
-  }
+    }
 
   cleanup(): void {
     if (this.game3D) {
       this.game3D.dispose()
+    }
+    // **REMOVE FULLSCREEN CONTAINER:**
+    const game3DContainer = document.getElementById('game3DContainer')
+    if (game3DContainer && game3DContainer.parentElement === document.body) {
+      document.body.removeChild(game3DContainer)
     }
   }
 }

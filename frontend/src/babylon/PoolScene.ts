@@ -26,6 +26,9 @@ import { Paddle } from "./Paddle";
 import { GameClient } from "./GameClient";
 import type { Snapshot } from "@shared/protocol";
 import type {GameState} from "@shared/types";
+import { Scoreboard } from "./Scoreboard";
+import { LocalGameEngine } from "./LocalGameEngine";
+
 
 
 export class PoolScene {
@@ -47,26 +50,33 @@ export class PoolScene {
   private Paddle1: Paddle;
   private Paddle2: Paddle;
 
-  // Client and State
-  private client: GameClient;
+  // Game mode properties
+  private gameMode: 'local' | 'online';
+  private localGameEngine?: LocalGameEngine;
+  private client?: GameClient;
 
   // Sounds
-  private wallHitSound: Sound;
-  private paddleHitSound: Sound;
+  private wallHitSound!: Sound;
+  private paddleHitSound!: Sound;
+
+  // Scoreboard
+  private scoreboard!: Scoreboard;
 
   // Event handlers for cleanup
-  private keyDownHandler: (e: KeyboardEvent) => void;
-  private keyUpHandler: (e: KeyboardEvent) => void;
-  private resizeHandler: () => void;
+  private keyDownHandler!: (e: KeyboardEvent) => void;
+  private keyUpHandler!: (e: KeyboardEvent) => void;
+  private resizeHandler!: () => void;
 
   // -------------------
   // --- CONSTRUCTOR ---
   // -------------------
-  // Sets up the entire scene, connects to the server, and starts the render loop.
-  constructor(canvas: HTMLCanvasElement) {
+  // 0. Sets up the entire scene, connects to the server, and starts the render loop.
+  constructor(canvas: HTMLCanvasElement, gameMode: 'local' | 'online' = 'online') {
     this.canvas = canvas;
+    this.gameMode = gameMode;
     this.engine = new Engine(this.canvas, true); // Antialiasing is enabled (edges look smoother, less jagged)
     this.scene = this.CreateScene();
+    this.scoreboard = new Scoreboard();
 
     // 1. Initialize sounds
     this.wallHitSound = new Sound("wallHit", "/sounds/quack.ogg", this.scene);
@@ -89,33 +99,83 @@ export class PoolScene {
       this.shadowGenerator
     );
 
-    // 3. Connect to Server and Set Handlers
+    // 3. Initialize game based on mode
+    if (this.gameMode === 'local') {
+      this.initializeLocalGame();
+    } else {
+      this.initializeOnlineGame();
+    }
+
+    // 4. Setup input and render loop
+    this.setupInputListeners();
+    this.engine.runRenderLoop(() => {
+      this.scene.render();
+    });
+  }
+
+  // --LOCAL GAME SETUP --
+  private initializeLocalGame(): void {
+  console.log('Initializing local game');
+  this.localGameEngine = new LocalGameEngine();
+
+  // Use the same updateFromState method as online games!
+  this.scene.registerBeforeRender(() => {
+    if (this.localGameEngine) {
+      // Update game logic
+      this.localGameEngine.update();
+
+      // Use the same visual update method as online games
+      const gameState = this.localGameEngine.getGameState();
+      this.updateFromState(gameState);
+    }
+  });
+
+  // Camera setup...
+  this.camera.detachControl();
+}
+
+
+  // --ONLINE GAME SETUP --
+  private initializeOnlineGame(): void {
     this.client = new GameClient(GAME_CONFIG.SERVER_URL);
     this.client.setSnapshotHandler((snapshot: Snapshot) => {
       this.updateFromState(snapshot.state);
     });
+  }
+   private setupInputListeners(): void {
+    if (this.gameMode === 'local') {
+      // Local game - handle both players
+      this.keyDownHandler = (e: KeyboardEvent) => {
+        console.log('Key down:', e.key);
+        if (this.localGameEngine) {
+          this.localGameEngine.handleKeyDown(e.key);
+        }
+      };
+      this.keyUpHandler = (e: KeyboardEvent) => {
+        console.log('Key up:', e.key);
+        if (this.localGameEngine) {
+          this.localGameEngine.handleKeyUp(e.key);
+        }
+      };
+    } else {
+      // Online game - send to server
+      this.keyDownHandler = (e: KeyboardEvent) => {
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+          this.client?.sendInput(e.key, true);
+        }
+      };
+      this.keyUpHandler = (e: KeyboardEvent) => {
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+          this.client?.sendInput(e.key, false);
+        }
+      };
+    }
 
-    // 4. Setup Input Listeners
-    this.keyDownHandler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-        this.client.sendInput(e.key, true);
-      }
-    };
-    this.keyUpHandler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-        this.client.sendInput(e.key, false);
-      }
-    };
     this.resizeHandler = () => this.engine.resize();
 
     window.addEventListener("keydown", this.keyDownHandler);
     window.addEventListener("keyup", this.keyUpHandler);
     window.addEventListener("resize", this.resizeHandler);
-
-    // 5. Start Render Loop
-    this.engine.runRenderLoop(() => {
-      this.scene.render();
-    });
   }
 
 
@@ -133,23 +193,20 @@ export class PoolScene {
     // Update duck position
     this.duck.updatePosition(state.duck);
 
-      // Update paddles based on their position field
-    const playerNames = Object.keys(state.players);
-    for (let i = 0; i < playerNames.length; i++) {
-      const playerName = playerNames[i];
-      const playerState = state.players[playerName];
-
+    // Update paddles based on their position field
+    Object.entries(state.players).forEach(([playerName, playerState]) => {
       if (playerState.position === 1) {
         this.Paddle1.updatePosition(playerState);
       } else if (playerState.position === 2) {
         this.Paddle2.updatePosition(playerState);
       }
-    }
+    });
+
+    // Update scoreboard
+    this.scoreboard.updateFromGameState(state);
 
     // Handle events (score, sounds)
-    const events = state.events;
-    for (let i = 0; i < events.length; i++) {
-      const event = events[i];
+    state.events.forEach((event) => {
       switch (event.type) {
         case 'collision':
           if (event.collisionType === 'wall') {
@@ -160,30 +217,24 @@ export class PoolScene {
           break;
 
         case 'score':
-          console.log(event.player + ' scored ' + event.points + ' points!');
-          // TODO: Add score display in UI
+          console.log(`${event.player} scored ${event.points} points!`);
           break;
       }
-    }
+    });
 
     // Game status
     if (state.status === 'finished') {
-      if (state.winner === this.client.playerName) {
-        console.log("Game Over: You WIN!");
-        // TODO: Show win screen
-      } else {
-        console.log("Game Over: You Lose.");
-        // TODO: Show lose screen
-      }
+      console.log(`Game Over: ${state.winner} WINS!`);
+      // TODO: Show win screen
     }
   }
 
+  // Update constants.ts to include local camera position
   private _updateCameraPosition(state: GameState): void {
-
-    if (state.players.playerState.position === 1 && this.client.playerPosition === 1) {
+    if (this.client?.playerPosition === 1) {
       this.camera.setPosition(CAMERA_SETTINGS.POSITION1);
       this.camera.setTarget(CAMERA_SETTINGS.TARGET1);
-    } else if (state.players.playerState.position === 2 && this.client.playerPosition === 2) {
+    } else if (this.client?.playerPosition === 2) {
       this.camera.setPosition(CAMERA_SETTINGS.POSITION2);
       this.camera.setTarget(CAMERA_SETTINGS.TARGET2);
     }
@@ -193,8 +244,8 @@ export class PoolScene {
   // -------------------------------
   // --- SCENE CREATION METHODS  ---
   // -------------------------------
-  // Creates and configures the entire 3D scene.
 
+  // Creates and configures the entire 3D scene.
   private CreateScene(): Scene {
     const scene: Scene = new Scene(this.engine);
     const materials: Materials = new Materials(scene);
@@ -226,7 +277,7 @@ export class PoolScene {
   private _createCamera(scene: Scene): void {
     this.camera = new ArcRotateCamera("camera", 0, 0, 1, CAMERA_SETTINGS.TARGET_LOCAL, scene);
     this.camera.setPosition(CAMERA_SETTINGS.POSITION_LOCAL);
-    this.camera.attachControl(this.canvas);
+    // this.camera.attachControl(this.canvas);
     this.camera.wheelPrecision = CAMERA_SETTINGS.WHEEL_PRECISION;
   }
 
@@ -490,6 +541,17 @@ export class PoolScene {
     window.removeEventListener("keydown", this.keyDownHandler);
     window.removeEventListener("keyup", this.keyUpHandler);
     window.removeEventListener("resize", this.resizeHandler);
+    // Dispose game engines
+    if (this.localGameEngine) {
+      this.localGameEngine.dispose();
+    }
+    if (this.client) {
+      this.client.dispose(); // Add dispose method to GameClient if needed
+    }
+
+    // Dispose scoreboard
+    this.scoreboard.dispose();
+
     // Dispose scene and engine
     this.scene.dispose();
     this.engine.dispose();
