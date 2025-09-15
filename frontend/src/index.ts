@@ -77,6 +77,29 @@ class ApiService {
     }
   }
 
+  async getOnlineUsersList(): Promise<{id: number, username: string}[]> {
+    try {
+      console.log('Fetching online users list from:', `${this.baseUrl}/api/loggedinusers`)
+      const response = await fetch(`${this.baseUrl}/api/loggedinusers`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const users = await response.json()
+        console.log('Online users list:', users)
+        return Array.isArray(users) ? users : []
+      } else {
+        console.error('Failed to fetch online users list:', response.status, response.statusText)
+        return []
+      }
+    } catch (error) {
+      console.error('Error fetching online users list:', error)
+      return []
+    }
+  }
+
   async getCurrentUser(): Promise<{id: number, username: string, email: string, createdAt: string, twoFAEnabled?: boolean} | null> {
     try {
       console.log('Fetching current user from:', `${this.baseUrl}/api/me`)
@@ -1235,6 +1258,7 @@ class LoggedInLandingScreen extends Component {
   private templateManager = TemplateManager.getInstance()
   private router = AppRouter.getInstance()
   private apiService = new ApiService()
+  private documentClickHandler?: (e: Event) => void
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('loggedInLandingTemplate')
@@ -1254,6 +1278,8 @@ class LoggedInLandingScreen extends Component {
 
     // Load current user and update welcome message
     this.loadCurrentUser()
+
+    this.setupOnlineUsersDropdown()
 
     const startSinglePlayerBtn = this.element?.querySelector('#startSinglePlayerBtn') as HTMLButtonElement
     const start2PlayerBtn = this.element?.querySelector('#start2PlayerBtn') as HTMLButtonElement
@@ -1334,8 +1360,87 @@ class LoggedInLandingScreen extends Component {
     }
   }
 
+  private setupOnlineUsersDropdown(): void {
+    const onlineUsersToggle = this.element?.querySelector('#onlineUsersToggle') as HTMLButtonElement
+    const onlineUsersDropdown = this.element?.querySelector('#onlineUsersDropdown') as HTMLElement
+
+    if (!onlineUsersToggle || !onlineUsersDropdown) {
+      console.error('Online users dropdown elements not found')
+      return
+    }
+
+    // Toggle dropdown on button click
+    onlineUsersToggle.addEventListener('click', async (e) => {
+      e.stopPropagation()
+      
+      if (onlineUsersDropdown.classList.contains('hidden')) {
+        // Show dropdown and load users
+        await this.loadOnlineUsersList()
+        onlineUsersDropdown.classList.remove('hidden')
+      } else {
+        // Hide dropdown
+        onlineUsersDropdown.classList.add('hidden')
+      }
+    })
+
+    // Close dropdown when clicking outside
+    this.documentClickHandler = (e) => {
+      if (!onlineUsersDropdown.contains(e.target as Node) && !onlineUsersToggle.contains(e.target as Node)) {
+        onlineUsersDropdown.classList.add('hidden')
+      }
+    }
+    document.addEventListener('click', this.documentClickHandler)
+
+    // Prevent dropdown from closing when clicking inside it
+    onlineUsersDropdown.addEventListener('click', (e) => {
+      e.stopPropagation()
+    })
+  }
+
+  private async loadOnlineUsersList(): Promise<void> {
+    const onlineUsersListElement = this.element?.querySelector('#onlineUsersList')
+    if (!onlineUsersListElement) {
+      console.error('onlineUsersList element not found')
+      return
+    }
+
+    // Show loading state
+    onlineUsersListElement.innerHTML = '<div class="text-center text-gray-500 font-mono text-sm">Loading users...</div>'
+
+    try {
+      const users = await this.apiService.getOnlineUsersList()
+      console.log('Online users list loaded:', users)
+
+      if (users.length === 0) {
+        onlineUsersListElement.innerHTML = '<div class="text-center text-gray-500 font-mono text-sm">No users online</div>'
+        return
+      }
+
+      // Create user list HTML
+      const userListHTML = users.map(user => `
+        <div class="flex items-center justify-between p-2 border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
+          <div class="flex items-center">
+            <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+            <span class="text-black font-mono text-sm font-semibold">${user.username}</span>
+          </div>
+          <div class="text-green-600 font-mono text-xs font-bold">ONLINE</div>
+        </div>
+      `).join('')
+
+      onlineUsersListElement.innerHTML = userListHTML
+    } catch (error) {
+      console.error('Error loading online users list:', error)
+      onlineUsersListElement.innerHTML = '<div class="text-center text-red-500 font-mono text-sm">Error loading users</div>'
+    }
+  }
+
   cleanup(): void {
-    // Cleanup handled automatically by unmount
+    // Remove the document click listener to prevent memory leaks
+    if (this.documentClickHandler) {
+      document.removeEventListener('click', this.documentClickHandler)
+      this.documentClickHandler = undefined
+    }
+    // Other cleanup handled automatically by unmount
   }
 }
 
