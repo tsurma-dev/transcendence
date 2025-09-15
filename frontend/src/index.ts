@@ -2054,31 +2054,36 @@ class UserProfileScreen extends Component {
   private setupFriendButtons(): void {
     if (!this.element) return
 
-    const addFriendBtn = this.element.querySelector('#addFriendBtn')
-    const friendRequestSentBtn = this.element.querySelector('#friendRequestSentBtn')
-    const alreadyFriendsBtn = this.element.querySelector('#alreadyFriendsBtn')
-    const friendActionContainer = this.element.querySelector('#friendActionContainer')
+    const addFriendBtn = this.element.querySelector('#addFriendBtn') as HTMLElement
+    const friendRequestSentBtn = this.element.querySelector('#friendRequestSentBtn') as HTMLElement
+    const alreadyFriendsBtn = this.element.querySelector('#alreadyFriendsBtn') as HTMLElement
+    const friendActionContainer = this.element.querySelector('#friendActionContainer') as HTMLElement
 
     // Show friend action container for other users
     if (friendActionContainer) {
-      (friendActionContainer as HTMLElement).style.display = 'flex'
+      friendActionContainer.style.display = 'flex'
     }
 
-    // For now, show Add Friend button as placeholder
+    // Show Add Friend button initially
     if (addFriendBtn) {
-      (addFriendBtn as HTMLElement).style.display = 'block'
+      addFriendBtn.style.display = 'block'
       addFriendBtn.addEventListener('click', () => {
         console.log('Add friend clicked for:', this.targetUsername)
-        // TODO: Implement friend request logic
+        
+        // Hide Add Friend button and show Request Sent button
+        addFriendBtn.style.display = 'none'
+        if (friendRequestSentBtn) {
+          friendRequestSentBtn.style.display = 'block'
+        }
       })
     }
 
-    // Hide other buttons for now
+    // Initially hide other buttons
     if (friendRequestSentBtn) {
-      (friendRequestSentBtn as HTMLElement).style.display = 'none'
+      friendRequestSentBtn.style.display = 'none'
     }
     if (alreadyFriendsBtn) {
-      (alreadyFriendsBtn as HTMLElement).style.display = 'none'
+      alreadyFriendsBtn.style.display = 'none'
     }
   }
 
