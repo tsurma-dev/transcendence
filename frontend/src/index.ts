@@ -567,6 +567,10 @@ class AppRouter {
         const profileUsername = urlParams.get('user') ? decodeURIComponent(urlParams.get('user')!) : undefined
         return profileUsername ? [profileUsername] : []
 
+      case '/match-history':
+        const historyUsername = urlParams.get('user') ? decodeURIComponent(urlParams.get('user')!) : undefined
+        return historyUsername ? [historyUsername] : []
+
       case '/game':
         const player1 = urlParams.get('p1') ? decodeURIComponent(urlParams.get('p1')!) : 'Player 1'
         const player2 = urlParams.get('p2') ? decodeURIComponent(urlParams.get('p2')!) : 'Player 2'
@@ -630,7 +634,9 @@ class AppRouter {
       case 'UserSettingsScreen':
         return '/settings'
       case 'MatchHistoryScreen':
-        return '/match-history'
+        // Handle username parameter for viewing specific user's match history
+        const historyUser = args[0] ? encodeURIComponent(args[0]) : undefined
+        return historyUser ? `/match-history?user=${historyUser}` : '/match-history'
       case 'QuickPlaySetupScreen':
         return '/quick-play'
       case 'PlayerSetupScreen':
@@ -1849,8 +1855,14 @@ class UserProfileScreen extends Component {
     // Handle match history button click
     if (matchHistoryBtn) {
       matchHistoryBtn.addEventListener('click', () => {
-        // Navigate to match history screen
-        this.router.navigateTo(MatchHistoryScreen)
+        // Navigate to match history screen, passing the target username
+        if (this.targetUsername) {
+          // Pass the username of the profile being viewed
+          this.router.navigateTo(MatchHistoryScreen, this.targetUsername)
+        } else {
+          // Current user's profile, no username parameter needed
+          this.router.navigateTo(MatchHistoryScreen)
+        }
       })
     }
 
@@ -2391,6 +2403,12 @@ class MatchHistoryScreen extends Component {
   private templateManager = TemplateManager.getInstance()
   private router = AppRouter.getInstance()
   private apiService = new ApiService()
+  private targetUsername?: string  // Username of the profile that was being viewed
+
+  constructor(username?: string) {
+    super()
+    this.targetUsername = username
+  }
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('matchHistoryTemplate')
@@ -2410,7 +2428,14 @@ class MatchHistoryScreen extends Component {
     // Handle back to profile button
     if (backToProfileBtn) {
       backToProfileBtn.addEventListener('click', () => {
-        this.router.navigateTo(UserProfileScreen)
+        // Navigate back to the profile that was being viewed
+        if (this.targetUsername) {
+          // Go back to specific user's profile
+          this.router.navigateTo(UserProfileScreen, this.targetUsername)
+        } else {
+          // Go back to current user's profile
+          this.router.navigateTo(UserProfileScreen)
+        }
       })
     }
 
