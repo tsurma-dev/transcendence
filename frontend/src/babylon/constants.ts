@@ -26,7 +26,7 @@ export const CAMERA_SETTINGS = {
   TARGET2: new Vector3(0, 0, 1.5),
   POSITION1: new Vector3(0, 6, -8),
   POSITION2: new Vector3(0, 6, 8),
-  TARGET_LOCAL: new Vector3(0, 0, 0),
-  POSITION_LOCAL: new Vector3(15, 8, 0),
+  TARGET_LOCAL: new Vector3(-0.5, 0, 0),
+  POSITION_LOCAL: new Vector3(1, 8, 0),
   WHEEL_PRECISION: 50
 } as const;
