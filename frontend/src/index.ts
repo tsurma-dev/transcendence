@@ -2447,10 +2447,18 @@ class UserProfileScreen extends Component {
     console.log('Loading friends and pending requests from backend')
     
     try {
-      const result = await this.apiService.getFriendsAndRequests()
+      // Load both friends/requests and online users in parallel
+      const [result, onlineUsers] = await Promise.all([
+        this.apiService.getFriendsAndRequests(),
+        this.apiService.getOnlineUsersList()
+      ])
+      
+      // Create a set of online usernames for quick lookup
+      const onlineUsernames = new Set(onlineUsers.map(user => user.username))
       
       if (result.success) {
         console.log('Friends and requests loaded:', result)
+        console.log('Online users:', onlineUsers)
         
         // Handle pending requests
         if (result.pendingRequests && result.pendingRequests.length > 0) {
@@ -2530,6 +2538,19 @@ class UserProfileScreen extends Component {
                     friendsListDropdown.classList.add('hidden')
                   }
                 })
+              }
+              
+              // Update online status indicator
+              const statusIndicator = friendElement.querySelector('.indicator-offline, .indicator-online') as HTMLElement
+              if (statusIndicator) {
+                const isOnline = onlineUsernames.has(friend.username)
+                if (isOnline) {
+                  statusIndicator.className = 'indicator-online'
+                  statusIndicator.title = 'Online'
+                } else {
+                  statusIndicator.className = 'indicator-offline'
+                  statusIndicator.title = 'Offline'
+                }
               }
               
               friendsList.appendChild(friendElement)

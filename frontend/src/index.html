@@ -272,7 +272,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
               <button 
                 id="removeFriendBtn"
                 class="block w-full text-left px-4 py-2 hover:bg-red-50 border-b border-gray-300 font-mono uppercase text-sm font-bold text-red-600">
-                🗑️ Remove Friend
+                🗑️ Unfriend
               </button>
             </div>
           </div>
@@ -329,7 +329,8 @@ _|          _|_|    _|      _|    _|_|_|</pre>
                   
                   <!-- Friend Item Template (inline) -->
                   <template id="friendItemTemplate">
-                    <div class="py-2 px-3 border-b border-gray-200">
+                    <div class="py-2 px-3 border-b border-gray-200 flex items-center">
+                      <div class="indicator-offline"></div>
                       <span class="text-sm text-blue-600 hover:text-blue-800 cursor-pointer underline font-semibold friend-username"></span>
                     </div>
                   </template>
