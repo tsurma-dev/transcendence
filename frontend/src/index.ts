@@ -438,6 +438,48 @@ class ApiService {
     }
   }
 
+  async acceptFriendRequest(username: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}/accept`, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        return { success: result.success, message: result.message || 'Friend request accepted!' }
+      } else {
+        return { success: false, message: result.message || 'Failed to accept friend request' }
+      }
+    } catch (error) {
+      console.error('Accept friend request error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async rejectFriendRequest(username: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}/reject`, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        return { success: result.success, message: result.message || 'Friend request rejected!' }
+      } else {
+        return { success: false, message: result.message || 'Failed to reject friend request' }
+      }
+    } catch (error) {
+      console.error('Reject friend request error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
   async getFriendsAndRequests(): Promise<{success: boolean, friends?: any[], pendingRequests?: any[], message?: string}> {
     try {
       const response = await fetch(`${this.baseUrl}/api/me/friends`, {
@@ -2148,6 +2190,9 @@ class UserProfileScreen extends Component {
     const addFriendBtn = this.element.querySelector('#addFriendBtn') as HTMLElement
     const friendRequestSentBtn = this.element.querySelector('#friendRequestSentBtn') as HTMLElement
     const alreadyFriendsBtn = this.element.querySelector('#alreadyFriendsBtn') as HTMLElement
+    const friendRequestActions = this.element.querySelector('#friendRequestActions') as HTMLElement
+    const acceptFriendBtn = this.element.querySelector('#acceptFriendBtn') as HTMLElement
+    const rejectFriendBtn = this.element.querySelector('#rejectFriendBtn') as HTMLElement
     const friendActionContainer = this.element.querySelector('#friendActionContainer') as HTMLElement
 
     // Show friend action container for other users
@@ -2155,10 +2200,11 @@ class UserProfileScreen extends Component {
       friendActionContainer.style.display = 'flex'
     }
 
-    // Initially hide all buttons
+    // Initially hide all buttons and containers
     if (addFriendBtn) addFriendBtn.style.display = 'none'
     if (friendRequestSentBtn) friendRequestSentBtn.style.display = 'none'
     if (alreadyFriendsBtn) alreadyFriendsBtn.style.display = 'none'
+    if (friendRequestActions) friendRequestActions.style.display = 'none'
 
     // Check current friendship status and show appropriate button
     if (this.targetUsername) {
@@ -2173,8 +2219,8 @@ class UserProfileScreen extends Component {
               if (friendRequestSentBtn) friendRequestSentBtn.style.display = 'block'
               break
             case 'request_received':
-              // Could show a different button like "Accept Friend Request" in the future
-              if (addFriendBtn) addFriendBtn.style.display = 'block'
+              // Show Accept/Reject buttons when this user sent you a request
+              if (friendRequestActions) friendRequestActions.style.display = 'flex'
               break
             case 'none':
             default:
@@ -2189,7 +2235,7 @@ class UserProfileScreen extends Component {
       })
     }
 
-    // Show Add Friend button initially
+    // Handle Add Friend button click
     if (addFriendBtn) {
       addFriendBtn.addEventListener('click', async () => {
         console.log('Add friend clicked for:', this.targetUsername)
@@ -2209,6 +2255,56 @@ class UserProfileScreen extends Component {
           } else {
             console.error('Failed to send friend request:', result.message)
             alert(result.message || 'Failed to send friend request')
+          }
+        }
+      })
+    }
+
+    // Handle Accept Friend Request button click
+    if (acceptFriendBtn) {
+      acceptFriendBtn.addEventListener('click', async () => {
+        console.log('Accept friend request clicked for:', this.targetUsername)
+        
+        if (this.targetUsername) {
+          const result = await this.apiService.acceptFriendRequest(this.targetUsername)
+          
+          if (result.success) {
+            console.log('Friend request accepted successfully:', result.message)
+            
+            // Hide Accept/Reject buttons and show Already Friends button
+            if (friendRequestActions) friendRequestActions.style.display = 'none'
+            if (alreadyFriendsBtn) alreadyFriendsBtn.style.display = 'block'
+            
+            // Show success message
+            alert(result.message || 'Friend request accepted!')
+          } else {
+            console.error('Failed to accept friend request:', result.message)
+            alert(result.message || 'Failed to accept friend request')
+          }
+        }
+      })
+    }
+
+    // Handle Reject Friend Request button click
+    if (rejectFriendBtn) {
+      rejectFriendBtn.addEventListener('click', async () => {
+        console.log('Reject friend request clicked for:', this.targetUsername)
+        
+        if (this.targetUsername) {
+          const result = await this.apiService.rejectFriendRequest(this.targetUsername)
+          
+          if (result.success) {
+            console.log('Friend request rejected successfully:', result.message)
+            
+            // Hide Accept/Reject buttons and show Add Friend button
+            if (friendRequestActions) friendRequestActions.style.display = 'none'
+            if (addFriendBtn) addFriendBtn.style.display = 'block'
+            
+            // Show success message
+            alert(result.message || 'Friend request rejected!')
+          } else {
+            console.error('Failed to reject friend request:', result.message)
+            alert(result.message || 'Failed to reject friend request')
           }
         }
       })
