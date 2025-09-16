@@ -2274,35 +2274,89 @@ class UserProfileScreen extends Component {
         console.log('Friends and requests loaded:', result)
         
         // Handle pending requests
-        pendingRequestsList.innerHTML = ''
         if (result.pendingRequests && result.pendingRequests.length > 0) {
+          // Remove default message elements only when we have data
+          const defaultMessages = pendingRequestsList.querySelectorAll('div:not([id]):not(.template)')
+          defaultMessages.forEach(msg => {
+            if (msg.textContent?.includes('No pending requests')) {
+              msg.remove()
+            }
+          })
+          
           result.pendingRequests.forEach((request: any) => {
-            const requestElement = document.createElement('div')
-            requestElement.className = 'py-2 px-3 border-b border-gray-200'
-            requestElement.innerHTML = `
-              <span class="text-sm">Friend request from ${request.username}</span>
-            `
+            // Clone the pending request template
+            const template = this.templateManager.cloneTemplate('pendingRequestItemTemplate')
+            if (!template) return
+            
+            const requestElement = template.firstElementChild as HTMLElement
+            if (!requestElement) return
+            
+            // Update the username text
+            const usernameSpan = requestElement.querySelector('.pending-request-username') as HTMLElement
+            if (usernameSpan) {
+              usernameSpan.textContent = request.username
+              usernameSpan.setAttribute('data-username', request.username)
+              
+              // Add click handler for the username
+              usernameSpan.addEventListener('click', (e) => {
+                e.stopPropagation()
+                // Navigate to the user's profile
+                this.router.navigateTo(UserProfileScreen, request.username)
+                // Close the dropdown
+                const friendsListDropdown = this.element?.querySelector('#friendsListDropdown') as HTMLElement
+                if (friendsListDropdown) {
+                  friendsListDropdown.classList.add('hidden')
+                }
+              })
+            }
+            
             pendingRequestsList.appendChild(requestElement)
           })
-        } else {
-          pendingRequestsList.innerHTML = '<p class="text-gray-500 text-sm">No pending requests</p>'
         }
+        // If no pending requests, default message remains visible
         
         // Handle friends list if element exists
         if (friendsList && result.friends) {
-          friendsList.innerHTML = ''
           if (result.friends.length > 0) {
+            // Remove default message elements only when we have data
+            const defaultMessages = friendsList.querySelectorAll('div:not([id]):not(.template)')
+            defaultMessages.forEach(msg => {
+              if (msg.textContent?.includes('No friends yet')) {
+                msg.remove()
+              }
+            })
+            
             result.friends.forEach((friend: any) => {
-              const friendElement = document.createElement('div')
-              friendElement.className = 'py-2 px-3 border-b border-gray-200'
-              friendElement.innerHTML = `
-                <span class="text-sm">${friend.username}</span>
-              `
+              // Clone the friend item template
+              const template = this.templateManager.cloneTemplate('friendItemTemplate')
+              if (!template) return
+              
+              const friendElement = template.firstElementChild as HTMLElement
+              if (!friendElement) return
+              
+              // Update the username text
+              const usernameSpan = friendElement.querySelector('.friend-username') as HTMLElement
+              if (usernameSpan) {
+                usernameSpan.textContent = friend.username
+                usernameSpan.setAttribute('data-username', friend.username)
+                
+                // Add click handler for the username
+                usernameSpan.addEventListener('click', (e) => {
+                  e.stopPropagation()
+                  // Navigate to the user's profile
+                  this.router.navigateTo(UserProfileScreen, friend.username)
+                  // Close the dropdown
+                  const friendsListDropdown = this.element?.querySelector('#friendsListDropdown') as HTMLElement
+                  if (friendsListDropdown) {
+                    friendsListDropdown.classList.add('hidden')
+                  }
+                })
+              }
+              
               friendsList.appendChild(friendElement)
             })
-          } else {
-            friendsList.innerHTML = '<p class="text-gray-500 text-sm">No friends yet</p>'
           }
+          // If no friends, default message remains visible
         }
       } else {
         console.error('Failed to load friends and requests:', result.message)

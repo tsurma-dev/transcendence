@@ -302,6 +302,13 @@ _|          _|_|    _|      _|    _|_|_|</pre>
                   <div class="text-gray-500 font-mono text-sm text-center py-2">
                     No friends yet
                   </div>
+                  
+                  <!-- Friend Item Template (inline) -->
+                  <template id="friendItemTemplate">
+                    <div class="py-2 px-3 border-b border-gray-200">
+                      <span class="text-sm text-blue-600 hover:text-blue-800 cursor-pointer underline font-semibold friend-username"></span>
+                    </div>
+                  </template>
                 </div>
               </div>
               
@@ -313,6 +320,13 @@ _|          _|_|    _|      _|    _|_|_|</pre>
                   <div class="text-gray-500 font-mono text-sm text-center py-2">
                     No pending requests
                   </div>
+                  
+                  <!-- Pending Request Item Template (inline) -->
+                  <template id="pendingRequestItemTemplate">
+                    <div class="py-2 px-3 border-b border-gray-200">
+                      <span class="text-sm">Friend request from <span class="text-blue-600 hover:text-blue-800 cursor-pointer underline font-semibold pending-request-username"></span></span>
+                    </div>
+                  </template>
                 </div>
               </div>
             </div>
