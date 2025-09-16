@@ -43,9 +43,9 @@ Do not edit files in the dist directory, as they are generated files.
     </button>
     <!-- Dropdown Menu -->
     <div id="userMenuDropdown" class="hidden mt-2 w-40 bg-white border border-gray-300 rounded shadow-lg">
+      <button id="startGameMenuBtn" class="menu-btn-blue">Start Game</button>
       <button id="profileMenuBtn" class="menu-btn-blue">Profile</button>
       <button id="settingsMenuBtn" class="menu-btn-blue">Settings</button>
-      <button id="startGameMenuBtn" class="menu-btn-blue">Start Game</button>
       <button id="logoutMenuBtn" class="menu-btn-blue">Log Out</button>
     </div>
     <!-- Back to Start Button for non-logged-in users -->
@@ -261,11 +261,35 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           </button>
           
           <!-- Already Friends Button -->
-          <button 
-            id="alreadyFriendsBtn"
-            class="hidden btn-friend bg-gradient-to-b from-blue-400 to-blue-600 text-white cursor-default">
-            ✅ Friends
-          </button>
+          <div id="alreadyFriendsContainer" class="hidden relative">
+            <button 
+              id="alreadyFriendsBtn"
+              class="btn-friend bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white">
+              ✅ Friends ▾
+            </button>
+            <!-- Friends dropdown menu -->
+            <div id="friendsActionDropdown" class="hidden absolute top-full left-0 w-full mt-1 bg-white border-2 border-black rounded shadow-lg z-10">
+              <button 
+                id="removeFriendBtn"
+                class="block w-full text-left px-4 py-2 hover:bg-red-50 border-b border-gray-300 font-mono uppercase text-sm font-bold text-red-600">
+                🗑️ Unfriend
+              </button>
+            </div>
+          </div>
+          
+          <!-- Accept/Reject Friend Request Container (when someone sent you a request) -->
+          <div id="friendRequestActions" class="hidden flex gap-2">
+            <button 
+              id="acceptFriendBtn"
+              class="btn-friend bg-gradient-to-b from-green-400 to-green-600 hover:from-green-300 hover:to-green-500 text-white">
+              ✅ Accept Request
+            </button>
+            <button 
+              id="rejectFriendBtn"
+              class="btn-friend bg-gradient-to-b from-red-400 to-red-600 hover:from-red-300 hover:to-red-500 text-white">
+              ❌ Reject Request
+            </button>
+          </div>
         </div>
       </div>
       <!-- User information -->
@@ -283,12 +307,12 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           Match History
         </button>
         
-        <!-- Friends List Button with Dropdown (only visible for own profile) -->
+        <!-- Friends Button with Dropdown (only visible for own profile) -->
         <div id="friendsListContainer" class="relative">
           <button 
             id="friendsListBtn"
             class="btn-blue w-full">
-            👥 Friends List
+            Friends
           </button>
           
           <!-- Friends List Dropdown -->
@@ -302,6 +326,14 @@ _|          _|_|    _|      _|    _|_|_|</pre>
                   <div class="text-gray-500 font-mono text-sm text-center py-2">
                     No friends yet
                   </div>
+                  
+                  <!-- Friend Item Template (inline) -->
+                  <template id="friendItemTemplate">
+                    <div class="py-2 px-3 border-b border-gray-200 flex items-center">
+                      <div class="indicator-offline"></div>
+                      <span class="text-sm text-blue-600 hover:text-blue-800 cursor-pointer underline font-semibold friend-username"></span>
+                    </div>
+                  </template>
                 </div>
               </div>
               
@@ -313,6 +345,13 @@ _|          _|_|    _|      _|    _|_|_|</pre>
                   <div class="text-gray-500 font-mono text-sm text-center py-2">
                     No pending requests
                   </div>
+                  
+                  <!-- Pending Request Item Template (inline) -->
+                  <template id="pendingRequestItemTemplate">
+                    <div class="py-2 px-3 border-b border-gray-200">
+                      <span class="text-sm">Friend request from <span class="text-blue-600 hover:text-blue-800 cursor-pointer underline font-semibold pending-request-username"></span></span>
+                    </div>
+                  </template>
                 </div>
               </div>
             </div>
@@ -439,22 +478,22 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       
       <!-- Match Statistics Overview -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div class="bg-white/90 border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4">
+        <div class="container-white p-4">
           <div class="text-black text-2xl font-bold" id="totalMatches">2</div>
           <div class="text-black text-sm font-mono uppercase">Total Matches</div>
         </div>
-        <div class="bg-white/90 border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4">
+        <div class="container-white p-4">
           <div class="text-green-600 text-2xl font-bold" id="matchesWon">1</div>
           <div class="text-black text-sm font-mono uppercase">Matches Won</div>
         </div>
-        <div class="bg-white/90 border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4">
+        <div class="container-white p-4">
           <div class="text-blue-600 text-2xl font-bold" id="winPercentage">50 %</div>
           <div class="text-black text-sm font-mono uppercase">Win Rate</div>
         </div>
       </div>
 
       <!-- Match List -->
-      <div class="bg-white/90 border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
+      <div class="container-white p-6">
         <h2 class="text-2xl font-bold text-black mb-4 font-mono uppercase">Matches</h2>
         
         <!-- Match History Header -->

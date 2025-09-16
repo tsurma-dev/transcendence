@@ -417,6 +417,138 @@ class ApiService {
     }
   }
 
+  async sendFriendRequest(username: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}/request`, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        return { success: result.success, message: result.message || 'Friend request sent!' }
+      } else {
+        return { success: false, message: result.message || 'Failed to send friend request' }
+      }
+    } catch (error) {
+      console.error('Friend request error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async acceptFriendRequest(username: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}/accept`, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        return { success: result.success, message: result.message || 'Friend request accepted!' }
+      } else {
+        return { success: false, message: result.message || 'Failed to accept friend request' }
+      }
+    } catch (error) {
+      console.error('Accept friend request error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async rejectFriendRequest(username: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}/reject`, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        return { success: result.success, message: result.message || 'Friend request rejected!' }
+      } else {
+        return { success: false, message: result.message || 'Failed to reject friend request' }
+      }
+    } catch (error) {
+      console.error('Reject friend request error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async removeFriend(username: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}`, {
+        method: 'DELETE',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        return { success: result.success, message: result.message || 'Friend removed successfully!' }
+      } else {
+        return { success: false, message: result.message || 'Failed to remove friend' }
+      }
+    } catch (error) {
+      console.error('Remove friend error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async getFriendsAndRequests(): Promise<{success: boolean, friends?: any[], pendingRequests?: any[], message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/friends`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+      console.log('Raw backend response:', result)
+
+      if (response.ok) {
+        return { 
+          success: true, 
+          friends: result.friends || [],
+          // The backend currently doesn't return pendingRequests, so we'll get an empty array
+          pendingRequests: result.pendingRequests || []
+        }
+      } else {
+        return { success: false, message: result.message || 'Failed to fetch friends' }
+      }
+    } catch (error) {
+      console.error('Friends fetch error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async checkFriendshipStatus(username: string): Promise<{success: boolean, status?: string, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}/status`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        return { success: true, status: result.status }
+      } else {
+        return { success: false, message: result.message || 'Failed to check friendship status' }
+      }
+    } catch (error) {
+      console.error('Friendship status check error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
   getAvatarUrl(username?: string): string {
     if (username) {
       // Backend serves user avatars via username and handles fallback automatically
@@ -2078,7 +2210,13 @@ class UserProfileScreen extends Component {
 
     const addFriendBtn = this.element.querySelector('#addFriendBtn') as HTMLElement
     const friendRequestSentBtn = this.element.querySelector('#friendRequestSentBtn') as HTMLElement
+    const alreadyFriendsContainer = this.element.querySelector('#alreadyFriendsContainer') as HTMLElement
     const alreadyFriendsBtn = this.element.querySelector('#alreadyFriendsBtn') as HTMLElement
+    const friendsActionDropdown = this.element.querySelector('#friendsActionDropdown') as HTMLElement
+    const removeFriendBtn = this.element.querySelector('#removeFriendBtn') as HTMLElement
+    const friendRequestActions = this.element.querySelector('#friendRequestActions') as HTMLElement
+    const acceptFriendBtn = this.element.querySelector('#acceptFriendBtn') as HTMLElement
+    const rejectFriendBtn = this.element.querySelector('#rejectFriendBtn') as HTMLElement
     const friendActionContainer = this.element.querySelector('#friendActionContainer') as HTMLElement
 
     // Show friend action container for other users
@@ -2086,26 +2224,173 @@ class UserProfileScreen extends Component {
       friendActionContainer.style.display = 'flex'
     }
 
-    // Show Add Friend button initially
-    if (addFriendBtn) {
-      addFriendBtn.style.display = 'block'
-      addFriendBtn.addEventListener('click', () => {
-        console.log('Add friend clicked for:', this.targetUsername)
-        
-        // Hide Add Friend button and show Request Sent button
-        addFriendBtn.style.display = 'none'
-        if (friendRequestSentBtn) {
-          friendRequestSentBtn.style.display = 'block'
+    // Initially hide all buttons and containers
+    if (addFriendBtn) addFriendBtn.style.display = 'none'
+    if (friendRequestSentBtn) friendRequestSentBtn.style.display = 'none'
+    if (alreadyFriendsContainer) alreadyFriendsContainer.style.display = 'none'
+    if (friendRequestActions) friendRequestActions.style.display = 'none'
+
+    // Check current friendship status and show appropriate button
+    if (this.targetUsername) {
+      this.apiService.checkFriendshipStatus(this.targetUsername).then(result => {
+        if (result.success) {
+          console.log('Friendship status:', result.status)
+          switch (result.status) {
+            case 'friends':
+              if (alreadyFriendsContainer) alreadyFriendsContainer.style.display = 'block'
+              break
+            case 'request_sent':
+              if (friendRequestSentBtn) friendRequestSentBtn.style.display = 'block'
+              break
+            case 'request_received':
+              // Show Accept/Reject buttons when this user sent you a request
+              if (friendRequestActions) friendRequestActions.style.display = 'flex'
+              break
+            case 'none':
+            default:
+              if (addFriendBtn) addFriendBtn.style.display = 'block'
+              break
+          }
+        } else {
+          console.error('Failed to check friendship status:', result.message)
+          // Default to showing Add Friend button
+          if (addFriendBtn) addFriendBtn.style.display = 'block'
         }
       })
     }
 
-    // Initially hide other buttons
-    if (friendRequestSentBtn) {
-      friendRequestSentBtn.style.display = 'none'
+    // Handle Already Friends dropdown toggle
+    if (alreadyFriendsBtn && friendsActionDropdown) {
+      alreadyFriendsBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        friendsActionDropdown.classList.toggle('hidden')
+      })
+
+      // Close dropdown when clicking outside
+      const documentClickHandler = (e: Event) => {
+        if (!alreadyFriendsContainer?.contains(e.target as Node)) {
+          friendsActionDropdown.classList.add('hidden')
+        }
+      }
+      document.addEventListener('click', documentClickHandler)
+
+      // Prevent dropdown from closing when clicking inside it
+      friendsActionDropdown.addEventListener('click', (e) => {
+        e.stopPropagation()
+      })
+
+      // Store the document click handler for cleanup
+      ;(this.element as any).friendsDropdownDocumentHandler = documentClickHandler
     }
-    if (alreadyFriendsBtn) {
-      alreadyFriendsBtn.style.display = 'none'
+
+    // Handle Remove Friend button click
+    if (removeFriendBtn) {
+      removeFriendBtn.addEventListener('click', async () => {
+        console.log('Remove friend clicked for:', this.targetUsername)
+        
+        if (this.targetUsername) {
+          // Confirm the action
+          const confirmRemove = confirm(`Are you sure you want to remove ${this.targetUsername} from your friends list?`)
+          
+          if (confirmRemove) {
+            const result = await this.apiService.removeFriend(this.targetUsername)
+            
+            if (result.success) {
+              console.log('Friend removed successfully:', result.message)
+              
+              // Hide Already Friends container and show Add Friend button
+              if (alreadyFriendsContainer) alreadyFriendsContainer.style.display = 'none'
+              if (addFriendBtn) addFriendBtn.style.display = 'block'
+              
+              // Show success message
+              alert(result.message || 'Friend removed successfully!')
+            } else {
+              console.error('Failed to remove friend:', result.message)
+              alert(result.message || 'Failed to remove friend')
+            }
+          }
+        }
+        
+        // Close the dropdown after action
+        if (friendsActionDropdown) {
+          friendsActionDropdown.classList.add('hidden')
+        }
+      })
+    }
+
+    // Handle Add Friend button click
+    if (addFriendBtn) {
+      addFriendBtn.addEventListener('click', async () => {
+        console.log('Add friend clicked for:', this.targetUsername)
+        
+        if (this.targetUsername) {
+          // Send the friend request
+          const result = await this.apiService.sendFriendRequest(this.targetUsername)
+          
+          if (result.success) {
+            console.log('Friend request sent successfully:', result.message)
+            
+            // Hide Add Friend button and show Request Sent button
+            addFriendBtn.style.display = 'none'
+            if (friendRequestSentBtn) {
+              friendRequestSentBtn.style.display = 'block'
+            }
+          } else {
+            console.error('Failed to send friend request:', result.message)
+            alert(result.message || 'Failed to send friend request')
+          }
+        }
+      })
+    }
+
+    // Handle Accept Friend Request button click
+    if (acceptFriendBtn) {
+      acceptFriendBtn.addEventListener('click', async () => {
+        console.log('Accept friend request clicked for:', this.targetUsername)
+        
+        if (this.targetUsername) {
+          const result = await this.apiService.acceptFriendRequest(this.targetUsername)
+          
+          if (result.success) {
+            console.log('Friend request accepted successfully:', result.message)
+            
+            // Hide Accept/Reject buttons and show Already Friends container
+            if (friendRequestActions) friendRequestActions.style.display = 'none'
+            if (alreadyFriendsContainer) alreadyFriendsContainer.style.display = 'block'
+            
+            // Show success message
+            alert(result.message || 'Friend request accepted!')
+          } else {
+            console.error('Failed to accept friend request:', result.message)
+            alert(result.message || 'Failed to accept friend request')
+          }
+        }
+      })
+    }
+
+    // Handle Reject Friend Request button click
+    if (rejectFriendBtn) {
+      rejectFriendBtn.addEventListener('click', async () => {
+        console.log('Reject friend request clicked for:', this.targetUsername)
+        
+        if (this.targetUsername) {
+          const result = await this.apiService.rejectFriendRequest(this.targetUsername)
+          
+          if (result.success) {
+            console.log('Friend request rejected successfully:', result.message)
+            
+            // Hide Accept/Reject buttons and show Add Friend button
+            if (friendRequestActions) friendRequestActions.style.display = 'none'
+            if (addFriendBtn) addFriendBtn.style.display = 'block'
+            
+            // Show success message
+            alert(result.message || 'Friend request rejected!')
+          } else {
+            console.error('Failed to reject friend request:', result.message)
+            alert(result.message || 'Failed to reject friend request')
+          }
+        }
+      })
     }
   }
 
@@ -2150,9 +2435,137 @@ class UserProfileScreen extends Component {
     ;(this.element as any).friendsListDocumentHandler = documentClickHandler
   }
 
-  private loadFriendsListData(): void {
-    // Template contains default "No friends yet" and "No pending requests" text placeholders
-    console.log('Friends list dropdown opened - showing default template content')
+  private async loadFriendsListData(): Promise<void> {
+    const pendingRequestsList = this.element?.querySelector('#pendingRequestsList') as HTMLElement
+    const friendsList = this.element?.querySelector('#friendsList') as HTMLElement
+    
+    if (!pendingRequestsList) {
+      console.log('Pending requests list element not found')
+      return
+    }
+
+    console.log('Loading friends and pending requests from backend')
+    
+    try {
+      // Load both friends/requests and online users in parallel
+      const [result, onlineUsers] = await Promise.all([
+        this.apiService.getFriendsAndRequests(),
+        this.apiService.getOnlineUsersList()
+      ])
+      
+      // Create a set of online usernames for quick lookup
+      const onlineUsernames = new Set(onlineUsers.map(user => user.username))
+      
+      if (result.success) {
+        console.log('Friends and requests loaded:', result)
+        console.log('Online users:', onlineUsers)
+        
+        // Handle pending requests
+        if (result.pendingRequests && result.pendingRequests.length > 0) {
+          // Remove default message elements only when we have data
+          const defaultMessages = pendingRequestsList.querySelectorAll('div:not([id]):not(.template)')
+          defaultMessages.forEach(msg => {
+            if (msg.textContent?.includes('No pending requests')) {
+              msg.remove()
+            }
+          })
+          
+          result.pendingRequests.forEach((request: any) => {
+            // Clone the pending request template
+            const template = this.templateManager.cloneTemplate('pendingRequestItemTemplate')
+            if (!template) return
+            
+            const requestElement = template.firstElementChild as HTMLElement
+            if (!requestElement) return
+            
+            // Update the username text
+            const usernameSpan = requestElement.querySelector('.pending-request-username') as HTMLElement
+            if (usernameSpan) {
+              usernameSpan.textContent = request.username
+              usernameSpan.setAttribute('data-username', request.username)
+              
+              // Add click handler for the username
+              usernameSpan.addEventListener('click', (e) => {
+                e.stopPropagation()
+                // Navigate to the user's profile
+                this.router.navigateTo(UserProfileScreen, request.username)
+                // Close the dropdown
+                const friendsListDropdown = this.element?.querySelector('#friendsListDropdown') as HTMLElement
+                if (friendsListDropdown) {
+                  friendsListDropdown.classList.add('hidden')
+                }
+              })
+            }
+            
+            pendingRequestsList.appendChild(requestElement)
+          })
+        }
+        // If no pending requests, default message remains visible
+        
+        // Handle friends list if element exists
+        if (friendsList && result.friends) {
+          if (result.friends.length > 0) {
+            // Remove default message elements only when we have data
+            const defaultMessages = friendsList.querySelectorAll('div:not([id]):not(.template)')
+            defaultMessages.forEach(msg => {
+              if (msg.textContent?.includes('No friends yet')) {
+                msg.remove()
+              }
+            })
+            
+            result.friends.forEach((friend: any) => {
+              // Clone the friend item template
+              const template = this.templateManager.cloneTemplate('friendItemTemplate')
+              if (!template) return
+              
+              const friendElement = template.firstElementChild as HTMLElement
+              if (!friendElement) return
+              
+              // Update the username text
+              const usernameSpan = friendElement.querySelector('.friend-username') as HTMLElement
+              if (usernameSpan) {
+                usernameSpan.textContent = friend.username
+                usernameSpan.setAttribute('data-username', friend.username)
+                
+                // Add click handler for the username
+                usernameSpan.addEventListener('click', (e) => {
+                  e.stopPropagation()
+                  // Navigate to the user's profile
+                  this.router.navigateTo(UserProfileScreen, friend.username)
+                  // Close the dropdown
+                  const friendsListDropdown = this.element?.querySelector('#friendsListDropdown') as HTMLElement
+                  if (friendsListDropdown) {
+                    friendsListDropdown.classList.add('hidden')
+                  }
+                })
+              }
+              
+              // Update online status indicator
+              const statusIndicator = friendElement.querySelector('.indicator-offline, .indicator-online') as HTMLElement
+              if (statusIndicator) {
+                const isOnline = onlineUsernames.has(friend.username)
+                if (isOnline) {
+                  statusIndicator.className = 'indicator-online'
+                  statusIndicator.title = 'Online'
+                } else {
+                  statusIndicator.className = 'indicator-offline'
+                  statusIndicator.title = 'Offline'
+                }
+              }
+              
+              friendsList.appendChild(friendElement)
+            })
+          }
+          // If no friends, default message remains visible
+        }
+      } else {
+        console.error('Failed to load friends and requests:', result.message)
+        pendingRequestsList.innerHTML = '<p class="text-red-500 text-sm">Failed to load requests</p>'
+      }
+    } catch (error) {
+      console.error('Error loading friends data:', error)
+      pendingRequestsList.innerHTML = '<p class="text-red-500 text-sm">Error loading requests</p>'
+    }
   }
 
   private async handleAvatarDelete(
@@ -2207,6 +2620,12 @@ class UserProfileScreen extends Component {
     if (this.element && (this.element as any).friendsListDocumentHandler) {
       document.removeEventListener('click', (this.element as any).friendsListDocumentHandler)
     }
+    
+    // Remove friends dropdown document click handler if it exists
+    if (this.element && (this.element as any).friendsDropdownDocumentHandler) {
+      document.removeEventListener('click', (this.element as any).friendsDropdownDocumentHandler)
+    }
+    
     // Cleanup handled automatically by unmount
   }
 }

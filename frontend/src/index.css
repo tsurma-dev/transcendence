@@ -43,6 +43,10 @@
     @apply bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 w-full text-center;
   }
 
+  .container-white {
+    @apply bg-white/90 border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)];
+  }
+
   /* White input field */
   .input-white {
     @apply w-full p-4 rounded-none bg-white/90 text-gray-800 border-4 border-black outline-none focus:ring-4 focus:ring-blue-400/50 transition-all font-mono;

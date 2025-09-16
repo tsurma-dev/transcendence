@@ -5,6 +5,8 @@ import {
   deleteFriend,
   listFriends,
   findFriendRequest,
+  getPendingFriendRequests,
+  getFriendshipStatus,
 } from "../models/friendModel.js";
 import { findUserByUsername } from "../models/userModel.js";
 
@@ -25,9 +27,8 @@ export async function sendFriendRequestCon(req, reply) {
   }
   const info = sendFriendRequest(req.server.db, userId, friend.id);
   reply.send({
-    success: info.changes > 0,
-    message:
-      info.changes > 0 ? "Friend request sent" : "Request already exists",
+    success: info.success,
+    message: info.success ? "Friend request sent" : "Request already exists",
   });
 }
 
@@ -69,5 +70,19 @@ export async function deleteFriendCon(req, reply) {
 export async function getFriendsCon(req, reply) {
   const userId = req.user.id;
   const friends = listFriends(req.server.db, userId);
-  reply.send({ friends });
+  const pendingRequests = getPendingFriendRequests(req.server.db, userId);
+  reply.send({ friends, pendingRequests });
+}
+
+export async function getFriendshipStatusCon(req, reply) {
+  const { username } = req.params;
+  const userId = req.user.id;
+
+  const targetUser = findUserByUsername(req.server.db, username);
+  if (!targetUser) {
+    return reply.code(404).send({ message: "User not found" });
+  }
+
+  const status = getFriendshipStatus(req.server.db, userId, targetUser.id);
+  reply.send(status);
 }

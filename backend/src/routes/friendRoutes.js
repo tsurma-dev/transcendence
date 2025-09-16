@@ -4,6 +4,7 @@ import {
   rejectFriendRequestCon,
   deleteFriendCon,
   getFriendsCon,
+  getFriendshipStatusCon,
 } from "../controllers/friendController.js";
 
 async function friendRoutes(fastify) {
@@ -30,6 +31,11 @@ async function friendRoutes(fastify) {
   fastify.delete("/api/me/friends/:username", {
     preHandler: fastify.verifyAuth,
     handler: deleteFriendCon,
+  });
+
+  fastify.get("/api/me/friends/:username/status", {
+    preHandler: fastify.verifyAuth,
+    handler: getFriendshipStatusCon,
   });
 }
 
