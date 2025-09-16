@@ -2433,6 +2433,9 @@ class UserProfileScreen extends Component {
 
     // Store the document click handler for cleanup
     ;(this.element as any).friendsListDocumentHandler = documentClickHandler
+    
+    // Load initial notification badge status
+    this.updateFriendsNotificationBadge()
   }
 
   private async loadFriendsListData(): Promise<void> {
@@ -2459,6 +2462,16 @@ class UserProfileScreen extends Component {
       if (result.success) {
         console.log('Friends and requests loaded:', result)
         console.log('Online users:', onlineUsers)
+        
+        // Update notification badge based on pending requests
+        const notificationBadge = this.element?.querySelector('#friendsNotificationBadge') as HTMLElement
+        if (notificationBadge) {
+          if (result.pendingRequests && result.pendingRequests.length > 0) {
+            notificationBadge.classList.remove('hidden')
+          } else {
+            notificationBadge.classList.add('hidden')
+          }
+        }
         
         // Handle pending requests
         if (result.pendingRequests && result.pendingRequests.length > 0) {
@@ -2565,6 +2578,31 @@ class UserProfileScreen extends Component {
     } catch (error) {
       console.error('Error loading friends data:', error)
       pendingRequestsList.innerHTML = '<p class="text-red-500 text-sm">Error loading requests</p>'
+    }
+  }
+
+  private async updateFriendsNotificationBadge(): Promise<void> {
+    const notificationBadge = this.element?.querySelector('#friendsNotificationBadge') as HTMLElement
+    if (!notificationBadge) return
+
+    try {
+      // Only get pending requests to check if badge should be shown
+      const result = await this.apiService.getFriendsAndRequests()
+      
+      if (result.success) {
+        if (result.pendingRequests && result.pendingRequests.length > 0) {
+          notificationBadge.classList.remove('hidden')
+        } else {
+          notificationBadge.classList.add('hidden')
+        }
+      } else {
+        // Hide badge on error
+        notificationBadge.classList.add('hidden')
+      }
+    } catch (error) {
+      console.error('Error checking pending requests:', error)
+      // Hide badge on error
+      notificationBadge.classList.add('hidden')
     }
   }
 
