@@ -6,6 +6,7 @@ export class GameClient {
   private clientId: string | null = null;
   public playerName: string | null = null;
   public playerPosition: 1 | 2 | null = null;
+  private pingInterval: number | null = null;
 
   constructor(serverUrl: string) {
     this.ws = new WebSocket(serverUrl);
@@ -64,7 +65,7 @@ export class GameClient {
    * and measure latency.
    */
   private startPingLoop(): void {
-    setInterval(() => {
+    this.pingInterval = setInterval(() => {
       const message: ClientToServer = {
         type: "ping",
         payload: { t: Date.now() }
@@ -93,5 +94,36 @@ export class GameClient {
     };
 
     this.ws.send(JSON.stringify(message));
+  }
+
+  /** Clean up WebSocket connection and resources */
+  dispose(): void {
+    // Stop ping loop
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+
+    // Close WebSocket connection
+    if (this.ws) {
+      // Remove event listeners to prevent callbacks after disposal
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
+      this.ws.onclose = null;
+      this.ws.onerror = null;
+
+      // Close connection if still open
+      if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+        this.ws.close();
+      }
+    }
+
+    // Clear references
+    this.snapshotHandler = () => {}; // Reset to empty function
+    this.clientId = null;
+    this.playerName = null;
+    this.playerPosition = null;
+
+    console.log("GameClient disposed");
   }
 }

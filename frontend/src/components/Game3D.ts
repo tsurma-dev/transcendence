@@ -1,12 +1,14 @@
 import { PoolScene } from '../babylon/PoolScene'
 
+export type GameMode = 'local' | 'online';
+
 export class Game3DComponent {
   private poolScene: PoolScene | null = null
   private canvas: HTMLCanvasElement
-  private playerNumber: 1 | 2
+  private gameMode: GameMode;
 
-  constructor(private container: HTMLElement, playerNumber: 1 | 2 = 1) {
-    this.playerNumber = playerNumber
+  constructor(private container: HTMLElement, gameMode: GameMode = 'local') {
+    this.gameMode = gameMode;
     this.canvas = document.createElement('canvas')
     this.canvas.id = 'babylon3dCanvas'
     this.canvas.style.width = '100%'
@@ -14,12 +16,20 @@ export class Game3DComponent {
     this.canvas.style.display = 'block'
     this.container.appendChild(this.canvas)
   }
+
   initialize(): void {
-    if (!this.poolScene) this.poolScene = new PoolScene(this.canvas)
+    if (!this.poolScene) {
+      this.poolScene = new PoolScene(this.canvas, this.gameMode);
+    }
   }
+
   dispose(): void {
     this.poolScene?.dispose?.()
     this.poolScene = null
     this.canvas.remove()
+  }
+
+    getGameMode(): GameMode {
+    return this.gameMode;
   }
 }

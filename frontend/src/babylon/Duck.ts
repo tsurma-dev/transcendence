@@ -34,9 +34,16 @@ export class Duck {
     if (!this.mesh) {
       return;
     }
+
+    // Ensure we're using Euler angles, not quaternions
+    if (this.mesh.rotationQuaternion !== null) {
+      this.mesh.rotationQuaternion = null;
+    }
+
     this.mesh.position.x = state.x;
     this.mesh.position.z = state.z;
-    this.mesh.rotation.y = state.dir;
+
+    this.mesh.rotation.y = state.dir + Math.PI;
   }
 
   // Scales and positions the duck model based on its bounding box.
@@ -72,6 +79,9 @@ export class Duck {
 
     mesh.scaling.setAll(scale);
     mesh.position = new Vector3(0, GAME_CONFIG.WATER_LEVEL - 0.15, 0);
+
+    mesh.rotationQuaternion = null;
+    mesh.rotation.y = 0;
 
     // Add all children to the shadow generator for correct shadows
     shadowGenerator.addShadowCaster(mesh, true);

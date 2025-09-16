@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@babylonjs/core": "^8.26.0",
+    "@babylonjs/gui": "^8.27.0",
     "@babylonjs/loaders": "^8.26.0",
     "@babylonjs/materials": "^8.26.0",
     "ws": "^8.18.3"
