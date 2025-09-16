@@ -428,7 +428,7 @@ class ApiService {
       const result = await response.json().catch(() => ({}))
 
       if (response.ok) {
-        return { success: true, message: result.message || 'Friend request sent!' }
+        return { success: result.success, message: result.message || 'Friend request sent!' }
       } else {
         return { success: false, message: result.message || 'Failed to send friend request' }
       }
@@ -461,6 +461,27 @@ class ApiService {
       }
     } catch (error) {
       console.error('Friends fetch error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async checkFriendshipStatus(username: string): Promise<{success: boolean, status?: string, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}/status`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        return { success: true, status: result.status }
+      } else {
+        return { success: false, message: result.message || 'Failed to check friendship status' }
+      }
+    } catch (error) {
+      console.error('Friendship status check error:', error)
       return { success: false, message: 'Network error. Please try again.' }
     }
   }
@@ -2134,9 +2155,42 @@ class UserProfileScreen extends Component {
       friendActionContainer.style.display = 'flex'
     }
 
+    // Initially hide all buttons
+    if (addFriendBtn) addFriendBtn.style.display = 'none'
+    if (friendRequestSentBtn) friendRequestSentBtn.style.display = 'none'
+    if (alreadyFriendsBtn) alreadyFriendsBtn.style.display = 'none'
+
+    // Check current friendship status and show appropriate button
+    if (this.targetUsername) {
+      this.apiService.checkFriendshipStatus(this.targetUsername).then(result => {
+        if (result.success) {
+          console.log('Friendship status:', result.status)
+          switch (result.status) {
+            case 'friends':
+              if (alreadyFriendsBtn) alreadyFriendsBtn.style.display = 'block'
+              break
+            case 'request_sent':
+              if (friendRequestSentBtn) friendRequestSentBtn.style.display = 'block'
+              break
+            case 'request_received':
+              // Could show a different button like "Accept Friend Request" in the future
+              if (addFriendBtn) addFriendBtn.style.display = 'block'
+              break
+            case 'none':
+            default:
+              if (addFriendBtn) addFriendBtn.style.display = 'block'
+              break
+          }
+        } else {
+          console.error('Failed to check friendship status:', result.message)
+          // Default to showing Add Friend button
+          if (addFriendBtn) addFriendBtn.style.display = 'block'
+        }
+      })
+    }
+
     // Show Add Friend button initially
     if (addFriendBtn) {
-      addFriendBtn.style.display = 'block'
       addFriendBtn.addEventListener('click', async () => {
         console.log('Add friend clicked for:', this.targetUsername)
         
@@ -2158,14 +2212,6 @@ class UserProfileScreen extends Component {
           }
         }
       })
-    }
-
-    // Initially hide other buttons
-    if (friendRequestSentBtn) {
-      friendRequestSentBtn.style.display = 'none'
-    }
-    if (alreadyFriendsBtn) {
-      alreadyFriendsBtn.style.display = 'none'
     }
   }
 
