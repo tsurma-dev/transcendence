@@ -480,6 +480,27 @@ class ApiService {
     }
   }
 
+  async removeFriend(username: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}`, {
+        method: 'DELETE',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        return { success: result.success, message: result.message || 'Friend removed successfully!' }
+      } else {
+        return { success: false, message: result.message || 'Failed to remove friend' }
+      }
+    } catch (error) {
+      console.error('Remove friend error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
   async getFriendsAndRequests(): Promise<{success: boolean, friends?: any[], pendingRequests?: any[], message?: string}> {
     try {
       const response = await fetch(`${this.baseUrl}/api/me/friends`, {
@@ -2189,7 +2210,10 @@ class UserProfileScreen extends Component {
 
     const addFriendBtn = this.element.querySelector('#addFriendBtn') as HTMLElement
     const friendRequestSentBtn = this.element.querySelector('#friendRequestSentBtn') as HTMLElement
+    const alreadyFriendsContainer = this.element.querySelector('#alreadyFriendsContainer') as HTMLElement
     const alreadyFriendsBtn = this.element.querySelector('#alreadyFriendsBtn') as HTMLElement
+    const friendsActionDropdown = this.element.querySelector('#friendsActionDropdown') as HTMLElement
+    const removeFriendBtn = this.element.querySelector('#removeFriendBtn') as HTMLElement
     const friendRequestActions = this.element.querySelector('#friendRequestActions') as HTMLElement
     const acceptFriendBtn = this.element.querySelector('#acceptFriendBtn') as HTMLElement
     const rejectFriendBtn = this.element.querySelector('#rejectFriendBtn') as HTMLElement
@@ -2203,7 +2227,7 @@ class UserProfileScreen extends Component {
     // Initially hide all buttons and containers
     if (addFriendBtn) addFriendBtn.style.display = 'none'
     if (friendRequestSentBtn) friendRequestSentBtn.style.display = 'none'
-    if (alreadyFriendsBtn) alreadyFriendsBtn.style.display = 'none'
+    if (alreadyFriendsContainer) alreadyFriendsContainer.style.display = 'none'
     if (friendRequestActions) friendRequestActions.style.display = 'none'
 
     // Check current friendship status and show appropriate button
@@ -2213,7 +2237,7 @@ class UserProfileScreen extends Component {
           console.log('Friendship status:', result.status)
           switch (result.status) {
             case 'friends':
-              if (alreadyFriendsBtn) alreadyFriendsBtn.style.display = 'block'
+              if (alreadyFriendsContainer) alreadyFriendsContainer.style.display = 'block'
               break
             case 'request_sent':
               if (friendRequestSentBtn) friendRequestSentBtn.style.display = 'block'
@@ -2231,6 +2255,65 @@ class UserProfileScreen extends Component {
           console.error('Failed to check friendship status:', result.message)
           // Default to showing Add Friend button
           if (addFriendBtn) addFriendBtn.style.display = 'block'
+        }
+      })
+    }
+
+    // Handle Already Friends dropdown toggle
+    if (alreadyFriendsBtn && friendsActionDropdown) {
+      alreadyFriendsBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        friendsActionDropdown.classList.toggle('hidden')
+      })
+
+      // Close dropdown when clicking outside
+      const documentClickHandler = (e: Event) => {
+        if (!alreadyFriendsContainer?.contains(e.target as Node)) {
+          friendsActionDropdown.classList.add('hidden')
+        }
+      }
+      document.addEventListener('click', documentClickHandler)
+
+      // Prevent dropdown from closing when clicking inside it
+      friendsActionDropdown.addEventListener('click', (e) => {
+        e.stopPropagation()
+      })
+
+      // Store the document click handler for cleanup
+      ;(this.element as any).friendsDropdownDocumentHandler = documentClickHandler
+    }
+
+    // Handle Remove Friend button click
+    if (removeFriendBtn) {
+      removeFriendBtn.addEventListener('click', async () => {
+        console.log('Remove friend clicked for:', this.targetUsername)
+        
+        if (this.targetUsername) {
+          // Confirm the action
+          const confirmRemove = confirm(`Are you sure you want to remove ${this.targetUsername} from your friends list?`)
+          
+          if (confirmRemove) {
+            const result = await this.apiService.removeFriend(this.targetUsername)
+            
+            if (result.success) {
+              console.log('Friend removed successfully:', result.message)
+              
+              // Hide Already Friends container and show Add Friend button
+              if (alreadyFriendsContainer) alreadyFriendsContainer.style.display = 'none'
+              if (addFriendBtn) addFriendBtn.style.display = 'block'
+              
+              // Show success message
+              alert(result.message || 'Friend removed successfully!')
+            } else {
+              console.error('Failed to remove friend:', result.message)
+              alert(result.message || 'Failed to remove friend')
+            }
+          }
+        }
+        
+        // Close the dropdown after action
+        if (friendsActionDropdown) {
+          friendsActionDropdown.classList.add('hidden')
         }
       })
     }
@@ -2271,9 +2354,9 @@ class UserProfileScreen extends Component {
           if (result.success) {
             console.log('Friend request accepted successfully:', result.message)
             
-            // Hide Accept/Reject buttons and show Already Friends button
+            // Hide Accept/Reject buttons and show Already Friends container
             if (friendRequestActions) friendRequestActions.style.display = 'none'
-            if (alreadyFriendsBtn) alreadyFriendsBtn.style.display = 'block'
+            if (alreadyFriendsContainer) alreadyFriendsContainer.style.display = 'block'
             
             // Show success message
             alert(result.message || 'Friend request accepted!')
@@ -2516,6 +2599,12 @@ class UserProfileScreen extends Component {
     if (this.element && (this.element as any).friendsListDocumentHandler) {
       document.removeEventListener('click', (this.element as any).friendsListDocumentHandler)
     }
+    
+    // Remove friends dropdown document click handler if it exists
+    if (this.element && (this.element as any).friendsDropdownDocumentHandler) {
+      document.removeEventListener('click', (this.element as any).friendsDropdownDocumentHandler)
+    }
+    
     // Cleanup handled automatically by unmount
   }
 }

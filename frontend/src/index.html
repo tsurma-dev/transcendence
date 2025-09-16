@@ -261,11 +261,21 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           </button>
           
           <!-- Already Friends Button -->
-          <button 
-            id="alreadyFriendsBtn"
-            class="hidden btn-friend bg-gradient-to-b from-blue-400 to-blue-600 text-white cursor-default">
-            ✅ Friends
-          </button>
+          <div id="alreadyFriendsContainer" class="hidden relative">
+            <button 
+              id="alreadyFriendsBtn"
+              class="btn-friend bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white">
+              ✅ Friends ▾
+            </button>
+            <!-- Friends dropdown menu -->
+            <div id="friendsActionDropdown" class="hidden absolute top-full left-0 w-full mt-1 bg-white border-2 border-black rounded shadow-lg z-10">
+              <button 
+                id="removeFriendBtn"
+                class="block w-full text-left px-4 py-2 hover:bg-red-50 border-b border-gray-300 font-mono uppercase text-sm font-bold text-red-600">
+                🗑️ Remove Friend
+              </button>
+            </div>
+          </div>
           
           <!-- Accept/Reject Friend Request Container (when someone sent you a request) -->
           <div id="friendRequestActions" class="hidden flex gap-2">
@@ -297,12 +307,12 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           Match History
         </button>
         
-        <!-- Friends List Button with Dropdown (only visible for own profile) -->
+        <!-- Friends Button with Dropdown (only visible for own profile) -->
         <div id="friendsListContainer" class="relative">
           <button 
             id="friendsListBtn"
             class="btn-blue w-full">
-            👥 Friends List
+            Friends
           </button>
           
           <!-- Friends List Dropdown -->
