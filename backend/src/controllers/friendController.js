@@ -5,6 +5,7 @@ import {
   deleteFriend,
   listFriends,
   findFriendRequest,
+  getPendingFriendRequests,
 } from "../models/friendModel.js";
 import { findUserByUsername } from "../models/userModel.js";
 
@@ -69,5 +70,6 @@ export async function deleteFriendCon(req, reply) {
 export async function getFriendsCon(req, reply) {
   const userId = req.user.id;
   const friends = listFriends(req.server.db, userId);
-  reply.send({ friends });
+  const pendingRequests = getPendingFriendRequests(req.server.db, userId);
+  reply.send({ friends, pendingRequests });
 }

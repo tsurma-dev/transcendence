@@ -417,6 +417,54 @@ class ApiService {
     }
   }
 
+  async sendFriendRequest(username: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}/request`, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        return { success: true, message: result.message || 'Friend request sent!' }
+      } else {
+        return { success: false, message: result.message || 'Failed to send friend request' }
+      }
+    } catch (error) {
+      console.error('Friend request error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async getFriendsAndRequests(): Promise<{success: boolean, friends?: any[], pendingRequests?: any[], message?: string}> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/me/friends`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+      console.log('Raw backend response:', result)
+
+      if (response.ok) {
+        return { 
+          success: true, 
+          friends: result.friends || [],
+          // The backend currently doesn't return pendingRequests, so we'll get an empty array
+          pendingRequests: result.pendingRequests || []
+        }
+      } else {
+        return { success: false, message: result.message || 'Failed to fetch friends' }
+      }
+    } catch (error) {
+      console.error('Friends fetch error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
   getAvatarUrl(username?: string): string {
     if (username) {
       // Backend serves user avatars via username and handles fallback automatically
@@ -2089,13 +2137,25 @@ class UserProfileScreen extends Component {
     // Show Add Friend button initially
     if (addFriendBtn) {
       addFriendBtn.style.display = 'block'
-      addFriendBtn.addEventListener('click', () => {
+      addFriendBtn.addEventListener('click', async () => {
         console.log('Add friend clicked for:', this.targetUsername)
         
-        // Hide Add Friend button and show Request Sent button
-        addFriendBtn.style.display = 'none'
-        if (friendRequestSentBtn) {
-          friendRequestSentBtn.style.display = 'block'
+        if (this.targetUsername) {
+          // Send the friend request
+          const result = await this.apiService.sendFriendRequest(this.targetUsername)
+          
+          if (result.success) {
+            console.log('Friend request sent successfully:', result.message)
+            
+            // Hide Add Friend button and show Request Sent button
+            addFriendBtn.style.display = 'none'
+            if (friendRequestSentBtn) {
+              friendRequestSentBtn.style.display = 'block'
+            }
+          } else {
+            console.error('Failed to send friend request:', result.message)
+            alert(result.message || 'Failed to send friend request')
+          }
         }
       })
     }
@@ -2150,9 +2210,62 @@ class UserProfileScreen extends Component {
     ;(this.element as any).friendsListDocumentHandler = documentClickHandler
   }
 
-  private loadFriendsListData(): void {
-    // Template contains default "No friends yet" and "No pending requests" text placeholders
-    console.log('Friends list dropdown opened - showing default template content')
+  private async loadFriendsListData(): Promise<void> {
+    const pendingRequestsList = this.element?.querySelector('#pendingRequestsList') as HTMLElement
+    const friendsList = this.element?.querySelector('#friendsList') as HTMLElement
+    
+    if (!pendingRequestsList) {
+      console.log('Pending requests list element not found')
+      return
+    }
+
+    console.log('Loading friends and pending requests from backend')
+    
+    try {
+      const result = await this.apiService.getFriendsAndRequests()
+      
+      if (result.success) {
+        console.log('Friends and requests loaded:', result)
+        
+        // Handle pending requests
+        pendingRequestsList.innerHTML = ''
+        if (result.pendingRequests && result.pendingRequests.length > 0) {
+          result.pendingRequests.forEach((request: any) => {
+            const requestElement = document.createElement('div')
+            requestElement.className = 'py-2 px-3 border-b border-gray-200'
+            requestElement.innerHTML = `
+              <span class="text-sm">Friend request from ${request.username}</span>
+            `
+            pendingRequestsList.appendChild(requestElement)
+          })
+        } else {
+          pendingRequestsList.innerHTML = '<p class="text-gray-500 text-sm">No pending requests</p>'
+        }
+        
+        // Handle friends list if element exists
+        if (friendsList && result.friends) {
+          friendsList.innerHTML = ''
+          if (result.friends.length > 0) {
+            result.friends.forEach((friend: any) => {
+              const friendElement = document.createElement('div')
+              friendElement.className = 'py-2 px-3 border-b border-gray-200'
+              friendElement.innerHTML = `
+                <span class="text-sm">${friend.username}</span>
+              `
+              friendsList.appendChild(friendElement)
+            })
+          } else {
+            friendsList.innerHTML = '<p class="text-gray-500 text-sm">No friends yet</p>'
+          }
+        }
+      } else {
+        console.error('Failed to load friends and requests:', result.message)
+        pendingRequestsList.innerHTML = '<p class="text-red-500 text-sm">Failed to load requests</p>'
+      }
+    } catch (error) {
+      console.error('Error loading friends data:', error)
+      pendingRequestsList.innerHTML = '<p class="text-red-500 text-sm">Error loading requests</p>'
+    }
   }
 
   private async handleAvatarDelete(

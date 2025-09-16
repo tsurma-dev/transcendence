@@ -67,3 +67,13 @@ export function deleteFriend(db, userId, friendId) {
     success: info.changes > 0,
   };
 }
+
+export function getPendingFriendRequests(db, userId) {
+  const stmt = db.prepare(`
+    SELECT u.id, u.username, f.created_at
+    FROM friendships f
+    JOIN users u ON u.id = f.user_id
+    WHERE f.friend_id = ? AND f.status = 'pending'
+  `);
+  return stmt.all(userId);
+}
