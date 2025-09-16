@@ -657,7 +657,7 @@ class PongGame {
   private onScoreUpdate?: (player1Score: number, player2Score: number) => void
 
   private socket = new WebSocket("wss://localhost:8443/ws/pong");
-  private roomId: string = "42" // TODO: dynamic room IDs
+  private roomId: string = "" // TODO: dynamic room IDs
   private playerId: string = "" // TODO: assign player IDs based on server response
 
   constructor(canvas: HTMLCanvasElement) {
@@ -671,7 +671,7 @@ class PongGame {
     this.socket.onopen = () => {
         console.log("Connected to server via wss")
         // TODO: work out logic with rooms
-        this.socket.send(JSON.stringify({ action: "join", roomId: "42" }))
+        this.socket.send(JSON.stringify({ action: "join", roomId: null }))
     }
 
     this.socket.onmessage = (event) => {
@@ -680,7 +680,7 @@ class PongGame {
             switch (data.type) {
                 case "room-joined":
                     console.log("received ws msg: " + event.data)
-                    this.roomId = data.roomId
+                    this.roomId = data.room
                     this.playerId = data.playerId
                     //this.socket.send(JSON.stringify({ action: "play", roomId: this.roomId }))
                     break
@@ -714,18 +714,18 @@ class PongGame {
     const handleKeyDown = (e: KeyboardEvent) => {
         //this.keys[e.key] = true
         if (e.key === 'ArrowUp') {
-        this.socket.send(JSON.stringify({ action: "update", roomId: "42",
+        this.socket.send(JSON.stringify({ action: "update", roomId: this.roomId,
         playerId: this.playerId, direction: -1 }))
         }
         else if (e.key === 'ArrowDown') {
-        this.socket.send(JSON.stringify({ action: "update", roomId: "42",
+        this.socket.send(JSON.stringify({ action: "update", roomId: this.roomId,
         playerId: this.playerId, direction: 1 }))
         }
     }
     const handleKeyUp = (e: KeyboardEvent) => {
         //this.keys[e.key] = false
         if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-            this.socket.send(JSON.stringify({ action: "update", roomId: "42",
+            this.socket.send(JSON.stringify({ action: "update", roomId: this.roomId,
             playerId: this.playerId, direction: 0 }))
         }
     }
