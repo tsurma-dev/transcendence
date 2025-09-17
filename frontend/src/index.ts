@@ -2934,7 +2934,7 @@ class UserSettingsScreen extends Component {
     // Validate that both fields are filled
     if (!currentPassword || !newPassword) {
       responseDiv.textContent = 'Please fill in both current and new password fields'
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
       return
     }
@@ -2942,14 +2942,14 @@ class UserSettingsScreen extends Component {
     // Validate that new password is different from current
     if (currentPassword === newPassword) {
       responseDiv.textContent = 'New password must be different from current password'
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
       return
     }
 
     // Show loading state
     responseDiv.textContent = 'Verifying current password...'
-    responseDiv.className = 'text-blue-600 text-left mt-2 font-mono'
+    responseDiv.className = 'text-info'
     responseDiv.classList.remove('hidden')
 
     // First verify the current password using login endpoint
@@ -2957,20 +2957,20 @@ class UserSettingsScreen extends Component {
     
     if (!verificationResult.success) {
       responseDiv.textContent = `Error: ${verificationResult.message || 'Current password is incorrect'}`
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
       return
     }
 
     // Current password is correct, proceed with password update
     responseDiv.textContent = 'Updating password...'
-    responseDiv.className = 'text-blue-600 text-left mt-2 font-mono'
+    responseDiv.className = 'text-info'
 
     const result = await this.apiService.updatePassword(newPassword, currentPassword)
 
     if (result.success) {
       responseDiv.textContent = 'Password updated successfully! You have been logged out for security. Redirecting to login...'
-      responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-success'
       responseDiv.classList.remove('hidden')
       form.reset()
 
@@ -2981,7 +2981,7 @@ class UserSettingsScreen extends Component {
       }, 2000)
     } else {
       responseDiv.textContent = `Error: ${result.message}`
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
     }
   }
@@ -2995,7 +2995,7 @@ class UserSettingsScreen extends Component {
     // Validate input
     if (!currentEmail || !newEmail || !currentPassword) {
       responseDiv.textContent = 'All fields are required'
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
       return
     }
@@ -3003,7 +3003,7 @@ class UserSettingsScreen extends Component {
     // Check that new email is different from current
     if (currentEmail === newEmail) {
       responseDiv.textContent = 'New email must be different from current email'
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
       return
     }
@@ -3012,14 +3012,14 @@ class UserSettingsScreen extends Component {
     const user = await this.apiService.getCurrentUser()
     if (!user || user.email !== currentEmail) {
       responseDiv.textContent = 'Current email is incorrect'
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
       return
     }
 
     // Show loading state
     responseDiv.textContent = 'Verifying current password...'
-    responseDiv.className = 'text-blue-600 text-left mt-2 font-mono'
+    responseDiv.className = 'text-info'
     responseDiv.classList.remove('hidden')
 
     // Verify current password using login endpoint
@@ -3027,20 +3027,20 @@ class UserSettingsScreen extends Component {
     
     if (!verificationResult.success) {
       responseDiv.textContent = `Error: ${verificationResult.message || 'Current password is incorrect'}`
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
       return
     }
 
     // Password verified, proceed with email update
     responseDiv.textContent = 'Updating email...'
-    responseDiv.className = 'text-blue-600 text-left mt-2 font-mono'
+    responseDiv.className = 'text-info'
 
     const result = await this.apiService.updateEmail(newEmail)
 
     if (result.success) {
       responseDiv.textContent = 'Email updated successfully! You have been logged out for security. Redirecting to login...'
-      responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-success'
       responseDiv.classList.remove('hidden')
       form.reset()
 
@@ -3051,7 +3051,7 @@ class UserSettingsScreen extends Component {
       }, 2000)
     } else {
       responseDiv.textContent = `Error: ${result.message}`
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
     }
   }
@@ -3064,12 +3064,12 @@ class UserSettingsScreen extends Component {
 
     if (result.success) {
       responseDiv.textContent = 'Username updated successfully!'
-      responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-success'
       responseDiv.classList.remove('hidden')
       form.reset()
     } else {
       responseDiv.textContent = `Error: ${result.message}`
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
     }
   }
@@ -3082,7 +3082,7 @@ class UserSettingsScreen extends Component {
 
     if (result.success) {
       responseDiv.textContent = 'Account deleted successfully. Redirecting...'
-      responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-success'
       responseDiv.classList.remove('hidden')
 
       // Redirect to start page after successful deletion
@@ -3092,7 +3092,7 @@ class UserSettingsScreen extends Component {
       }, 2000)
     } else {
       responseDiv.textContent = `Error: ${result.message}`
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
     }
   }
@@ -3234,7 +3234,7 @@ class UserSettingsScreen extends Component {
 
     // Show loading state
     responseDiv.textContent = 'Verifying password...'
-    responseDiv.className = 'text-blue-600 text-left mt-2 font-mono'
+    responseDiv.className = 'text-info'
     responseDiv.classList.remove('hidden')
 
     // Verify current password
@@ -3248,7 +3248,7 @@ class UserSettingsScreen extends Component {
     // Password verified, hide confirmation and enable 2FA
     this.hidePasswordConfirmation2FA()
     responseDiv.textContent = 'Password verified. Setting up 2FA...'
-    responseDiv.className = 'text-blue-600 text-left mt-2 font-mono'
+    responseDiv.className = 'text-info'
     responseDiv.classList.remove('hidden')
 
     // Proceed with 2FA enablement
@@ -3260,8 +3260,8 @@ class UserSettingsScreen extends Component {
 
     responseDiv.textContent = message
     responseDiv.className = type === 'success' ?
-      'text-green-600 text-left mt-2 font-mono' :
-      'text-red-600 text-left mt-2 font-mono'
+      'text-success' :
+      'text-error'
     responseDiv.classList.remove('hidden')
 
     // Auto-hide success messages after 5 seconds
