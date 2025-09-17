@@ -1738,7 +1738,7 @@ class LoggedInLandingScreen extends Component {
         <div class="flex items-center justify-between p-2 border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
           <div class="flex items-center">
             <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-            <button class="text-black font-mono text-sm font-semibold hover:text-blue-600 hover:underline cursor-pointer user-profile-link" data-username="${user.username}">
+            <button class="text-content font-semibold hover:text-blue-600 hover:underline cursor-pointer user-profile-link" data-username="${user.username}">
               ${user.username}
             </button>
           </div>
@@ -1962,7 +1962,7 @@ class GameScreen extends Component {
     // game3DContainer.style.width = '800px'
     // game3DContainer.style.height = '400px'
     // game3DContainer.style.backgroundColor = '#000'
-    // game3DContainer.className = 'border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+    // game3DContainer.className = 'container-shadowed'
     // ---FULL SCREEN---
     game3DContainer.style.position = 'fixed'
     game3DContainer.style.top = '0'
