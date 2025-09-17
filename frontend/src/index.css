@@ -38,13 +38,22 @@
     @apply w-full px-6 py-4 bg-gradient-to-b from-purple-400 to-purple-600 hover:from-purple-300 hover:to-purple-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider;
   }
 
+  /* Friend button base styling (color applied inline) */
+  .btn-friend {
+    @apply px-4 py-2 font-bold text-sm rounded-none border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wide;
+  }
+
   /* Rose/Pink screen container */
   .container-main-pink {
     @apply bg-gradient-to-b from-rose-300 to-pink-400 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wider p-8 w-full text-center;
   }
 
+  .container-shadowed {
+    @apply border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)];
+  }
+
   .container-white {
-    @apply bg-white/90 border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)];
+    @apply container-shadowed bg-white/90;
   }
 
   /* White input field */
@@ -58,26 +67,38 @@
     }
 
   /* Online indicator */
-    .indicator-online {
-      @apply w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse;
-    }
+  .indicator-online {
+    @apply w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse;
+  }
 
   /* Offline indicator */
-    .indicator-offline {
-      @apply w-2 h-2 bg-red-400 rounded-full mr-2;
-    }
+  .indicator-offline {
+    @apply w-2 h-2 bg-red-400 rounded-full mr-2;
+  }
+
+  /* Header text styling */
+  .text-header {
+    @apply text-black font-bold text-sm font-mono uppercase;
+  }
 
   /* General content text styling */
   .text-content {
     @apply text-black font-mono text-sm;
   }
 
-  .text-header {
-    @apply text-black font-bold text-sm font-mono uppercase;
+  /* Error message text styling */
+  .text-error {
+    @apply text-red-600 text-left mt-2 font-mono;
   }
 
-  /* Friend button base styling (color applied inline) */
-  .btn-friend {
-    @apply px-4 py-2 font-bold text-sm rounded-none border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-mono uppercase tracking-wide;
+  /* Success message text styling */
+  .text-success {
+    @apply text-green-600 text-left mt-2 font-mono;
   }
+
+  /* Info message text styling */
+  .text-info {
+    @apply text-blue-600 text-left mt-2 font-mono;
+  }
+
 }
