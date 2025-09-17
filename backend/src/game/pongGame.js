@@ -44,9 +44,9 @@ export class Game {
 
 	movePaddle(paddle) {
 		if (paddle.direction === -1) {
-			paddle.y = Math.max(gameProperties.PADDLE_HEIGHT / 2, paddle.y - paddle.speed);
+			paddle.y = Math.max(0, paddle.y - paddle.speed); // gameProperties.PADDLE_HEIGHT / 2
 		} else if (paddle.direction === 1) {
-			paddle.y = Math.min(gameProperties.GAME_HEIGHT - gameProperties.PADDLE_HEIGHT / 2, paddle.y + paddle.speed);
+			paddle.y = Math.min(gameProperties.GAME_HEIGHT - gameProperties.PADDLE_HEIGHT, paddle.y + paddle.speed);
 		}
 		return paddle.y;
 	}
@@ -58,9 +58,9 @@ export class Game {
 
 		// Move paddles
 		this.paddle1.y = this.movePaddle(this.paddle1);
-		console.log("Paddle1 new position: " + this.paddle1.y + ", direction: " + this.paddle1.direction);
+		//console.log("Paddle1 new position: " + this.paddle1.y + ", direction: " + this.paddle1.direction);
 		this.paddle2.y = this.movePaddle(this.paddle2);
-		console.log("Paddle2 new position: " + this.paddle2.y + ", direction: " + this.paddle2.direction);
+		//console.log("Paddle2 new position: " + this.paddle2.y + ", direction: " + this.paddle2.direction);
 
 		// Ball collision with top/bottom
 		if (this.ball.y - this.ball.radius < 0 || this.ball.y + this.ball.radius > gameProperties.GAME_HEIGHT) {

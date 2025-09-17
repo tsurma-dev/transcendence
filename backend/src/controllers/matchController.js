@@ -39,7 +39,7 @@ export function handlePongWebSocket(socket) {
 		//startGame(data.roomId);
 		//break;
 		case "update":
-			console.log("Updating player " + data.playerId + " room " + data.roomId + " with direction " + data.direction);
+			//console.log("Updating player " + data.playerId + " room " + data.roomId + " with direction " + data.direction);
 			// check if playerId is matched to socket in the room
 			updatePlayer(socket, data.roomId, data.playerId, data.direction);
 			break;
@@ -66,8 +66,8 @@ function updatePlayer(socket, roomId, playerId, direction) {
 //set new Game instance to room and send "game-start" to both players
 function startGame(roomId) {
 	const room = rooms.get(roomId);
-	//if (!room || room.game) return;
-	//if (!room.player1.socket || !room.player2.socket) return;
+	if (!room || room.game) return;
+	if (!room.player1.socket || !room.player2.socket) return;
 	console.log("Starting game in room " + roomId);
 	room.game = new Game("running");
 	const startState = {
@@ -85,8 +85,8 @@ function endGame(roomId) {
 	if (!room || !room.game) return;
 	const endState = {
 		type: "game-over",
-		gameState: room.game.gameState,
-		score: room.game.score,
+		P1Score: room.game.score.player1,
+		P2Score: room.game.score.player2,
 	};
 	if (room.player1.socket) {
 		room.player1.socket.send(JSON.stringify(endState));
@@ -98,6 +98,8 @@ function endGame(roomId) {
 	}
 	//store match result in DB
 	room.game = null;
+	rooms.delete(roomId);
+	console.log("Game ended in room " + roomId + ", rooms count: " + rooms.size);
 }
 
 //loop through rooms and call room.game.update() and send game state to both players
@@ -192,9 +194,9 @@ function setupCloseHandler(roomId, socket) {
 		room.player2.socket = null;
 	}
     endGame(roomId);
-    // TODO: temporally while rooms are not supported in UI
-    if (roomId != "42") {
-      rooms.delete(roomId);
-	}
+
+    // if (roomId != "42") {
+    //   rooms.delete(roomId);
+	// }
   });
 }
