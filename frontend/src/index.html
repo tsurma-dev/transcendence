@@ -408,6 +408,11 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       <form id="updatePasswordForm" class="mb-6">
         <h2 class="text-2xl font-semibold text-black mb-4">Change Password</h2>
         <label class="block mb-2">
+          Current Password:
+          <input type="password" name="currentPassword" required 
+            class="input-white" />
+        </label>
+        <label class="block mb-2">
           New Password:
           <input type="password" name="password" required 
             class="input-white" />
@@ -421,8 +426,18 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       <form id="updateEmailForm" class="mb-6">
         <h2 class="text-2xl font-semibold text-black mb-4">Change Email</h2>
         <label class="block mb-2">
+          Current Email:
+          <input type="email" name="currentEmail" required 
+            class="input-white" />
+        </label>
+        <label class="block mb-2">
           New Email:
           <input type="email" name="email" required 
+            class="input-white" />
+        </label>
+        <label class="block mb-2">
+          Confirm Password:
+          <input type="password" name="currentPassword" required 
             class="input-white" />
         </label>
         <button type="submit" 

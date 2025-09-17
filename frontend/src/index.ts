@@ -179,7 +179,41 @@ class ApiService {
     }
   }
 
-  async updatePassword(password: string): Promise<{success: boolean, message?: string}> {
+  async verifyCurrentPassword(currentPassword: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const user = await this.getCurrentUser()
+      if (!user || !user.email) {
+        return { success: false, message: 'Unable to verify current user' }
+      }
+
+      // Use the login endpoint to verify current credentials
+      const response = await fetch(`${this.baseUrl}/api/login`, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email: user.email,
+          password: currentPassword 
+        }),
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        return { success: true }
+      } else {
+        return { success: false, message: result.message || 'Current password is incorrect' }
+      }
+    } catch (error) {
+      console.error('Password verification error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async updatePassword(newPassword: string, currentPassword: string): Promise<{success: boolean, message?: string}> {
     try {
       const response = await fetch(`${this.baseUrl}/api/me/password`, {
         method: 'PATCH',
@@ -187,7 +221,9 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ 
+          password: newPassword
+        }),
         credentials: 'include'
       })
 
@@ -2113,13 +2149,11 @@ class UserProfileScreen extends Component {
       })
     }
 
-    // Update online status
     this.updateOnlineStatus()
 
-    // Handle user settings button click (placeholder functionality)
+    // Handle user settings button click
     if (userSettingsBtn) {
       userSettingsBtn.addEventListener('click', () => {
-        // Navigate to user settings screen
         this.router.navigateTo(UserSettingsScreen)
       })
     }
@@ -2188,8 +2222,7 @@ class UserProfileScreen extends Component {
         // Set the avatar image
         avatarImg.src = avatarUrl
 
-        // Initially assume no custom avatar - this will be set to true only after uploads
-        // or we could check localStorage for a flag that tracks custom avatar status
+        // Check localStorage for a flag that tracks custom avatar status
         const hasCustomAvatarFlag = localStorage.getItem(`hasCustomAvatar_${username}`)
         this.hasCustomAvatar = hasCustomAvatarFlag === 'true'
         this.updateDeleteButtonVisibility()
@@ -2879,9 +2912,45 @@ class UserSettingsScreen extends Component {
 
   private async handlePasswordUpdate(form: HTMLFormElement, responseDiv: HTMLElement): Promise<void> {
     const formData = new FormData(form)
-    const password = formData.get('password') as string
+    const currentPassword = formData.get('currentPassword') as string
+    const newPassword = formData.get('password') as string
 
-    const result = await this.apiService.updatePassword(password)
+    // Validate that both fields are filled
+    if (!currentPassword || !newPassword) {
+      responseDiv.textContent = 'Please fill in both current and new password fields'
+      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Validate that new password is different from current
+    if (currentPassword === newPassword) {
+      responseDiv.textContent = 'New password must be different from current password'
+      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Show loading state
+    responseDiv.textContent = 'Verifying current password...'
+    responseDiv.className = 'text-blue-600 text-left mt-2 font-mono'
+    responseDiv.classList.remove('hidden')
+
+    // First verify the current password using login endpoint
+    const verificationResult = await this.apiService.verifyCurrentPassword(currentPassword)
+    
+    if (!verificationResult.success) {
+      responseDiv.textContent = `Error: ${verificationResult.message || 'Current password is incorrect'}`
+      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Current password is correct, proceed with password update
+    responseDiv.textContent = 'Updating password...'
+    responseDiv.className = 'text-blue-600 text-left mt-2 font-mono'
+
+    const result = await this.apiService.updatePassword(newPassword, currentPassword)
 
     if (result.success) {
       responseDiv.textContent = 'Password updated successfully! You have been logged out for security. Redirecting to login...'
@@ -2903,15 +2972,67 @@ class UserSettingsScreen extends Component {
 
   private async handleEmailUpdate(form: HTMLFormElement, responseDiv: HTMLElement): Promise<void> {
     const formData = new FormData(form)
-    const email = formData.get('email') as string
+    const currentEmail = formData.get('currentEmail') as string
+    const newEmail = formData.get('email') as string
+    const currentPassword = formData.get('currentPassword') as string
 
-    const result = await this.apiService.updateEmail(email)
+    // Validate input
+    if (!currentEmail || !newEmail || !currentPassword) {
+      responseDiv.textContent = 'All fields are required'
+      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Check that new email is different from current
+    if (currentEmail === newEmail) {
+      responseDiv.textContent = 'New email must be different from current email'
+      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Verify current email matches user's actual email
+    const user = await this.apiService.getCurrentUser()
+    if (!user || user.email !== currentEmail) {
+      responseDiv.textContent = 'Current email is incorrect'
+      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Show loading state
+    responseDiv.textContent = 'Verifying current password...'
+    responseDiv.className = 'text-blue-600 text-left mt-2 font-mono'
+    responseDiv.classList.remove('hidden')
+
+    // Verify current password using login endpoint
+    const verificationResult = await this.apiService.verifyCurrentPassword(currentPassword)
+    
+    if (!verificationResult.success) {
+      responseDiv.textContent = `Error: ${verificationResult.message || 'Current password is incorrect'}`
+      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Password verified, proceed with email update
+    responseDiv.textContent = 'Updating email...'
+    responseDiv.className = 'text-blue-600 text-left mt-2 font-mono'
+
+    const result = await this.apiService.updateEmail(newEmail)
 
     if (result.success) {
-      responseDiv.textContent = 'Email updated successfully!'
+      responseDiv.textContent = 'Email updated successfully! You have been logged out for security. Redirecting to login...'
       responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
       responseDiv.classList.remove('hidden')
       form.reset()
+
+      // User is logged out after email change for security
+      setTimeout(() => {
+        App.getInstance().setUserLoggedIn(false)
+        this.router.navigateTo(LoginScreen)
+      }, 2000)
     } else {
       responseDiv.textContent = `Error: ${result.message}`
       responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
