@@ -655,6 +655,7 @@ class AppRouter {
     this.routes.set('/player-setup', { component: PlayerSetupScreen })
     this.routes.set('/game', { component: GameScreen })
     this.routes.set('/logged-out', { component: LoggedOutScreen })
+    this.routes.set('/auth-error', { component: AuthErrorScreen })
   }
 
   private setupHistoryListener(): void {
@@ -678,7 +679,8 @@ class AppRouter {
     if (routeInfo) {
       // Parse URL parameters and use them as component arguments
       const args = this.parseArgumentsFromUrl(path, search, state)
-      this.renderComponent(routeInfo.component, ...args)
+      // Check authentication for protected routes
+      this.renderComponentWithAuthCheck(routeInfo.component, ...args)
     } else {
       // Fallback to start page for unknown routes
       this.renderComponent(StartPageScreen)
@@ -748,6 +750,30 @@ class AppRouter {
     this.currentComponent.mount(this.appContainer)
   }
 
+  // Method to render component with authentication check for protected routes
+  private async renderComponentWithAuthCheck(componentClass: new(...args: any[]) => Component, ...args: any[]): Promise<void> {
+    if (this.requiresAuthentication(componentClass)) {
+      // Check if user is authenticated
+      const apiService = new ApiService()
+      try {
+        const user = await apiService.getCurrentUser()
+        if (!user || !user.username) {
+          // User not authenticated, render auth error page
+          this.renderComponent(AuthErrorScreen)
+          return
+        }
+      } catch (error) {
+        // Authentication check failed, render auth error page
+        console.error('Authentication check failed:', error)
+        this.renderComponent(AuthErrorScreen)
+        return
+      }
+    }
+    
+    // User is authenticated or route doesn't require auth, proceed with rendering
+    this.renderComponent(componentClass, ...args)
+  }
+
   private getPathForComponent(componentClass: new(...args: any[]) => Component, ...args: any[]): string {
     // Map component classes to URL paths
     switch (componentClass.name) {
@@ -783,6 +809,8 @@ class AppRouter {
         // Handle username parameter
         const username = args[0] ? encodeURIComponent(args[0]) : 'User'
         return `/logged-out?user=${username}`
+      case 'AuthErrorScreen':
+        return '/auth-error'
       default:
         return '/start'
     }
@@ -796,7 +824,7 @@ class AppRouter {
 
     if (routeInfo) {
       const args = this.parseArgumentsFromUrl(path, search, null)
-      this.renderComponent(routeInfo.component, ...args)
+      this.renderComponentWithAuthCheck(routeInfo.component, ...args)
     } else {
       // Default to start page and update URL
       window.history.replaceState({ componentName: 'StartPageScreen' }, '', '/start')
@@ -815,6 +843,43 @@ class AppRouter {
       component: routeInfo ? routeInfo.component.name : null,
       args: this.parseArgumentsFromUrl(path, search, null)
     }
+  }
+
+  // Method to check if a route requires authentication
+  private requiresAuthentication(componentClass: new(...args: any[]) => Component): boolean {
+    const protectedRoutes = [
+      'LoggedInLandingScreen',
+      'UserProfileScreen',
+      'UserSettingsScreen',
+      'MatchHistoryScreen',
+      'PlayerSetupScreen'
+    ]
+    
+    return protectedRoutes.includes(componentClass.name)
+  }
+
+  // Method to check authentication and redirect to auth error if needed
+  async navigateToProtected(componentClass: new(...args: any[]) => Component, ...args: any[]): Promise<void> {
+    if (this.requiresAuthentication(componentClass)) {
+      // Check if user is authenticated
+      const apiService = new ApiService()
+      try {
+        const user = await apiService.getCurrentUser()
+        if (!user || !user.username) {
+          // User not authenticated, redirect to auth error page
+          this.navigateTo(AuthErrorScreen)
+          return
+        }
+      } catch (error) {
+        // Authentication check failed, redirect to auth error page
+        console.error('Authentication check failed:', error)
+        this.navigateTo(AuthErrorScreen)
+        return
+      }
+    }
+    
+    // User is authenticated or route doesn't require auth, proceed with navigation
+    this.navigateTo(componentClass, ...args)
   }
 }
 
@@ -1422,6 +1487,50 @@ class LoggedOutScreen extends Component {
 }
 
 /**
+ * Authentication Error Screen
+ * This screen is shown when users try to access protected pages without being logged in
+ * It provides options to log in, register, or go back to the start page
+ */
+class AuthErrorScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+  private apiService = new ApiService()
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('authErrorTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+
+      // Reset to logged-out state (back button shows automatically)
+      App.getInstance().setUserLoggedIn(false)
+    }
+    return div
+  }
+
+  setupEvents(): void {
+    const loginBtn = this.element?.querySelector('#authErrorLoginBtn') as HTMLButtonElement
+    const registerBtn = this.element?.querySelector('#authErrorRegisterBtn') as HTMLButtonElement
+
+    if (loginBtn) {
+      loginBtn.addEventListener('click', () => {
+        this.router.navigateTo(LoginScreen)
+      })
+    }
+
+    if (registerBtn) {
+      registerBtn.addEventListener('click', () => {
+        this.router.navigateTo(RegisterScreen)
+      })
+    }
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
+  }
+}
+
+/**
  * Logged-in Landing Page Screen
  * This screen is shown when logged-in users successfully log in
  * It provides options for single player game, tournament, and profile access
@@ -1467,7 +1576,7 @@ class LoggedInLandingScreen extends Component {
 
     if (start2PlayerBtn) {
       start2PlayerBtn.addEventListener('click', () => {
-        this.router.navigateTo(PlayerSetupScreen)
+        this.router.navigateToProtected(PlayerSetupScreen)
       })
     }
 
@@ -1480,7 +1589,7 @@ class LoggedInLandingScreen extends Component {
 
     if (userProfileLandingBtn) {
       userProfileLandingBtn.addEventListener('click', () => {
-        this.router.navigateTo(UserProfileScreen)
+        this.router.navigateToProtected(UserProfileScreen)
       })
     }
   }
@@ -3090,11 +3199,11 @@ class App {
     // Profile, settings and logout menu buttons
     document.getElementById('profileMenuBtn')?.addEventListener('click', () => {
       this.userMenuDropdown?.classList.add('hidden')
-      this.router.navigateTo(UserProfileScreen)
+      this.router.navigateToProtected(UserProfileScreen)
     })
     document.getElementById('settingsMenuBtn')?.addEventListener('click', () => {
       this.userMenuDropdown?.classList.add('hidden')
-      this.router.navigateTo(UserSettingsScreen)
+      this.router.navigateToProtected(UserSettingsScreen)
     })
     // Start Game menu button
     document.getElementById('startGameMenuBtn')?.addEventListener('click', () => {
