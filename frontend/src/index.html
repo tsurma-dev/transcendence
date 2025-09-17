@@ -473,6 +473,34 @@ _|          _|_|    _|      _|    _|_|_|</pre>
             Enable 2FA
           </button>
           
+          <!-- Password confirmation for 2FA (shown when enabling 2FA) -->
+          <div id="twoFAPasswordSection" class="hidden">
+            <h3 class="text-lg font-semibold text-black mb-4">Confirm Password to Enable 2FA</h3>
+            <div class="space-y-4">
+              <label class="block">
+                <span class="text-black font-mono">Current Password:</span>
+                <input 
+                  type="password" 
+                  id="twoFAPassword" 
+                  placeholder="Enter your current password" 
+                  required 
+                  class="input-white" />
+              </label>
+              <div class="flex space-x-4">
+                <button 
+                  id="confirmEnable2FABtn"
+                  class="btn-green flex-1">
+                  Confirm & Continue
+                </button>
+                <button 
+                  id="cancelEnable2FABtn"
+                  class="btn-red flex-1">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+          
           <!-- Disable 2FA Button (shown when 2FA is enabled) -->
           <button 
             id="disable2FABtn"

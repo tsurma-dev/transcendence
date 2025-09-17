@@ -2843,6 +2843,8 @@ class UserSettingsScreen extends Component {
     const enable2FABtn = this.element?.querySelector('#enable2FABtn') as HTMLButtonElement
     const disable2FABtn = this.element?.querySelector('#disable2FABtn') as HTMLButtonElement
     const verify2FABtn = this.element?.querySelector('#verify2FABtn') as HTMLButtonElement
+    const confirmEnable2FABtn = this.element?.querySelector('#confirmEnable2FABtn') as HTMLButtonElement
+    const cancelEnable2FABtn = this.element?.querySelector('#cancelEnable2FABtn') as HTMLButtonElement
 
     // Handle password update
     if (updatePasswordForm) {
@@ -2883,10 +2885,24 @@ class UserSettingsScreen extends Component {
       })
     }
 
-    // Handle 2FA enable
+    // Handle Enable 2FA
     if (enable2FABtn) {
       enable2FABtn.addEventListener('click', async () => {
-        await this.handleEnable2FA()
+        this.showPasswordConfirmation2FA()
+      })
+    }
+
+    // Handle 2FA password confirmation
+    if (confirmEnable2FABtn) {
+      confirmEnable2FABtn.addEventListener('click', async () => {
+        await this.handleConfirmEnable2FA()
+      })
+    }
+
+    // Handle 2FA enable cancellation
+    if (cancelEnable2FABtn) {
+      cancelEnable2FABtn.addEventListener('click', () => {
+        this.hidePasswordConfirmation2FA()
       })
     }
 
@@ -3175,6 +3191,68 @@ class UserSettingsScreen extends Component {
     } else {
       this.showResponse(responseDiv, result.message || 'Failed to disable 2FA', 'error')
     }
+  }
+
+  private showPasswordConfirmation2FA(): void {
+    const enable2FABtn = this.element?.querySelector('#enable2FABtn') as HTMLButtonElement
+    const passwordSection = this.element?.querySelector('#twoFAPasswordSection') as HTMLElement
+    const responseDiv = this.element?.querySelector('#twoFAResponse') as HTMLElement
+
+    if (enable2FABtn) enable2FABtn.classList.add('hidden')
+    if (passwordSection) passwordSection.classList.remove('hidden')
+    if (responseDiv) responseDiv.classList.add('hidden')
+
+    // Clear password field
+    const passwordInput = this.element?.querySelector('#twoFAPassword') as HTMLInputElement
+    if (passwordInput) passwordInput.value = ''
+  }
+
+  private hidePasswordConfirmation2FA(): void {
+    const enable2FABtn = this.element?.querySelector('#enable2FABtn') as HTMLButtonElement
+    const passwordSection = this.element?.querySelector('#twoFAPasswordSection') as HTMLElement
+    const responseDiv = this.element?.querySelector('#twoFAResponse') as HTMLElement
+
+    if (enable2FABtn) enable2FABtn.classList.remove('hidden')
+    if (passwordSection) passwordSection.classList.add('hidden')
+    if (responseDiv) responseDiv.classList.add('hidden')
+
+    // Clear password field
+    const passwordInput = this.element?.querySelector('#twoFAPassword') as HTMLInputElement
+    if (passwordInput) passwordInput.value = ''
+  }
+
+  private async handleConfirmEnable2FA(): Promise<void> {
+    const passwordInput = this.element?.querySelector('#twoFAPassword') as HTMLInputElement
+    const responseDiv = this.element?.querySelector('#twoFAResponse') as HTMLElement
+
+    if (!passwordInput || !passwordInput.value.trim()) {
+      this.showResponse(responseDiv, 'Password is required', 'error')
+      return
+    }
+
+    const password = passwordInput.value.trim()
+
+    // Show loading state
+    responseDiv.textContent = 'Verifying password...'
+    responseDiv.className = 'text-blue-600 text-left mt-2 font-mono'
+    responseDiv.classList.remove('hidden')
+
+    // Verify current password
+    const verificationResult = await this.apiService.verifyCurrentPassword(password)
+    
+    if (!verificationResult.success) {
+      this.showResponse(responseDiv, verificationResult.message || 'Current password is incorrect', 'error')
+      return
+    }
+
+    // Password verified, hide confirmation and enable 2FA
+    this.hidePasswordConfirmation2FA()
+    responseDiv.textContent = 'Password verified. Setting up 2FA...'
+    responseDiv.className = 'text-blue-600 text-left mt-2 font-mono'
+    responseDiv.classList.remove('hidden')
+
+    // Proceed with 2FA enablement
+    await this.handleEnable2FA()
   }
 
   private showResponse(responseDiv: HTMLElement, message: string, type: 'success' | 'error'): void {
