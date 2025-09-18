@@ -90,11 +90,11 @@ function endGame(roomId) {
 	};
 	if (room.player1.socket) {
 		room.player1.socket.send(JSON.stringify(endState));
-		room.player1.socket = null;
+		room.player1.socket.close();
 	}
 	if (room.player2.socket) {
 		room.player2.socket.send(JSON.stringify(endState));
-		room.player2.socket = null;
+		room.player2.socket.close();
 	}
 	//store match result in DB
 	room.game = null;
@@ -187,16 +187,7 @@ function setupCloseHandler(roomId, socket) {
   socket.on("close", () => {
     const room = rooms.get(roomId);
     if (!room) return;
-	if (room.player1.socket === socket) {
-		room.player1.socket = null;
-	}
-	if (room.player2.socket === socket) {
-		room.player2.socket = null;
-	}
+	console.log("Socket closed, game in room " + roomId + " ended");
     endGame(roomId);
-
-    // if (roomId != "42") {
-    //   rooms.delete(roomId);
-	// }
   });
 }

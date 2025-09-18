@@ -708,6 +708,10 @@ class PongGame {
         }
         }
     }
+	this.socket.onclose = () => {
+		this.socket.close()
+		console.log("WebSocket connection closed")
+	}
   }
 
   private setupEventListeners(): void {
