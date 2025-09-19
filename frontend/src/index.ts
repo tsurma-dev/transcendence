@@ -179,7 +179,41 @@ class ApiService {
     }
   }
 
-  async updatePassword(password: string): Promise<{success: boolean, message?: string}> {
+  async verifyCurrentPassword(currentPassword: string): Promise<{success: boolean, message?: string}> {
+    try {
+      const user = await this.getCurrentUser()
+      if (!user || !user.email) {
+        return { success: false, message: 'Unable to verify current user' }
+      }
+
+      // Use the login endpoint to verify current credentials
+      const response = await fetch(`${this.baseUrl}/api/login`, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email: user.email,
+          password: currentPassword 
+        }),
+        credentials: 'include'
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        return { success: true }
+      } else {
+        return { success: false, message: result.message || 'Current password is incorrect' }
+      }
+    } catch (error) {
+      console.error('Password verification error:', error)
+      return { success: false, message: 'Network error. Please try again.' }
+    }
+  }
+
+  async updatePassword(newPassword: string, currentPassword: string): Promise<{success: boolean, message?: string}> {
     try {
       const response = await fetch(`${this.baseUrl}/api/me/password`, {
         method: 'PATCH',
@@ -187,7 +221,9 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ 
+          password: newPassword
+        }),
         credentials: 'include'
       })
 
@@ -653,8 +689,10 @@ class AppRouter {
     this.routes.set('/match-history', { component: MatchHistoryScreen })
     this.routes.set('/quick-play', { component: QuickPlaySetupScreen })
     this.routes.set('/player-setup', { component: PlayerSetupScreen })
+    this.routes.set('/tournament-lobby', { component: TournamentLobbyScreen })
     this.routes.set('/game', { component: GameScreen })
     this.routes.set('/logged-out', { component: LoggedOutScreen })
+    this.routes.set('/auth-error', { component: AuthErrorScreen })
   }
 
   private setupHistoryListener(): void {
@@ -678,7 +716,8 @@ class AppRouter {
     if (routeInfo) {
       // Parse URL parameters and use them as component arguments
       const args = this.parseArgumentsFromUrl(path, search, state)
-      this.renderComponent(routeInfo.component, ...args)
+      // Check authentication for protected routes
+      this.renderComponentWithAuthCheck(routeInfo.component, ...args)
     } else {
       // Fallback to start page for unknown routes
       this.renderComponent(StartPageScreen)
@@ -748,6 +787,30 @@ class AppRouter {
     this.currentComponent.mount(this.appContainer)
   }
 
+  // Method to render component with authentication check for protected routes
+  private async renderComponentWithAuthCheck(componentClass: new(...args: any[]) => Component, ...args: any[]): Promise<void> {
+    if (this.requiresAuthentication(componentClass)) {
+      // Check if user is authenticated
+      const apiService = new ApiService()
+      try {
+        const user = await apiService.getCurrentUser()
+        if (!user || !user.username) {
+          // User not authenticated, render auth error page
+          this.renderComponent(AuthErrorScreen)
+          return
+        }
+      } catch (error) {
+        // Authentication check failed, render auth error page
+        console.error('Authentication check failed:', error)
+        this.renderComponent(AuthErrorScreen)
+        return
+      }
+    }
+    
+    // User is authenticated or route doesn't require auth, proceed with rendering
+    this.renderComponent(componentClass, ...args)
+  }
+
   private getPathForComponent(componentClass: new(...args: any[]) => Component, ...args: any[]): string {
     // Map component classes to URL paths
     switch (componentClass.name) {
@@ -773,6 +836,8 @@ class AppRouter {
         return '/quick-play'
       case 'PlayerSetupScreen':
         return '/player-setup'
+      case 'TournamentLobbyScreen':
+        return '/tournament-lobby'
       case 'GameScreen':
         // Handle game parameters: player1Name, player2Name, isQuickPlay
         const player1 = args[0] ? encodeURIComponent(args[0]) : 'Player1'
@@ -783,6 +848,8 @@ class AppRouter {
         // Handle username parameter
         const username = args[0] ? encodeURIComponent(args[0]) : 'User'
         return `/logged-out?user=${username}`
+      case 'AuthErrorScreen':
+        return '/auth-error'
       default:
         return '/start'
     }
@@ -796,7 +863,7 @@ class AppRouter {
 
     if (routeInfo) {
       const args = this.parseArgumentsFromUrl(path, search, null)
-      this.renderComponent(routeInfo.component, ...args)
+      this.renderComponentWithAuthCheck(routeInfo.component, ...args)
     } else {
       // Default to start page and update URL
       window.history.replaceState({ componentName: 'StartPageScreen' }, '', '/start')
@@ -815,6 +882,44 @@ class AppRouter {
       component: routeInfo ? routeInfo.component.name : null,
       args: this.parseArgumentsFromUrl(path, search, null)
     }
+  }
+
+  // Method to check if a route requires authentication
+  private requiresAuthentication(componentClass: new(...args: any[]) => Component): boolean {
+    const protectedRoutes = [
+      'LoggedInLandingScreen',
+      'UserProfileScreen',
+      'UserSettingsScreen',
+      'MatchHistoryScreen',
+      'PlayerSetupScreen',
+      'TournamentLobbyScreen'
+    ]
+    
+    return protectedRoutes.includes(componentClass.name)
+  }
+
+  // Method to check authentication and redirect to auth error if needed
+  async navigateToProtected(componentClass: new(...args: any[]) => Component, ...args: any[]): Promise<void> {
+    if (this.requiresAuthentication(componentClass)) {
+      // Check if user is authenticated
+      const apiService = new ApiService()
+      try {
+        const user = await apiService.getCurrentUser()
+        if (!user || !user.username) {
+          // User not authenticated, redirect to auth error page
+          this.navigateTo(AuthErrorScreen)
+          return
+        }
+      } catch (error) {
+        // Authentication check failed, redirect to auth error page
+        console.error('Authentication check failed:', error)
+        this.navigateTo(AuthErrorScreen)
+        return
+      }
+    }
+    
+    // User is authenticated or route doesn't require auth, proceed with navigation
+    this.navigateTo(componentClass, ...args)
   }
 }
 
@@ -1422,6 +1527,50 @@ class LoggedOutScreen extends Component {
 }
 
 /**
+ * Authentication Error Screen
+ * This screen is shown when users try to access protected pages without being logged in
+ * It provides options to log in, register, or go back to the start page
+ */
+class AuthErrorScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+  private apiService = new ApiService()
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('authErrorTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+
+      // Reset to logged-out state (back button shows automatically)
+      App.getInstance().setUserLoggedIn(false)
+    }
+    return div
+  }
+
+  setupEvents(): void {
+    const loginBtn = this.element?.querySelector('#authErrorLoginBtn') as HTMLButtonElement
+    const registerBtn = this.element?.querySelector('#authErrorRegisterBtn') as HTMLButtonElement
+
+    if (loginBtn) {
+      loginBtn.addEventListener('click', () => {
+        this.router.navigateTo(LoginScreen)
+      })
+    }
+
+    if (registerBtn) {
+      registerBtn.addEventListener('click', () => {
+        this.router.navigateTo(RegisterScreen)
+      })
+    }
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
+  }
+}
+
+/**
  * Logged-in Landing Page Screen
  * This screen is shown when logged-in users successfully log in
  * It provides options for single player game, tournament, and profile access
@@ -1467,20 +1616,19 @@ class LoggedInLandingScreen extends Component {
 
     if (start2PlayerBtn) {
       start2PlayerBtn.addEventListener('click', () => {
-        this.router.navigateTo(PlayerSetupScreen)
+        this.router.navigateToProtected(PlayerSetupScreen)
       })
     }
 
     if (startTournamentBtn) {
       startTournamentBtn.addEventListener('click', () => {
-        // TODO: Implement tournament navigation
-        console.log('Tournament mode - not implemented yet')
+        this.router.navigateToProtected(TournamentLobbyScreen)
       })
     }
 
     if (userProfileLandingBtn) {
       userProfileLandingBtn.addEventListener('click', () => {
-        this.router.navigateTo(UserProfileScreen)
+        this.router.navigateToProtected(UserProfileScreen)
       })
     }
   }
@@ -1593,7 +1741,7 @@ class LoggedInLandingScreen extends Component {
         <div class="flex items-center justify-between p-2 border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
           <div class="flex items-center">
             <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-            <button class="text-black font-mono text-sm font-semibold hover:text-blue-600 hover:underline cursor-pointer user-profile-link" data-username="${user.username}">
+            <button class="text-content font-semibold hover:text-blue-600 hover:underline cursor-pointer user-profile-link" data-username="${user.username}">
               ${user.username}
             </button>
           </div>
@@ -1657,6 +1805,62 @@ class LoggedInLandingScreen extends Component {
       this.documentClickHandler = undefined
     }
     // Other cleanup handled automatically by unmount
+  }
+}
+
+/**
+ * Tournament Lobby Screen
+ * This screen is shown when users join a tournament
+ * It displays the lobby with waiting players, chat, and tournament status
+ */
+class TournamentLobbyScreen extends Component {
+  private templateManager = TemplateManager.getInstance()
+  private router = AppRouter.getInstance()
+  private apiService = new ApiService()
+
+  render(): HTMLElement {
+    const fragment = this.templateManager.cloneTemplate('tournamentLobbyTemplate')
+    const div = document.createElement('div')
+    if (fragment) {
+      div.appendChild(fragment)
+
+      // Show user menu for authenticated users
+      App.getInstance().setUserLoggedIn(true)
+    }
+    return div
+  }
+
+  setupEvents(): void {
+    const leaveTournamentBtn = this.element?.querySelector('#leaveTournamentBtn') as HTMLButtonElement
+
+    if (leaveTournamentBtn) {
+      leaveTournamentBtn.addEventListener('click', () => {
+        // Navigate back to logged-in landing page
+        this.router.navigateToProtected(LoggedInLandingScreen)
+      })
+    }
+
+    // Load initial tournament state
+    this.loadTournamentData()
+  }
+
+  private loadTournamentData(): void {
+    // TODO: Load real tournament data from backend
+    // For now, use placeholder data
+    console.log('Loading tournament data...')
+    
+    // Update tournament info with sample data
+    const tournamentPlayers = this.element?.querySelector('#tournamentPlayers')
+    const tournamentMaxPlayers = this.element?.querySelector('#tournamentMaxPlayers')
+    const tournamentStatus = this.element?.querySelector('#tournamentStatus')
+    
+    if (tournamentPlayers) tournamentPlayers.textContent = '2'
+    if (tournamentMaxPlayers) tournamentMaxPlayers.textContent = '4'
+    if (tournamentStatus) tournamentStatus.textContent = 'Waiting'
+  }
+
+  cleanup(): void {
+    // Cleanup handled automatically by unmount
   }
 }
 
@@ -1817,7 +2021,7 @@ class GameScreen extends Component {
     // game3DContainer.style.width = '800px'
     // game3DContainer.style.height = '400px'
     // game3DContainer.style.backgroundColor = '#000'
-    // game3DContainer.className = 'border-4 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+    // game3DContainer.className = 'container-shadowed'
     // ---FULL SCREEN---
     game3DContainer.style.position = 'fixed'
     game3DContainer.style.top = '0'
@@ -2004,13 +2208,11 @@ class UserProfileScreen extends Component {
       })
     }
 
-    // Update online status
     this.updateOnlineStatus()
 
-    // Handle user settings button click (placeholder functionality)
+    // Handle user settings button click
     if (userSettingsBtn) {
       userSettingsBtn.addEventListener('click', () => {
-        // Navigate to user settings screen
         this.router.navigateTo(UserSettingsScreen)
       })
     }
@@ -2079,8 +2281,7 @@ class UserProfileScreen extends Component {
         // Set the avatar image
         avatarImg.src = avatarUrl
 
-        // Initially assume no custom avatar - this will be set to true only after uploads
-        // or we could check localStorage for a flag that tracks custom avatar status
+        // Check localStorage for a flag that tracks custom avatar status
         const hasCustomAvatarFlag = localStorage.getItem(`hasCustomAvatar_${username}`)
         this.hasCustomAvatar = hasCustomAvatarFlag === 'true'
         this.updateDeleteButtonVisibility()
@@ -2701,6 +2902,8 @@ class UserSettingsScreen extends Component {
     const enable2FABtn = this.element?.querySelector('#enable2FABtn') as HTMLButtonElement
     const disable2FABtn = this.element?.querySelector('#disable2FABtn') as HTMLButtonElement
     const verify2FABtn = this.element?.querySelector('#verify2FABtn') as HTMLButtonElement
+    const confirmEnable2FABtn = this.element?.querySelector('#confirmEnable2FABtn') as HTMLButtonElement
+    const cancelEnable2FABtn = this.element?.querySelector('#cancelEnable2FABtn') as HTMLButtonElement
 
     // Handle password update
     if (updatePasswordForm) {
@@ -2741,10 +2944,24 @@ class UserSettingsScreen extends Component {
       })
     }
 
-    // Handle 2FA enable
+    // Handle Enable 2FA
     if (enable2FABtn) {
       enable2FABtn.addEventListener('click', async () => {
-        await this.handleEnable2FA()
+        this.showPasswordConfirmation2FA()
+      })
+    }
+
+    // Handle 2FA password confirmation
+    if (confirmEnable2FABtn) {
+      confirmEnable2FABtn.addEventListener('click', async () => {
+        await this.handleConfirmEnable2FA()
+      })
+    }
+
+    // Handle 2FA enable cancellation
+    if (cancelEnable2FABtn) {
+      cancelEnable2FABtn.addEventListener('click', () => {
+        this.hidePasswordConfirmation2FA()
       })
     }
 
@@ -2770,13 +2987,49 @@ class UserSettingsScreen extends Component {
 
   private async handlePasswordUpdate(form: HTMLFormElement, responseDiv: HTMLElement): Promise<void> {
     const formData = new FormData(form)
-    const password = formData.get('password') as string
+    const currentPassword = formData.get('currentPassword') as string
+    const newPassword = formData.get('password') as string
 
-    const result = await this.apiService.updatePassword(password)
+    // Validate that both fields are filled
+    if (!currentPassword || !newPassword) {
+      responseDiv.textContent = 'Please fill in both current and new password fields'
+      responseDiv.className = 'text-error'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Validate that new password is different from current
+    if (currentPassword === newPassword) {
+      responseDiv.textContent = 'New password must be different from current password'
+      responseDiv.className = 'text-error'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Show loading state
+    responseDiv.textContent = 'Verifying current password...'
+    responseDiv.className = 'text-info'
+    responseDiv.classList.remove('hidden')
+
+    // First verify the current password using login endpoint
+    const verificationResult = await this.apiService.verifyCurrentPassword(currentPassword)
+    
+    if (!verificationResult.success) {
+      responseDiv.textContent = `Error: ${verificationResult.message || 'Current password is incorrect'}`
+      responseDiv.className = 'text-error'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Current password is correct, proceed with password update
+    responseDiv.textContent = 'Updating password...'
+    responseDiv.className = 'text-info'
+
+    const result = await this.apiService.updatePassword(newPassword, currentPassword)
 
     if (result.success) {
       responseDiv.textContent = 'Password updated successfully! You have been logged out for security. Redirecting to login...'
-      responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-success'
       responseDiv.classList.remove('hidden')
       form.reset()
 
@@ -2787,25 +3040,77 @@ class UserSettingsScreen extends Component {
       }, 2000)
     } else {
       responseDiv.textContent = `Error: ${result.message}`
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
     }
   }
 
   private async handleEmailUpdate(form: HTMLFormElement, responseDiv: HTMLElement): Promise<void> {
     const formData = new FormData(form)
-    const email = formData.get('email') as string
+    const currentEmail = formData.get('currentEmail') as string
+    const newEmail = formData.get('email') as string
+    const currentPassword = formData.get('currentPassword') as string
 
-    const result = await this.apiService.updateEmail(email)
+    // Validate input
+    if (!currentEmail || !newEmail || !currentPassword) {
+      responseDiv.textContent = 'All fields are required'
+      responseDiv.className = 'text-error'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Check that new email is different from current
+    if (currentEmail === newEmail) {
+      responseDiv.textContent = 'New email must be different from current email'
+      responseDiv.className = 'text-error'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Verify current email matches user's actual email
+    const user = await this.apiService.getCurrentUser()
+    if (!user || user.email !== currentEmail) {
+      responseDiv.textContent = 'Current email is incorrect'
+      responseDiv.className = 'text-error'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Show loading state
+    responseDiv.textContent = 'Verifying current password...'
+    responseDiv.className = 'text-info'
+    responseDiv.classList.remove('hidden')
+
+    // Verify current password using login endpoint
+    const verificationResult = await this.apiService.verifyCurrentPassword(currentPassword)
+    
+    if (!verificationResult.success) {
+      responseDiv.textContent = `Error: ${verificationResult.message || 'Current password is incorrect'}`
+      responseDiv.className = 'text-error'
+      responseDiv.classList.remove('hidden')
+      return
+    }
+
+    // Password verified, proceed with email update
+    responseDiv.textContent = 'Updating email...'
+    responseDiv.className = 'text-info'
+
+    const result = await this.apiService.updateEmail(newEmail)
 
     if (result.success) {
-      responseDiv.textContent = 'Email updated successfully!'
-      responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
+      responseDiv.textContent = 'Email updated successfully! You have been logged out for security. Redirecting to login...'
+      responseDiv.className = 'text-success'
       responseDiv.classList.remove('hidden')
       form.reset()
+
+      // User is logged out after email change for security
+      setTimeout(() => {
+        App.getInstance().setUserLoggedIn(false)
+        this.router.navigateTo(LoginScreen)
+      }, 2000)
     } else {
       responseDiv.textContent = `Error: ${result.message}`
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
     }
   }
@@ -2818,12 +3123,12 @@ class UserSettingsScreen extends Component {
 
     if (result.success) {
       responseDiv.textContent = 'Username updated successfully!'
-      responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-success'
       responseDiv.classList.remove('hidden')
       form.reset()
     } else {
       responseDiv.textContent = `Error: ${result.message}`
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
     }
   }
@@ -2836,7 +3141,7 @@ class UserSettingsScreen extends Component {
 
     if (result.success) {
       responseDiv.textContent = 'Account deleted successfully. Redirecting...'
-      responseDiv.className = 'text-green-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-success'
       responseDiv.classList.remove('hidden')
 
       // Redirect to start page after successful deletion
@@ -2846,7 +3151,7 @@ class UserSettingsScreen extends Component {
       }, 2000)
     } else {
       responseDiv.textContent = `Error: ${result.message}`
-      responseDiv.className = 'text-red-600 text-left mt-2 font-mono'
+      responseDiv.className = 'text-error'
       responseDiv.classList.remove('hidden')
     }
   }
@@ -2947,13 +3252,75 @@ class UserSettingsScreen extends Component {
     }
   }
 
+  private showPasswordConfirmation2FA(): void {
+    const enable2FABtn = this.element?.querySelector('#enable2FABtn') as HTMLButtonElement
+    const passwordSection = this.element?.querySelector('#twoFAPasswordSection') as HTMLElement
+    const responseDiv = this.element?.querySelector('#twoFAResponse') as HTMLElement
+
+    if (enable2FABtn) enable2FABtn.classList.add('hidden')
+    if (passwordSection) passwordSection.classList.remove('hidden')
+    if (responseDiv) responseDiv.classList.add('hidden')
+
+    // Clear password field
+    const passwordInput = this.element?.querySelector('#twoFAPassword') as HTMLInputElement
+    if (passwordInput) passwordInput.value = ''
+  }
+
+  private hidePasswordConfirmation2FA(): void {
+    const enable2FABtn = this.element?.querySelector('#enable2FABtn') as HTMLButtonElement
+    const passwordSection = this.element?.querySelector('#twoFAPasswordSection') as HTMLElement
+    const responseDiv = this.element?.querySelector('#twoFAResponse') as HTMLElement
+
+    if (enable2FABtn) enable2FABtn.classList.remove('hidden')
+    if (passwordSection) passwordSection.classList.add('hidden')
+    if (responseDiv) responseDiv.classList.add('hidden')
+
+    // Clear password field
+    const passwordInput = this.element?.querySelector('#twoFAPassword') as HTMLInputElement
+    if (passwordInput) passwordInput.value = ''
+  }
+
+  private async handleConfirmEnable2FA(): Promise<void> {
+    const passwordInput = this.element?.querySelector('#twoFAPassword') as HTMLInputElement
+    const responseDiv = this.element?.querySelector('#twoFAResponse') as HTMLElement
+
+    if (!passwordInput || !passwordInput.value.trim()) {
+      this.showResponse(responseDiv, 'Password is required', 'error')
+      return
+    }
+
+    const password = passwordInput.value.trim()
+
+    // Show loading state
+    responseDiv.textContent = 'Verifying password...'
+    responseDiv.className = 'text-info'
+    responseDiv.classList.remove('hidden')
+
+    // Verify current password
+    const verificationResult = await this.apiService.verifyCurrentPassword(password)
+    
+    if (!verificationResult.success) {
+      this.showResponse(responseDiv, verificationResult.message || 'Current password is incorrect', 'error')
+      return
+    }
+
+    // Password verified, hide confirmation and enable 2FA
+    this.hidePasswordConfirmation2FA()
+    responseDiv.textContent = 'Password verified. Setting up 2FA...'
+    responseDiv.className = 'text-info'
+    responseDiv.classList.remove('hidden')
+
+    // Proceed with 2FA enablement
+    await this.handleEnable2FA()
+  }
+
   private showResponse(responseDiv: HTMLElement, message: string, type: 'success' | 'error'): void {
     if (!responseDiv) return
 
     responseDiv.textContent = message
     responseDiv.className = type === 'success' ?
-      'text-green-600 text-left mt-2 font-mono' :
-      'text-red-600 text-left mt-2 font-mono'
+      'text-success' :
+      'text-error'
     responseDiv.classList.remove('hidden')
 
     // Auto-hide success messages after 5 seconds
@@ -3090,11 +3457,11 @@ class App {
     // Profile, settings and logout menu buttons
     document.getElementById('profileMenuBtn')?.addEventListener('click', () => {
       this.userMenuDropdown?.classList.add('hidden')
-      this.router.navigateTo(UserProfileScreen)
+      this.router.navigateToProtected(UserProfileScreen)
     })
     document.getElementById('settingsMenuBtn')?.addEventListener('click', () => {
       this.userMenuDropdown?.classList.add('hidden')
-      this.router.navigateTo(UserSettingsScreen)
+      this.router.navigateToProtected(UserSettingsScreen)
     })
     // Start Game menu button
     document.getElementById('startGameMenuBtn')?.addEventListener('click', () => {
