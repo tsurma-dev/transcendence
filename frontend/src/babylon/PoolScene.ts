@@ -120,9 +120,10 @@ export class PoolScene {
 
   // Use the same updateFromState method as online games!
   this.scene.registerBeforeRender(() => {
+    const deltaTime = this.engine.getDeltaTime();
     if (this.localGameEngine) {
       // Update game logic
-      this.localGameEngine.update();
+      this.localGameEngine.update(deltaTime);
 
       // Use the same visual update method as online games
       const gameState = this.localGameEngine.getGameState();
@@ -277,7 +278,7 @@ export class PoolScene {
   private _createCamera(scene: Scene): void {
     this.camera = new ArcRotateCamera("camera", 0, 0, 1, CAMERA_SETTINGS.TARGET_LOCAL, scene);
     this.camera.setPosition(CAMERA_SETTINGS.POSITION_LOCAL);
-    // this.camera.attachControl(this.canvas);
+    this.camera.attachControl(this.canvas);
     this.camera.wheelPrecision = CAMERA_SETTINGS.WHEEL_PRECISION;
   }
 

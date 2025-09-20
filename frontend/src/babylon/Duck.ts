@@ -43,7 +43,17 @@ export class Duck {
     this.mesh.position.x = state.x;
     this.mesh.position.z = state.z;
 
-    this.mesh.rotation.y = state.dir + Math.PI;
+    // Rotation: compute from velocity vector (vx, vz) so the model front faces movement.
+    // Reason: using state.dir + Math.PI can flip the model depending on model's forward axis and reflection transforms.
+    // Using the velocity vector ensures we always face the actual travel direction.
+    const vx = Math.cos(state.dir);
+    const vz = Math.sin(state.dir);
+
+    // Babylon uses rotation.y == 0 to face +Z. The angle from +Z to (vx, vz) is atan2(vx, vz).
+    // Using atan2(x, z) returns the yaw to rotate +Z to the velocity vector.
+    const rotationY = Math.atan2(vx, vz) + Math.PI;
+    this.mesh.rotation.y = rotationY;
+
   }
 
   // Scales and positions the duck model based on its bounding box.
@@ -78,12 +88,15 @@ export class Duck {
     const scale = targetDiameter / duckDiameter;
 
     mesh.scaling.setAll(scale);
+
+    // Place the duck at the water level (small downward offset so it sits nicely)
     mesh.position = new Vector3(0, GAME_CONFIG.WATER_LEVEL - 0.15, 0);
 
+    // Use Euler rotations
     mesh.rotationQuaternion = null;
     mesh.rotation.y = 0;
 
-    // Add all children to the shadow generator for correct shadows
+    // Add entire model as shadow caster (true -> recursive)
     shadowGenerator.addShadowCaster(mesh, true);
   }
 }
