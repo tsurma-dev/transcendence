@@ -4,6 +4,7 @@ import type { GameState, GameType } from "@shared/types";
 
 export class LocalGameEngine {
   private gameState: GameState;
+  private isPausedState = false;
 
   // Input state
   private player1Input = { left: false, right: false };
@@ -39,8 +40,26 @@ private createInitialGameState(): GameState {
     };
   }
 
+  public pause(): void {
+    this.isPausedState = true;
+    console.log('🟡 Game paused for countdown');
+  }
+
+  public resume(): void {
+    this.isPausedState = false;
+    console.log('🟢 Game resumed after countdown');
+  }
+
+  public isPaused(): boolean {
+    return this.isPausedState;
+  }
+
   // Called every frame by Babylon's render loop
-  update(deltaTime: number): void {
+  public update(deltaTime: number): void {
+    if (this.isPausedState) {
+      this.gameState.events = [];
+      return;
+    }
 
     if (this.gameState.status === 'finished') {
       console.log('Game is finished, stopping updates');
@@ -55,9 +74,17 @@ private createInitialGameState(): GameState {
     this.updateDuck(deltaTime);
     this.checkWallCollisions();
     const paddleHit = this.checkPaddleCollisions();
-    if (!paddleHit) { // Only check scoring if no paddle collision
-      this.checkScoring();
+
+    // Add collision events if they occurred
+    if (paddleHit) {
+      this.gameState.events.push({
+        type: 'collision',
+        collisionType: 'paddle'
+      });
     }
+
+    // Check scoring LAST (after clearing events)
+    this.checkScoring();
   }
 
   private updatePaddles(deltaTime: number): void {
@@ -94,12 +121,14 @@ private createInitialGameState(): GameState {
     if (duck.x <= -maxX) {
       duck.x = -maxX;                 // clamp inside
       duck.dir = Math.PI - duck.dir;  // reflect X
+      this.normalizeDirection(duck);
+      this.gameState.events.push({ type: 'collision', collisionType: 'wall' });
     } else if (duck.x >= maxX) {
       duck.x = maxX;
       duck.dir = Math.PI - duck.dir;
+      this.normalizeDirection(duck);
+      this.gameState.events.push({ type: 'collision', collisionType: 'wall' });
     }
-
-    this.gameState.events.push({ type: 'collision', collisionType: 'wall' });
   }
 
   private checkPaddleCollisions(): boolean {
@@ -114,7 +143,8 @@ private createInitialGameState(): GameState {
     if (
       duck.z - GAME_CONFIG.BALL_RADIUS <= -GAME_CONFIG.TABLE_DEPTH / 2 &&
       duck.x  >= player1.x - GAME_CONFIG.PADDLE_WIDTH / 2 &&
-      duck.x  <= player1.x + GAME_CONFIG.PADDLE_WIDTH / 2
+      duck.x  <= player1.x + GAME_CONFIG.PADDLE_WIDTH / 2 &&
+      duck.dir > Math.PI // Moving towards negative Z
       ) {
       // Reflect Z direction
       duck.dir = -duck.dir;
@@ -122,7 +152,6 @@ private createInitialGameState(): GameState {
       // Clamp outside paddle so we don’t get stuck
       duck.z = -GAME_CONFIG.TABLE_DEPTH / 2 + GAME_CONFIG.BALL_RADIUS;
 
-      this.gameState.events.push({ type: 'collision', collisionType: 'paddle' });
       return true; // Paddle hit
     }
 
@@ -130,13 +159,13 @@ private createInitialGameState(): GameState {
     if (
       duck.z + GAME_CONFIG.BALL_RADIUS >= GAME_CONFIG.TABLE_DEPTH / 2 &&
       duck.x >= player2.x - GAME_CONFIG.PADDLE_WIDTH / 2 &&
-      duck.x <= player2.x + GAME_CONFIG.PADDLE_WIDTH / 2
+      duck.x <= player2.x + GAME_CONFIG.PADDLE_WIDTH / 2 &&
+      duck.dir < Math.PI // Moving towards positive Z
       ) {
       duck.dir = -duck.dir;
       this.normalizeDirection(duck);
       duck.z = GAME_CONFIG.TABLE_DEPTH / 2 - GAME_CONFIG.BALL_RADIUS;
 
-      this.gameState.events.push({ type: 'collision', collisionType: 'paddle' });
       return true; // Paddle hit
     }
     return false; // No paddle hit
@@ -150,12 +179,15 @@ private createInitialGameState(): GameState {
   }
 
   private checkScoring(): void {
+     if (this.isPausedState) return;
     const duck = this.gameState.duck;
     const duckRadius = GAME_CONFIG.BALL_RADIUS;
 
     // Scoring zones are the pool ends
     const scoreZone1 = -GAME_CONFIG.TABLE_DEPTH / 2 - GAME_CONFIG.WATER_EXTRA_SPACE; // Behind Player 1's paddle
     const scoreZone2 = GAME_CONFIG.TABLE_DEPTH / 2 + GAME_CONFIG.WATER_EXTRA_SPACE;  // Behind Player 2's paddle
+
+    let scored = false;
 
     // Player 1 scores when duck hits the positive Z end of the pool
     if (duck.z + duckRadius > scoreZone2) {
@@ -165,7 +197,7 @@ private createInitialGameState(): GameState {
         player: "Player 1",
         points: this.gameState.scores["Player 1"]
       });
-      this.resetDuck();
+      scored = true;
     }
     // Player 2 scores when duck hits the negative Z end of the pool
     else if (duck.z - duckRadius < scoreZone1) {
@@ -175,8 +207,11 @@ private createInitialGameState(): GameState {
         player: "Player 2",
         points: this.gameState.scores["Player 2"]
       });
-      this.resetDuck();
+      scored = true;
     }
+
+    if (scored) {
+    this.resetDuck();
 
     // Check win condition
     const winningScore = 5;
@@ -190,6 +225,7 @@ private createInitialGameState(): GameState {
       console.log("🏆 Player 2 wins the game!");
     }
   }
+}
 
   private resetDuck(): void {
     // Start with one of four diagonal directions
@@ -205,8 +241,6 @@ private createInitialGameState(): GameState {
       z: 0,
       dir: directions[Math.floor(Math.random() * directions.length)]
     };
-
-    console.log(`Duck reset! Direction: ${this.gameState.duck.dir.toFixed(2)} (${(this.gameState.duck.dir * 180 / Math.PI).toFixed(0)}°)`);
   }
 
   // Input handlers

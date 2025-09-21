@@ -9,8 +9,13 @@ export class Scoreboard {
   private player2NameText!: TextBlock;
   private player2ScoreText!: TextBlock;
   private gameStatusText!: TextBlock;
+  private initialPlayer1Name: string;
+  private initialPlayer2Name: string;
 
-  constructor() {
+  constructor(player1Name: string, player2Name: string) {
+    this.initialPlayer1Name = player1Name || "Player 1";
+    this.initialPlayer2Name = player2Name || "Player 2";
+
     // Create GUI texture
     this.guiTexture = AdvancedDynamicTexture.CreateFullscreenUI("ScoreboardUI");
 
@@ -41,9 +46,9 @@ export class Scoreboard {
     this.gameStatusText.topInPixels = -60; // Move higher
     this.scoreboardContainer.addControl(this.gameStatusText);
 
-    // Player 1 (LEFT SIDE - Blue paddle)
-    this.player1NameText = new TextBlock("player1Name", "Player 1");
-    this.player1NameText.color = "#4FC3F7"; // Light blue
+    // Player 1 (LEFT SIDE - Orange  paddle)
+    this.player1NameText = new TextBlock("player1Name", this.initialPlayer1Name);
+    this.player1NameText.color = "#ff6b35"; // **UPDATED: Orange**
     this.player1NameText.fontSize = 18;
     this.player1NameText.fontWeight = "bold";
     this.player1NameText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -52,7 +57,7 @@ export class Scoreboard {
     this.scoreboardContainer.addControl(this.player1NameText);
 
     this.player1ScoreText = new TextBlock("player1Score", "0");
-    this.player1ScoreText.color = "#4FC3F7";
+    this.player1ScoreText.color = "#ff6b35"; // **UPDATED: Orange**
     this.player1ScoreText.fontSize = 32; // Bigger
     this.player1ScoreText.fontWeight = "bold";
     this.player1ScoreText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -69,9 +74,9 @@ export class Scoreboard {
     vsText.topInPixels = -5; // Center vertically
     this.scoreboardContainer.addControl(vsText);
 
-    // Player 2 (RIGHT SIDE - Red paddle)
-    this.player2NameText = new TextBlock("player2Name", "Player 2");
-    this.player2NameText.color = "#F44336"; // Red
+    // Player 2 (RIGHT SIDE - Pink paddle)
+    this.player2NameText = new TextBlock("player2Name", this.initialPlayer2Name);
+    this.player2NameText.color = "#ff69b4"; // **UPDATED: Hot Pink**
     this.player2NameText.fontSize = 18;
     this.player2NameText.fontWeight = "bold";
     this.player2NameText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -80,7 +85,7 @@ export class Scoreboard {
     this.scoreboardContainer.addControl(this.player2NameText);
 
     this.player2ScoreText = new TextBlock("player2Score", "0");
-    this.player2ScoreText.color = "#F44336";
+    this.player2ScoreText.color =  "#ff69b4"; // **UPDATED: Hot Pink**
     this.player2ScoreText.fontSize = 32; // Bigger
     this.player2ScoreText.fontWeight = "bold";
     this.player2ScoreText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -107,28 +112,22 @@ export class Scoreboard {
         break;
     }
 
-    // Get players by position
-    let player1Name = "Player 1";
+
     let player1Score = 0;
-    let player2Name = "Player 2";
     let player2Score = 0;
 
     Object.entries(state.players).forEach(([playerName, playerState]) => {
       const score = state.scores[playerName] || 0;
 
       if (playerState.position === 1) {
-        player1Name = playerName;
         player1Score = score;
       } else if (playerState.position === 2) {
-        player2Name = playerName;
         player2Score = score;
       }
     });
 
     // Update display
-    this.player1NameText.text = player1Name;
     this.player1ScoreText.text = player1Score.toString();
-    this.player2NameText.text = player2Name;
     this.player2ScoreText.text = player2Score.toString();
   }
 
