@@ -1,7 +1,8 @@
 import type { ServerToClient, ClientToServer, Snapshot, InputMessage, RoomCreatedPayload, RoomJoinedPayload, GameOverPayload, GameStartPayload} from "@shared/protocol";
 
 export class GameClient {
-  private ws: WebSocket;
+  private ws?: WebSocket;
+  private serverUrl: string;
   private snapshotHandler: (snap: Snapshot) => void = () => {};
   private clientId: string | null = null;
   public playerName: string | null = null;
@@ -10,7 +11,16 @@ export class GameClient {
   public roomId: string | null = null;
 
   constructor(serverUrl: string) {
-    this.ws = new WebSocket(serverUrl);
+    this.serverUrl = serverUrl;
+    // Don't connect immediately
+  }
+
+  // Connect when ready**
+  public connect(): void {
+    if (this.ws) return; // Already connected
+
+    this.ws = new WebSocket(this.serverUrl);
+    console.log(`Connecting to game server at ${this.serverUrl}...`);
     this.ws.onopen = () => this.onOpen();
     this.ws.onmessage = (event) => this.onMessage(event);
     this.ws.onclose = () => this.onClose();
@@ -25,15 +35,20 @@ export class GameClient {
     console.log("Disconnected from server");
   }
 
-  public createRoom(playerName: string, gameMode: 'public' | 'private' = 'public'): void {
-    const msg = {
-      type: "create-room",
-      payload: { playerName, gameMode }
-    };
+  public createRoom(): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.error("WebSocket not connected");
+      return;
+    }
+    const msg = { action: "create" };
     this.ws.send(JSON.stringify(msg));
   }
 
   public joinRoom(playerName: string, roomId?: string): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.error("WebSocket not connected");
+      return;
+    }
     const msg = {
       type: "join-room",
       payload: { playerName, roomId }
@@ -42,11 +57,19 @@ export class GameClient {
   }
 
   public leaveRoom(): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.error("WebSocket not connected");
+      return;
+    }
     const msg = { type: "leave-room" };
     this.ws.send(JSON.stringify(msg));
   }
 
   public setReady(): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.error("WebSocket not connected");
+      return;
+    }
     const msg = { type: "ready" };
     this.ws.send(JSON.stringify(msg));
   }
@@ -113,7 +136,7 @@ export class GameClient {
         type: "ping",
         payload: { t: Date.now() }
       };
-      this.ws.send(JSON.stringify(message));
+      this.ws?.send(JSON.stringify(message));
     }, 2000);
   }
 
@@ -164,7 +187,7 @@ export class GameClient {
       payload: inputPayload
     };
 
-    this.ws.send(JSON.stringify(message));
+    this.ws?.send(JSON.stringify(message));
   }
 
   /** Clean up WebSocket connection and resources */
