@@ -458,14 +458,12 @@ export class PoolScene {
     this.isIntroPlaying = true;
     this.camera.detachControl();
 
+    // **1. PLAY ORBIT ANIMATION**
     await this.playSkyOrbitIntro();
 
-    // ZOOM IN TO LOCAL VIEW
-    const startPosition = new Vector3(15, 12, 15);
-    const startTarget = new Vector3(0, 0, 0);
-
-    this.camera.setPosition(startPosition);
-    this.camera.setTarget(startTarget);
+    // **2. ZOOM ANIMATION - Use current camera position as start**
+    const startPosition = this.camera.position.clone(); // Use actual current position
+    const startTarget = this.camera.getTarget().clone(); // Use actual current target
 
     // Create easing
     const easingFunction = new CubicEase();
@@ -515,22 +513,41 @@ export class PoolScene {
   }
 
   private async playSkyOrbitIntro(): Promise<void> {
-    const orbitFrames = 600;
+    const orbitFrames = 480;
     const radius = 18;
-    const height = 2;
+    const startHeight = 1;
+    const endHeight = 12;
     const center = new Vector3(0, 0, 0);
+
+    const zoomStartPosition = new Vector3(15, 12, 15);
+    const endAngle = Math.atan2(zoomStartPosition.z, zoomStartPosition.x);
+    const startAngle = endAngle - Math.PI; // rotate 180 degrees
 
     // Generate keyframes for position
     const positionKeys = [];
     for (let i = 0; i <= orbitFrames; i++) {
-      const angle = Math.PI * 2 * (i / orbitFrames); // Full circle
+      const progress = i / orbitFrames;
+
+      // Smoothly interpolate from start angle to end angle
+      const angle = startAngle + (progress * Math.PI);
+
+      // Interpolate height from startHeight to endHeight
+      const height = startHeight + ((endHeight - startHeight) * progress);
+
+      // Calculate position on the circle
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
+
       positionKeys.push({
         frame: i,
         value: new Vector3(x, height, z)
       });
     }
+
+    // **VERIFY: Last position should match zoom start**
+    const lastPos = positionKeys[positionKeys.length - 1].value;
+    console.log("Orbit end position:", lastPos);
+    console.log("Zoom start position:", zoomStartPosition);
 
     // Always look at pool center (skybox will be visible)
     const targetKeys = [
