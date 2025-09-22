@@ -11,6 +11,8 @@ export type DuckState = Vec2 & { dir: number }; // radians
 export type PlayerState = {
   x: number;           // Paddle position
   position: 1 | 2;     // Which paddle they control (bottom or top)
+  connected?: boolean;
+  ready?: boolean;
 };
 
 // Overall game status
@@ -19,6 +21,18 @@ export type GameStatus = 'waiting' | 'playing' | 'finished';
 // Gametype (Local or Online)
 export type GameType = 'local' | 'online';
 
+// Roommanagement
+export type RoomId = string;
+export type RoomState = {
+  id: RoomId;
+  status: 'waiting' | 'ready' | 'playing' | 'finished';
+  players: {
+    player1?: PlayerName;
+    player2?: PlayerName;
+  };
+  createdAt: number;         // Timestamp
+  gameStartedAt?: number;    // Timestamp when game started
+};
 
 // --- EVENTS ---
 
@@ -37,11 +51,23 @@ export type ScoreEvent = {
   points: number;
 };
 
-export type GameEvent = CollisionEvent | ScoreEvent;
+export type RoomEvent = {
+  type: 'room';
+  roomEvent: 'player-joined' | 'player-left' | 'game-started' | 'game-ended';
+  playerName?: PlayerName;
+};
+
+export type GameEvent = CollisionEvent | ScoreEvent | RoomEvent;
+
+
+// --- GAME STATE ---
 
 export type GameState = {
   // Player data - maps player name to their state
   players: Record<PlayerName, PlayerState>;
+
+  // Room information
+  roomId?: RoomId;
 
   // Score data - maps player name to their score
   scores: Record<PlayerName, number>;

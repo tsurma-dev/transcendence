@@ -13,7 +13,11 @@ import {
   Sound,
   HDRCubeTexture,
   ImageProcessingConfiguration,
-  GlowLayer
+  GlowLayer,
+  Animation,
+  CubicEase,
+  EasingFunction,
+  AnimationGroup
 } from "@babylonjs/core";
 
 import "@babylonjs/loaders/glTF";
@@ -65,6 +69,9 @@ export class PoolScene {
   private wallHitSound!: Sound;
   private paddleHitSound!: Sound;
   public audioEnabled = false;
+
+  // Animations
+  private isIntroPlaying = false;
 
   // Scoreboard and UI
   private scoreboard!: Scoreboard;
@@ -277,12 +284,7 @@ export class PoolScene {
 
     console.log('🎮 Starting game...');
 
-    // **SHOW INITIAL COUNTDOWN**
-    await this.runCountdown();
-
-    this.gameStarted = true;
-
-    // initialize game logic
+    // **0. INITIALIZE GAME LOGIC**
     if (this.gameMode === 'local') {
       this.initializeLocalGame();
     } else {
@@ -291,6 +293,14 @@ export class PoolScene {
 
     // Setup input and render loop
     this.setupInputListeners();
+
+    // **1. PLAY CAMERA INTRO FIRST**
+    await this.playCameraIntro();
+
+    // **2. THEN SHOW COUNTDOWN**
+    await this.runCountdown();
+
+    this.gameStarted = true;
   }
 
   public onLoaded(callback: () => void): void {
@@ -437,6 +447,133 @@ export class PoolScene {
     }
     this.cameraPositioned = true;
   }
+
+  // ------------------------------
+  // --- ANIMATIONS ---
+  // ------------------------------
+  // Camera intro animation**
+  public async playCameraIntro(): Promise<void> {
+    if (this.isIntroPlaying) return;
+
+    this.isIntroPlaying = true;
+    this.camera.detachControl();
+
+    await this.playSkyOrbitIntro();
+
+    // ZOOM IN TO LOCAL VIEW
+    const startPosition = new Vector3(15, 12, 15);
+    const startTarget = new Vector3(0, 0, 0);
+
+    this.camera.setPosition(startPosition);
+    this.camera.setTarget(startTarget);
+
+    // Create easing
+    const easingFunction = new CubicEase();
+    easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
+
+    // Position animation
+    const positionAnimation = new Animation(
+      "cameraPosition",
+      "position",
+      60,
+      Animation.ANIMATIONTYPE_VECTOR3,
+      Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+
+    positionAnimation.setKeys([
+      { frame: 0, value: startPosition },
+      { frame: 300, value: CAMERA_SETTINGS.POSITION_LOCAL }
+    ]);
+    positionAnimation.setEasingFunction(easingFunction);
+
+    // Target animation
+    const targetAnimation = new Animation(
+      "cameraTarget",
+      "target",
+      60,
+      Animation.ANIMATIONTYPE_VECTOR3,
+      Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+
+    targetAnimation.setKeys([
+      { frame: 0, value: startTarget },
+      { frame: 300, value: CAMERA_SETTINGS.TARGET_LOCAL }
+    ]);
+    targetAnimation.setEasingFunction(easingFunction);
+
+    // Apply and start
+    this.camera.animations = [positionAnimation, targetAnimation];
+
+    return new Promise((resolve) => {
+      const animatable = this.scene.beginAnimation(this.camera, 0, 300, false);
+      animatable.onAnimationEndObservable.add(() => {
+        this.isIntroPlaying = false;
+        this.camera.attachControl(this.canvas, true);
+        resolve();
+      });
+    });
+  }
+
+  private async playSkyOrbitIntro(): Promise<void> {
+    const orbitFrames = 600;
+    const radius = 18;
+    const height = 2;
+    const center = new Vector3(0, 0, 0);
+
+    // Generate keyframes for position
+    const positionKeys = [];
+    for (let i = 0; i <= orbitFrames; i++) {
+      const angle = Math.PI * 2 * (i / orbitFrames); // Full circle
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      positionKeys.push({
+        frame: i,
+        value: new Vector3(x, height, z)
+      });
+    }
+
+    // Always look at pool center (skybox will be visible)
+    const targetKeys = [
+      { frame: 0, value: center },
+      { frame: orbitFrames, value: center }
+    ];
+
+    // Create animations
+    const positionAnimation = new Animation(
+      "skyOrbitPosition",
+      "position",
+      60,
+      Animation.ANIMATIONTYPE_VECTOR3,
+      Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+    positionAnimation.setKeys(positionKeys);
+
+    const targetAnimation = new Animation(
+      "skyOrbitTarget",
+      "target",
+      60,
+      Animation.ANIMATIONTYPE_VECTOR3,
+      Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+    targetAnimation.setKeys(targetKeys);
+
+    // Easing for smoothness
+    const easingFunction = new CubicEase();
+    easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
+    positionAnimation.setEasingFunction(easingFunction);
+    targetAnimation.setEasingFunction(easingFunction);
+
+    // Apply and start
+    this.camera.animations = [positionAnimation, targetAnimation];
+
+    return new Promise((resolve) => {
+      const animatable = this.scene.beginAnimation(this.camera, 0, orbitFrames, false);
+      animatable.onAnimationEndObservable.add(() => {
+        resolve();
+      });
+    });
+  }
+
 
   // -------------------------------
   // --- SCENE CREATION METHODS  ---

@@ -1,4 +1,4 @@
-import type { ServerToClient, ClientToServer, Snapshot, InputMessage} from "@shared/protocol";
+import type { ServerToClient, ClientToServer, Snapshot, InputMessage, RoomCreatedPayload, RoomJoinedPayload, GameOverPayload, GameStartPayload} from "@shared/protocol";
 
 export class GameClient {
   private ws: WebSocket;
@@ -7,6 +7,7 @@ export class GameClient {
   public playerName: string | null = null;
   public playerPosition: 1 | 2 | null = null;
   private pingInterval: number | null = null;
+  public roomId: string | null = null;
 
   constructor(serverUrl: string) {
     this.ws = new WebSocket(serverUrl);
@@ -24,6 +25,32 @@ export class GameClient {
     console.log("Disconnected from server");
   }
 
+  public createRoom(playerName: string, gameMode: 'public' | 'private' = 'public'): void {
+    const msg = {
+      type: "create-room",
+      payload: { playerName, gameMode }
+    };
+    this.ws.send(JSON.stringify(msg));
+  }
+
+  public joinRoom(playerName: string, roomId?: string): void {
+    const msg = {
+      type: "join-room",
+      payload: { playerName, roomId }
+    };
+    this.ws.send(JSON.stringify(msg));
+  }
+
+  public leaveRoom(): void {
+    const msg = { type: "leave-room" };
+    this.ws.send(JSON.stringify(msg));
+  }
+
+  public setReady(): void {
+    const msg = { type: "ready" };
+    this.ws.send(JSON.stringify(msg));
+  }
+
   private onMessage(event: MessageEvent): void {
     let message: ServerToClient;
     try {
@@ -39,6 +66,22 @@ export class GameClient {
         console.log(`Handshake complete. ${this.clientId} has joined!`);
         // Start sending pings to measure latency
         this.startPingLoop();
+        break;
+
+      case "room-created":
+        this.handleRoomCreated(message.payload);
+        break;
+      case "room-joined":
+        this.handleRoomJoined(message.payload);
+        break;
+      case "room-error":
+        this.handleRoomError(message.payload);
+        break;
+      case "game-start":
+        this.handleGameStart(message.payload);
+        break;
+      case "game-over":
+        this.handleGameOver(message.payload);
         break;
 
       case 'playerAssignment':
@@ -72,6 +115,34 @@ export class GameClient {
       };
       this.ws.send(JSON.stringify(message));
     }, 2000);
+  }
+
+    private handleRoomCreated(payload: RoomCreatedPayload): void {
+    this.roomId = payload.roomId;
+    this.playerPosition = payload.position;
+    console.log(`✅ Room created: ${this.roomId}, you are player ${payload.position}`);
+  }
+
+  private handleRoomJoined(payload: RoomJoinedPayload): void {
+    this.roomId = payload.roomId;
+    this.playerPosition = payload.position;
+    console.log(`✅ Joined room: ${this.roomId}, you are player ${payload.position}`);
+  }
+
+  private handleGameStart(payload: GameStartPayload): void {
+    console.log(`🎮 Game starting! ${payload.player1Name} vs ${payload.player2Name}`);
+    // Notify UI that game is starting
+  }
+
+  private handleGameOver(payload: GameOverPayload): void {
+    console.log(`🏁 Game over! Winner: ${payload.winner}`);
+    console.log(`Final score: ${payload.player1Score} - ${payload.player2Score}`);
+    // Notify UI of game results
+  }
+
+  private handleRoomError(payload: { message: string }): void {
+    console.error(`❌ Room error: ${payload.message}`);
+    // Notify UI of error
   }
 
   /** Register a callback to be invoked for each game state snapshot */
