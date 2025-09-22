@@ -346,6 +346,8 @@ export class PoolScene {
       if (!this.gameStarted) return; // ignore updates before start
       this.updateFromState(snapshot.state);
     });
+    // **Connect after initialization**
+    this.client.connect();
   }
 
   // --- INPUT HANDLING ---
@@ -546,8 +548,6 @@ export class PoolScene {
 
     // **VERIFY: Last position should match zoom start**
     const lastPos = positionKeys[positionKeys.length - 1].value;
-    console.log("Orbit end position:", lastPos);
-    console.log("Zoom start position:", zoomStartPosition);
 
     // Always look at pool center (skybox will be visible)
     const targetKeys = [
