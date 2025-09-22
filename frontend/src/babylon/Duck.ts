@@ -42,21 +42,17 @@ export class Duck {
     if (this.mesh.rotationQuaternion !== null) {
       this.mesh.rotationQuaternion = null;
     }
-
     this.mesh.position.x = state.x;
     this.mesh.position.z = state.z;
 
     // Rotation: compute from velocity vector (vx, vz) so the model front faces movement.
-    // Reason: using state.dir + Math.PI can flip the model depending on model's forward axis and reflection transforms.
     // Using the velocity vector ensures we always face the actual travel direction.
     const vx = Math.cos(state.dir);
     const vz = Math.sin(state.dir);
-
     // Babylon uses rotation.y == 0 to face +Z. The angle from +Z to (vx, vz) is atan2(vx, vz).
     // Using atan2(x, z) returns the yaw to rotate +Z to the velocity vector.
     const rotationY = Math.atan2(vx, vz) + Math.PI;
     this.mesh.rotation.y = rotationY;
-
   }
 
   // Scales and positions the duck model based on its bounding box.

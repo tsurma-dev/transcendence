@@ -46,5 +46,4 @@ export class Paddle {
   public updatePosition(state: PlayerState): void {
     this.mesh.position.x = state.x;
   }
-
 }

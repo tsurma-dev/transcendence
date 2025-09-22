@@ -23,7 +23,6 @@ export class Game3DComponent {
     this.player2Name = player2Name;
   }
 
-  // **NEW: Add initialize method to be called externally**
   initialize(): void {
     this.createCanvas();
     this.setupUI();
@@ -31,7 +30,6 @@ export class Game3DComponent {
   }
 
   private createCanvas(): void {
-    // **CREATE CANVAS ELEMENT PROPERLY**
     this.canvas = document.createElement('canvas');
     this.canvas.style.width = '100%';
     this.canvas.style.height = '100%';
@@ -44,7 +42,6 @@ export class Game3DComponent {
   }
 
   private setupUI(): void {
-    // 0️⃣ Create loading overlay with QuickPlay-style design
     this.loadingOverlay = document.createElement("div");
     this.loadingOverlay.style.cssText = `
       position: absolute;
@@ -59,13 +56,12 @@ export class Game3DComponent {
       z-index: 20;
     `;
 
-    // **NEW: Use your design system styling like QuickPlay**
     this.loadingOverlay.innerHTML = `
       <div class="container-main-pink max-w-lg">
         <div class="text-center mb-8">
           <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">
   _|_|_|      _|_|    _|      _|    _|_|_|
-  _|    _|  _|    _|  _|_|    _|  _|      
+  _|    _|  _|    _|  _|_|    _|  _|
   _|_|_|    _|    _|  _|  _|  _|  _|  _|_|
   _|        _|    _|  _|    _|_|  _|    _|
   _|          _|_|    _|      _|    _|_|_|</pre>
@@ -79,7 +75,6 @@ export class Game3DComponent {
 
     this.container.appendChild(this.loadingOverlay);
 
-    // 2️⃣ Start button overlay (hidden initially) - keep existing styling
     this.startButton = document.createElement("button");
     this.startButton.innerText = "Start Game";
     this.startButton.style.cssText = `
@@ -137,7 +132,6 @@ export class Game3DComponent {
   }
 
 
-  // **ADD DISPOSE METHOD**
   dispose(): void {
     if (this.poolScene) {
       this.poolScene.dispose();

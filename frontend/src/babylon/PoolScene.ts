@@ -81,7 +81,7 @@ export class PoolScene {
   // -------------------
   // --- CONSTRUCTOR ---
   // -------------------
-  // 0. Sets up the entire scene, connects to the server, and starts the render loop.
+  // Sets up the entire scene, connects to the server, and starts the render loop.
   constructor(
     canvas: HTMLCanvasElement,
     gameMode: 'local' | 'online' = 'online',
@@ -135,20 +135,18 @@ export class PoolScene {
   private async initializeAssets(): Promise<void> {
     console.log('🔄 Loading game assets...');
 
-    // // 1. Load sounds
-    // await this.loadSounds();
-
-    // 2. Load 3D models
+    // Load 3D models
     await this.load3DModels();
 
-    // 3. Wait for any other async operations
+    // Wait for any other async operations
     await Promise.all(this.loadingPromises);
 
     console.log('✅ All assets loaded!');
     this.isLoaded = true;
   }
 
-    private createCountdownUI(): void {
+  // COUNT-DOWN UI
+  private createCountdownUI(): void {
     this.countdownElement = document.createElement("div");
     this.countdownElement.style.cssText = `
       position: absolute;
@@ -163,8 +161,6 @@ export class PoolScene {
       display: none;
       pointer-events: none;
     `;
-
-    // Add to canvas parent (should be the game container)
     this.canvas.parentElement?.appendChild(this.countdownElement);
   }
 
@@ -186,7 +182,6 @@ export class PoolScene {
 
       let count = 3;
       const updateCountdown = () => {
-        // **FIX: Always check if we should stop and clean up properly**
         if (!this.countdownElement || !this.isCountdownRunning) {
           console.log('⚠️ Countdown interrupted or element missing');
           this.isCountdownRunning = false;
@@ -201,7 +196,7 @@ export class PoolScene {
         if (count < 0) {
           console.log('✅ Countdown finished');
           this.countdownElement.style.display = "none";
-          this.isCountdownRunning = false; // **FIX: Reset the flag**
+          this.isCountdownRunning = false;
           resolve();
         } else {
           setTimeout(updateCountdown, 1000);
@@ -256,7 +251,7 @@ export class PoolScene {
     this.Paddle1 = new Paddle(
       "Paddle1",
       this.scene,
-      new Vector3(1, 0.65, 0.35), //Orange
+      new Vector3(1, 0.6, 0), //Orange
       new Vector3(0, GAME_CONFIG.WATER_LEVEL, -GAME_CONFIG.TABLE_DEPTH / 2 - GAME_CONFIG.PADDLE_DEPTH / 2),
       this.shadowGenerator
     );
@@ -310,31 +305,31 @@ export class PoolScene {
     return this.isLoaded;
   }
 
-
-
-
+  // ********************
   // --LOCAL GAME SETUP --
+  // ********************
   private initializeLocalGame(): void {
-  console.log('Initializing local game');
-  this.localGameEngine = new LocalGameEngine();
+    console.log('Initializing local game');
+    this.localGameEngine = new LocalGameEngine();
 
-  // Use the same updateFromState method as online games
-  this.scene.registerBeforeRender(() => {
-    if (!this.gameStarted) return; // prevent updates before Start
-    const deltaTime = this.engine.getDeltaTime();
-    if (this.localGameEngine) {
-      this.localGameEngine.update(deltaTime);
-      const gameState = this.localGameEngine.getGameState();
-      this.updateFromState(gameState);
-    }
-  });
+    // Use the same updateFromState method as online games
+    this.scene.registerBeforeRender(() => {
+      if (!this.gameStarted) return; // prevent updates before Start
+      const deltaTime = this.engine.getDeltaTime();
+      if (this.localGameEngine) {
+        this.localGameEngine.update(deltaTime);
+        const gameState = this.localGameEngine.getGameState();
+        this.updateFromState(gameState);
+      }
+    });
 
-  // Camera setup...
-  this.camera.detachControl();
-}
+    // Camera setup...
+    this.camera.detachControl();
+  }
 
-
-  // --ONLINE GAME SETUP --
+  // **************************
+  // --- ONLINE GAME SETUP ---
+  // **************************
   private initializeOnlineGame(): void {
     this.client = new GameClient(GAME_CONFIG.SERVER_URL);
     this.client.setSnapshotHandler((snapshot: Snapshot) => {
@@ -343,6 +338,7 @@ export class PoolScene {
     });
   }
 
+  // --- INPUT HANDLING ---
   private setupInputListeners(): void {
     if (this.gameMode === 'local') {
       // Local game - handle both players

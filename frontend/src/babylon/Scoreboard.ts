@@ -48,7 +48,7 @@ export class Scoreboard {
 
     // Player 1 (LEFT SIDE - Orange  paddle)
     this.player1NameText = new TextBlock("player1Name", this.initialPlayer1Name);
-    this.player1NameText.color = "#ff6b35"; // **UPDATED: Orange**
+    this.player1NameText.color = "#ff6b35"; // **Orange**
     this.player1NameText.fontSize = 18;
     this.player1NameText.fontWeight = "bold";
     this.player1NameText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -57,7 +57,7 @@ export class Scoreboard {
     this.scoreboardContainer.addControl(this.player1NameText);
 
     this.player1ScoreText = new TextBlock("player1Score", "0");
-    this.player1ScoreText.color = "#ff6b35"; // **UPDATED: Orange**
+    this.player1ScoreText.color = "#ff6b35"; // **Orange**
     this.player1ScoreText.fontSize = 32; // Bigger
     this.player1ScoreText.fontWeight = "bold";
     this.player1ScoreText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -76,7 +76,7 @@ export class Scoreboard {
 
     // Player 2 (RIGHT SIDE - Pink paddle)
     this.player2NameText = new TextBlock("player2Name", this.initialPlayer2Name);
-    this.player2NameText.color = "#ff69b4"; // **UPDATED: Hot Pink**
+    this.player2NameText.color = "#ff69b4"; // **Pink**
     this.player2NameText.fontSize = 18;
     this.player2NameText.fontWeight = "bold";
     this.player2NameText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -85,7 +85,7 @@ export class Scoreboard {
     this.scoreboardContainer.addControl(this.player2NameText);
 
     this.player2ScoreText = new TextBlock("player2Score", "0");
-    this.player2ScoreText.color =  "#ff69b4"; // **UPDATED: Hot Pink**
+    this.player2ScoreText.color =  "#ff69b4"; // **Pink**
     this.player2ScoreText.fontSize = 32; // Bigger
     this.player2ScoreText.fontWeight = "bold";
     this.player2ScoreText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
