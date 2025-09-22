@@ -26,6 +26,7 @@ export class Game3DComponent {
   }
 
   initialize(): void {
+    console.log('Initializing 3D Game... Mode:', this.gameMode);
     this.createCanvas();
     this.setupUI();
     this.initializeScene();
@@ -63,7 +64,7 @@ export class Game3DComponent {
         <div class="text-center mb-8">
           <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">
   _|_|_|      _|_|    _|      _|    _|_|_|
-  _|    _|  _|    _|  _|_|    _|  _|      
+  _|    _|  _|    _|  _|_|    _|  _|
   _|_|_|    _|    _|  _|  _|  _|  _|  _|_|
   _|        _|    _|  _|    _|_|  _|    _|
   _|          _|_|    _|      _|    _|_|_|</pre>
@@ -97,7 +98,7 @@ export class Game3DComponent {
         <div class="text-center mb-8">
           <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">
   _|_|_|      _|_|    _|      _|    _|_|_|
-  _|    _|  _|    _|  _|_|    _|  _|      
+  _|    _|  _|    _|  _|_|    _|  _|
   _|_|_|    _|    _|  _|  _|  _|  _|  _|_|
   _|        _|    _|  _|    _|_|  _|    _|
   _|          _|_|    _|      _|    _|_|_|</pre>
