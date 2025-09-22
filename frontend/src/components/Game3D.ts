@@ -1,3 +1,5 @@
+/* eslint-disable no-trailing-spaces */
+
 import { PoolScene } from "../babylon/PoolScene";
 export type GameMode = 'local' | 'online';
 
@@ -5,7 +7,7 @@ export class Game3DComponent {
   private container: HTMLElement;
   private canvas!: HTMLCanvasElement;
   private poolScene?: PoolScene;
-  private startButton?: HTMLButtonElement;
+  private startButton?: HTMLElement;
   private loadingOverlay?: HTMLElement;
   private gameMode: GameMode;
   private player1Name?: string;
@@ -75,23 +77,40 @@ export class Game3DComponent {
 
     this.container.appendChild(this.loadingOverlay);
 
-    this.startButton = document.createElement("button");
-    this.startButton.innerText = "Start Game";
+    this.startButton = document.createElement("div");
     this.startButton.style.cssText = `
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      padding: 15px 30px;
-      font-size: 24px;
-      border: none;
-      border-radius: 12px;
-      background:rgb(13, 29, 14);
-      color: white;
-      cursor: pointer;
-      z-index: 10;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom right, #fde047, #f59e0b, #fb923c);
       display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      cursor: pointer;
     `;
+
+    this.startButton.innerHTML = `
+      <div class="container-main-pink max-w-lg text-center">
+        <div class="text-center mb-8">
+          <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">
+  _|_|_|      _|_|    _|      _|    _|_|_|
+  _|    _|  _|    _|  _|_|    _|  _|      
+  _|_|_|    _|    _|  _|  _|  _|  _|  _|_|
+  _|        _|    _|  _|    _|_|  _|    _|
+  _|          _|_|    _|      _|    _|_|_|</pre>
+        </div>
+        <p class="font-mono text-black text-3xl font-bold drop-shadow-lg mb-6">Ready to Play!</p>
+        <div class="animate-pulse">
+          <div class="text-black font-mono text-xl font-bold bg-green-800 text-white px-8 py-4 rounded-lg border-4 border-black">
+            Click to Start Game
+          </div>
+        </div>
+      </div>
+    `;
+
     this.container.appendChild(this.startButton);
   }
 
@@ -102,7 +121,7 @@ export class Game3DComponent {
       // Wait until PoolScene signals loaded
       this.poolScene.onLoaded(() => {
         if (this.loadingOverlay) this.loadingOverlay.style.display = "none";
-        if (this.startButton) this.startButton.style.display = "block";
+        if (this.startButton) this.startButton.style.display = "flex";
       });
 
       // Start button click handler
