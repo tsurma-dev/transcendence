@@ -9,22 +9,25 @@ import {
 import { GAME_CONFIG } from "@shared/GameConfig";
 import type { DuckState } from "@shared/types";
 
-
 export class Duck {
-  public mesh: AbstractMesh | null = null;  // mesh is public so the PoolScene can add it to the scene when ready.
+  private mesh: AbstractMesh | null = null;
+  private loadingPromise: Promise<void>;
 
-  // Load the duck model asynchronously in the constructor.
   constructor(scene: Scene, shadowGenerator: ShadowGenerator) {
-    SceneLoader.ImportMeshAsync("", "/rubber_duck/", "scene.gltf", scene)
+    this.loadingPromise = SceneLoader.ImportMeshAsync("", "/rubber_duck/", "scene.gltf", scene)
       .then((result) => {
         const rootMesh = result.meshes[0];
         this._setupMesh(rootMesh, shadowGenerator);
         this.mesh = rootMesh;
-      })
-      .catch((error) => {
-        console.error("Failed to load duck model:", error);
-        throw error;
       });
+  }
+
+  public waitForLoad(): Promise<void> {
+    return this.loadingPromise;
+  }
+
+  public getMesh(): AbstractMesh | null {
+    return this.mesh;
   }
 
   // Updates the duck's position and rotation based on the game state.
@@ -39,11 +42,17 @@ export class Duck {
     if (this.mesh.rotationQuaternion !== null) {
       this.mesh.rotationQuaternion = null;
     }
-
     this.mesh.position.x = state.x;
     this.mesh.position.z = state.z;
 
-    this.mesh.rotation.y = state.dir + Math.PI;
+    // Rotation: compute from velocity vector (vx, vz) so the model front faces movement.
+    // Using the velocity vector ensures we always face the actual travel direction.
+    const vx = Math.cos(state.dir);
+    const vz = Math.sin(state.dir);
+    // Babylon uses rotation.y == 0 to face +Z. The angle from +Z to (vx, vz) is atan2(vx, vz).
+    // Using atan2(x, z) returns the yaw to rotate +Z to the velocity vector.
+    const rotationY = Math.atan2(vx, vz) + Math.PI;
+    this.mesh.rotation.y = rotationY;
   }
 
   // Scales and positions the duck model based on its bounding box.
@@ -78,12 +87,15 @@ export class Duck {
     const scale = targetDiameter / duckDiameter;
 
     mesh.scaling.setAll(scale);
+
+    // Place the duck at the water level (small downward offset so it sits nicely)
     mesh.position = new Vector3(0, GAME_CONFIG.WATER_LEVEL - 0.15, 0);
 
+    // Use Euler rotations
     mesh.rotationQuaternion = null;
     mesh.rotation.y = 0;
 
-    // Add all children to the shadow generator for correct shadows
+    // Add entire model as shadow caster (true -> recursive)
     shadowGenerator.addShadowCaster(mesh, true);
   }
 }

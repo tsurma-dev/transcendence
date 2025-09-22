@@ -37,6 +37,12 @@ export class PoolScene {
   private engine: Engine;
   private canvas: HTMLCanvasElement;
 
+  // Loading state
+  private isLoaded = false;
+  private loadingPromises: Promise<any>[] = [];
+  private onLoadedCallback?: () => void;
+  private gameStarted = false;
+
   // Camera and lighting
   private light!: DirectionalLight;
   private hemilight!: HemisphericLight;
@@ -46,9 +52,9 @@ export class PoolScene {
   private cameraPositioned = false;
 
   // Game objects
-  private duck: Duck;
-  private Paddle1: Paddle;
-  private Paddle2: Paddle;
+  private duck!: Duck;
+  private Paddle1!: Paddle;
+  private Paddle2!: Paddle;
 
   // Game mode properties
   private gameMode: 'local' | 'online';
@@ -58,9 +64,14 @@ export class PoolScene {
   // Sounds
   private wallHitSound!: Sound;
   private paddleHitSound!: Sound;
+  public audioEnabled = false;
 
-  // Scoreboard
+  // Scoreboard and UI
   private scoreboard!: Scoreboard;
+  private countdownElement?: HTMLElement;
+  private isCountdownRunning = false;
+  private player1Name: string;
+  private player2Name: string;
 
   // Event handlers for cleanup
   private keyDownHandler!: (e: KeyboardEvent) => void;
@@ -70,89 +81,273 @@ export class PoolScene {
   // -------------------
   // --- CONSTRUCTOR ---
   // -------------------
-  // 0. Sets up the entire scene, connects to the server, and starts the render loop.
-  constructor(canvas: HTMLCanvasElement, gameMode: 'local' | 'online' = 'online') {
+  // Sets up the entire scene, connects to the server, and starts the render loop.
+  constructor(
+    canvas: HTMLCanvasElement,
+    gameMode: 'local' | 'online' = 'online',
+    player1Name?: string,
+    player2Name?: string
+  ) {
     this.canvas = canvas;
     this.gameMode = gameMode;
-    this.engine = new Engine(this.canvas, true); // Antialiasing is enabled (edges look smoother, less jagged)
-    this.scene = this.CreateScene();
-    this.scoreboard = new Scoreboard();
+    this.player1Name = player1Name || "Player 1";
+    this.player2Name = player2Name || "Player 2";
 
-    // 1. Initialize sounds
-    this.wallHitSound = new Sound("wallHit", "/sounds/quack.ogg", this.scene);
-    this.paddleHitSound = new Sound("paddleHit", "/sounds/quack.ogg", this.scene);
+    try {
+      this.engine = new Engine(this.canvas, true, {
+        preserveDrawingBuffer: true,
+        stencil: true,
+        disableWebGL2Support: false
+      });
 
-    // 2. Initialize Game Objects
+      // Check if engine was created successfully
+      if (!this.engine) {
+        throw new Error('Failed to create Babylon.js Engine');
+      }
+
+      this.scene = this.CreateScene();
+      this.scoreboard = new Scoreboard(this.player1Name, this.player2Name);
+      this.createCountdownUI();
+
+      // Load assets in the background
+      this.initializeAssets().then(() => {
+        if (this.onLoadedCallback) this.onLoadedCallback();
+      }).catch((error) => {
+        console.error('Failed to initialize assets:', error);
+      });
+
+      // Start render loop
+      this.engine.runRenderLoop(() => {
+        this.scene.render();
+      });
+
+      // Resize listener
+      this.resizeHandler = () => this.engine.resize();
+      window.addEventListener("resize", this.resizeHandler);
+
+    } catch (error) {
+      console.error('Failed to initialize PoolScene:', error);
+      throw error; // Re-throw so Game3DComponent can handle it
+    }
+  }
+
+  //Initialize all assets with promises**
+  private async initializeAssets(): Promise<void> {
+    console.log('🔄 Loading game assets...');
+
+    // Load 3D models
+    await this.load3DModels();
+
+    // Wait for any other async operations
+    await Promise.all(this.loadingPromises);
+
+    console.log('✅ All assets loaded!');
+    this.isLoaded = true;
+  }
+
+  // COUNT-DOWN UI
+  private createCountdownUI(): void {
+    this.countdownElement = document.createElement("div");
+    this.countdownElement.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 64px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 2px 2px 6px black;
+      z-index: 15;
+      display: none;
+      pointer-events: none;
+    `;
+    this.canvas.parentElement?.appendChild(this.countdownElement);
+  }
+
+  public async runCountdown(): Promise<void> {
+    if (this.isCountdownRunning) {
+      console.log('⚠️ Countdown already running, skipping...');
+      return;
+    }
+
+    return new Promise((resolve) => {
+      if (!this.countdownElement) {
+        console.log('❌ No countdown element found');
+        return resolve();
+      }
+
+      this.isCountdownRunning = true;
+      this.countdownElement.style.display = "block";
+      console.log('🚀 Starting countdown...');
+
+      let count = 3;
+      const updateCountdown = () => {
+        if (!this.countdownElement || !this.isCountdownRunning) {
+          console.log('⚠️ Countdown interrupted or element missing');
+          this.isCountdownRunning = false;
+          if (this.countdownElement) this.countdownElement.style.display = "none";
+          return resolve();
+        }
+
+        console.log(`🔢 Countdown: ${count}`);
+        this.countdownElement.innerText = count.toString();
+        count--;
+
+        if (count < 0) {
+          console.log('✅ Countdown finished');
+          this.countdownElement.style.display = "none";
+          this.isCountdownRunning = false;
+          resolve();
+        } else {
+          setTimeout(updateCountdown, 1000);
+        }
+      };
+
+      updateCountdown();
+    });
+  }
+
+  private async handleScoreEvent(event: any): Promise<void> {
+    console.log(`${event.player} scored ${event.points} points!`);
+
+    if (this.localGameEngine && !this.localGameEngine.isPaused()) {
+      this.localGameEngine.pause();
+
+      // Check if game is over
+      const gameState = this.localGameEngine.getGameState();
+      if (gameState?.status === 'finished') {
+        console.log(`🏆 Game Over: ${gameState.winner} WINS!`);
+        // TO DO: Show win screen instead of countdown
+        return;
+      }
+
+      // Show countdown for next round
+      await this.runCountdown();
+
+      this.localGameEngine.resume();
+    }
+  }
+
+  // --- AUDIO ---
+  public async enableAudio(): Promise<void> {
+    if (this.audioEnabled) return;
+    const audioCtx = Engine.audioEngine?.audioContext;
+    if (audioCtx && audioCtx.state === 'suspended') {
+      await audioCtx.resume();
+    }
+    this.wallHitSound = new Sound("wallHit", "/sounds/quack.mp3", this.scene, undefined, { autoplay: false, volume: 1.0 });
+    this.paddleHitSound = new Sound("paddleHit", "/sounds/quack.mp3", this.scene, undefined, { autoplay: false, volume: 1.0 });
+    this.audioEnabled = true;
+  }
+
+  // --- LOAD 3D MODELS ---
+  private async load3DModels(): Promise<void> {
+    console.log('🔄 Loading 3D models...');
+
+    // Initialize game objects and wait for them to load
     this.duck = new Duck(this.scene, this.shadowGenerator);
+    await this.duck.waitForLoad();
+
     this.Paddle1 = new Paddle(
       "Paddle1",
       this.scene,
-      new Vector3(0, 0, 1), // blue
+      new Vector3(1, 0.6, 0), //Orange
       new Vector3(0, GAME_CONFIG.WATER_LEVEL, -GAME_CONFIG.TABLE_DEPTH / 2 - GAME_CONFIG.PADDLE_DEPTH / 2),
       this.shadowGenerator
     );
+    await this.Paddle1.waitForLoad();
+
     this.Paddle2 = new Paddle(
       "Paddle2",
       this.scene,
-      new Vector3(1, 0, 0), // red
+      new Vector3(1, 0.41, 0.71), // Pink
       new Vector3(0, GAME_CONFIG.WATER_LEVEL, GAME_CONFIG.TABLE_DEPTH / 2 + GAME_CONFIG.PADDLE_DEPTH / 2),
       this.shadowGenerator
     );
+    await this.Paddle2.waitForLoad();
 
-    // 3. Initialize game based on mode
+    console.log('✅ All 3D models loaded');
+  }
+
+ public async startGame(): Promise<void> {
+    if (this.gameStarted) return;
+
+    // Enable audio on first user interaction
+    await this.enableAudio();
+
+    console.log('🎮 Starting game...');
+
+    // **SHOW INITIAL COUNTDOWN**
+    await this.runCountdown();
+
+    this.gameStarted = true;
+
+    // initialize game logic
     if (this.gameMode === 'local') {
       this.initializeLocalGame();
     } else {
       this.initializeOnlineGame();
     }
 
-    // 4. Setup input and render loop
+    // Setup input and render loop
     this.setupInputListeners();
-    this.engine.runRenderLoop(() => {
-      this.scene.render();
-    });
   }
 
-  // --LOCAL GAME SETUP --
-  private initializeLocalGame(): void {
-  console.log('Initializing local game');
-  this.localGameEngine = new LocalGameEngine();
-
-  // Use the same updateFromState method as online games!
-  this.scene.registerBeforeRender(() => {
-    if (this.localGameEngine) {
-      // Update game logic
-      this.localGameEngine.update();
-
-      // Use the same visual update method as online games
-      const gameState = this.localGameEngine.getGameState();
-      this.updateFromState(gameState);
+  public onLoaded(callback: () => void): void {
+    if (this.isLoaded) {
+      callback();
+    } else {
+      this.onLoadedCallback = callback;
     }
-  });
+  }
 
-  // Camera setup...
-  this.camera.detachControl();
-}
+  public isGameReady(): boolean {
+    return this.isLoaded;
+  }
 
+  // ********************
+  // --LOCAL GAME SETUP --
+  // ********************
+  private initializeLocalGame(): void {
+    console.log('Initializing local game');
+    this.localGameEngine = new LocalGameEngine();
 
-  // --ONLINE GAME SETUP --
+    // Use the same updateFromState method as online games
+    this.scene.registerBeforeRender(() => {
+      if (!this.gameStarted) return; // prevent updates before Start
+      const deltaTime = this.engine.getDeltaTime();
+      if (this.localGameEngine) {
+        this.localGameEngine.update(deltaTime);
+        const gameState = this.localGameEngine.getGameState();
+        this.updateFromState(gameState);
+      }
+    });
+
+    // Camera setup...
+    this.camera.detachControl();
+  }
+
+  // **************************
+  // --- ONLINE GAME SETUP ---
+  // **************************
   private initializeOnlineGame(): void {
     this.client = new GameClient(GAME_CONFIG.SERVER_URL);
     this.client.setSnapshotHandler((snapshot: Snapshot) => {
+      if (!this.gameStarted) return; // ignore updates before start
       this.updateFromState(snapshot.state);
     });
   }
-   private setupInputListeners(): void {
+
+  // --- INPUT HANDLING ---
+  private setupInputListeners(): void {
     if (this.gameMode === 'local') {
       // Local game - handle both players
       this.keyDownHandler = (e: KeyboardEvent) => {
-        console.log('Key down:', e.key);
         if (this.localGameEngine) {
           this.localGameEngine.handleKeyDown(e.key);
         }
       };
       this.keyUpHandler = (e: KeyboardEvent) => {
-        console.log('Key up:', e.key);
         if (this.localGameEngine) {
           this.localGameEngine.handleKeyUp(e.key);
         }
@@ -183,7 +378,8 @@ export class PoolScene {
   // !!! --- MAIN UPDATE LOOP --- !!!
   // --------------------------------
   //  Receives state from the server and updates the scene.
-  private updateFromState(state: GameState): void {
+  private async updateFromState(state: GameState): Promise<void> {
+    if (!this.gameStarted) return; // nothing moves before Start
 
     // Update camera position for online game
     if (!this.cameraPositioned && state.gameType === 'online') {
@@ -206,26 +402,27 @@ export class PoolScene {
     this.scoreboard.updateFromGameState(state);
 
     // Handle events (score, sounds)
-    state.events.forEach((event) => {
+    for (const event of state.events) {
       switch (event.type) {
         case 'collision':
           if (event.collisionType === 'wall') {
-            this.wallHitSound.play();
+            console.log('Wall sound!');
+            if (this.audioEnabled && this.wallHitSound) {
+              this.wallHitSound.setVolume(1.0);
+              this.wallHitSound.play();
+            }
           } else if (event.collisionType === 'paddle') {
-            this.paddleHitSound.play();
+            console.log('Paddle sound!');
+            if (this.audioEnabled && this.paddleHitSound) {
+              this.paddleHitSound.setVolume(1.0);
+              this.paddleHitSound.play();
+            }
           }
           break;
-
         case 'score':
-          console.log(`${event.player} scored ${event.points} points!`);
+          await this.handleScoreEvent(event);
           break;
       }
-    });
-
-    // Game status
-    if (state.status === 'finished') {
-      console.log(`Game Over: ${state.winner} WINS!`);
-      // TODO: Show win screen
     }
   }
 
@@ -250,16 +447,18 @@ export class PoolScene {
     const scene: Scene = new Scene(this.engine);
     const materials: Materials = new Materials(scene);
 
+    // Create camera and lights
+    this._createCamera(scene);
+    this._createLights(scene);
+    this._createSkybox(scene);
+
     // Configure scene post-processing
     this._configurePostProcessing(scene);
 
-    // Create scene elements
-    this._createCamera(scene);
-    this._createLights(scene);
+    // create elements of the pool
     this._createPool(scene, materials);
     this._createLadders(scene, materials);
     this._createWater(scene, materials);
-    this._createSkybox(scene);
 
     return scene;
   }
@@ -277,7 +476,7 @@ export class PoolScene {
   private _createCamera(scene: Scene): void {
     this.camera = new ArcRotateCamera("camera", 0, 0, 1, CAMERA_SETTINGS.TARGET_LOCAL, scene);
     this.camera.setPosition(CAMERA_SETTINGS.POSITION_LOCAL);
-    // this.camera.attachControl(this.canvas);
+    this.camera.attachControl(this.canvas, true);
     this.camera.wheelPrecision = CAMERA_SETTINGS.WHEEL_PRECISION;
   }
 
@@ -536,23 +735,15 @@ export class PoolScene {
   // --- CLEANUP METHOD ---
   // Cleans up all resources to prevent memory leaks.
   // This should be called when the game component is unmounted.
-  dispose(): void {
-  // Remove event listeners
+  public dispose(): void {
+    // Remove input listeners
     window.removeEventListener("keydown", this.keyDownHandler);
     window.removeEventListener("keyup", this.keyUpHandler);
     window.removeEventListener("resize", this.resizeHandler);
-    // Dispose game engines
-    if (this.localGameEngine) {
-      this.localGameEngine.dispose();
-    }
-    if (this.client) {
-      this.client.dispose(); // Add dispose method to GameClient if needed
-    }
 
-    // Dispose scoreboard
+    if (this.localGameEngine) this.localGameEngine.dispose();
+    if (this.client) this.client.dispose();
     this.scoreboard.dispose();
-
-    // Dispose scene and engine
     this.scene.dispose();
     this.engine.dispose();
   }

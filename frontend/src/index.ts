@@ -193,9 +193,9 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           email: user.email,
-          password: currentPassword 
+          password: currentPassword
         }),
         credentials: 'include'
       })
@@ -221,7 +221,7 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           password: newPassword
         }),
         credentials: 'include'
@@ -549,8 +549,8 @@ class ApiService {
       console.log('Raw backend response:', result)
 
       if (response.ok) {
-        return { 
-          success: true, 
+        return {
+          success: true,
           friends: result.friends || [],
           // The backend currently doesn't return pendingRequests, so we'll get an empty array
           pendingRequests: result.pendingRequests || []
@@ -806,7 +806,7 @@ class AppRouter {
         return
       }
     }
-    
+
     // User is authenticated or route doesn't require auth, proceed with rendering
     this.renderComponent(componentClass, ...args)
   }
@@ -894,7 +894,7 @@ class AppRouter {
       'PlayerSetupScreen',
       'TournamentLobbyScreen'
     ]
-    
+
     return protectedRoutes.includes(componentClass.name)
   }
 
@@ -917,7 +917,7 @@ class AppRouter {
         return
       }
     }
-    
+
     // User is authenticated or route doesn't require auth, proceed with navigation
     this.navigateTo(componentClass, ...args)
   }
@@ -1692,7 +1692,7 @@ class LoggedInLandingScreen extends Component {
     // Toggle dropdown on button click
     onlineUsersToggle.addEventListener('click', async (e) => {
       e.stopPropagation()
-      
+
       if (onlineUsersDropdown.classList.contains('hidden')) {
         // Show dropdown and load users
         await this.loadOnlineUsersList()
@@ -1750,7 +1750,7 @@ class LoggedInLandingScreen extends Component {
       `).join('')
 
       onlineUsersListElement.innerHTML = userListHTML
-      
+
       // Add click event listeners to user profile links
       this.setupUserProfileLinks()
     } catch (error) {
@@ -1767,11 +1767,11 @@ class LoggedInLandingScreen extends Component {
       link.addEventListener('click', async (e) => {
         e.preventDefault()
         e.stopPropagation()
-        
+
         const username = (link as HTMLElement).getAttribute('data-username')
         if (username) {
           console.log('Navigating to profile for user:', username)
-          
+
           // Check if this is the current user's own profile
           try {
             const currentUser = await this.apiService.getCurrentUser()
@@ -1787,7 +1787,7 @@ class LoggedInLandingScreen extends Component {
             // Fallback: navigate to other user's profile
             this.router.navigateTo(UserProfileScreen, username)
           }
-          
+
           // Close the dropdown
           const onlineUsersDropdown = this.element?.querySelector('#onlineUsersDropdown')
           if (onlineUsersDropdown) {
@@ -1848,12 +1848,12 @@ class TournamentLobbyScreen extends Component {
     // TODO: Load real tournament data from backend
     // For now, use placeholder data
     console.log('Loading tournament data...')
-    
+
     // Update tournament info with sample data
     const tournamentPlayers = this.element?.querySelector('#tournamentPlayers')
     const tournamentMaxPlayers = this.element?.querySelector('#tournamentMaxPlayers')
     const tournamentStatus = this.element?.querySelector('#tournamentStatus')
-    
+
     if (tournamentPlayers) tournamentPlayers.textContent = '2'
     if (tournamentMaxPlayers) tournamentMaxPlayers.textContent = '4'
     if (tournamentStatus) tournamentStatus.textContent = 'Waiting'
@@ -2033,9 +2033,14 @@ class GameScreen extends Component {
 
     host.appendChild(game3DContainer)
 
-    this.game3D = new Game3DComponent(game3DContainer, this.isQuickPlay ? 'local' : 'online')
-    this.game3D.initialize()
-    }
+    this.game3D = new Game3DComponent(
+      game3DContainer,
+      this.isQuickPlay ? 'local' : 'online',
+      this.player1Name,
+      this.player2Name,
+    );
+    this.game3D.initialize();
+  }
 
   cleanup(): void {
     if (this.game3D) {
@@ -2140,18 +2145,18 @@ class UserProfileScreen extends Component {
     if (isViewingOtherUser) {
       // Hide avatar menu for other users
       if (avatarMenuBtn) avatarMenuBtn.style.display = 'none'
-      
+
       // Hide settings button for other users (but keep match history visible)
       if (userSettingsBtn) userSettingsBtn.style.display = 'none'
-      
+
       // Hide friends list for other users
       const friendsListContainer = this.element?.querySelector('#friendsListContainer') as HTMLElement
       if (friendsListContainer) friendsListContainer.style.display = 'none'
-      
+
       // Hide avatar upload elements
       if (avatarFileInput) avatarFileInput.style.display = 'none'
       if (avatarUploadStatus) avatarUploadStatus.style.display = 'none'
-      
+
       // Show friend action container and buttons for other users
       this.setupFriendButtons()
     } else {
@@ -2160,7 +2165,7 @@ class UserProfileScreen extends Component {
       if (friendActionContainer) {
         friendActionContainer.style.display = 'none'
       }
-      
+
       // Setup friends list functionality for own profile
       this.setupFriendsList()
     }
@@ -2488,21 +2493,21 @@ class UserProfileScreen extends Component {
     if (removeFriendBtn) {
       removeFriendBtn.addEventListener('click', async () => {
         console.log('Remove friend clicked for:', this.targetUsername)
-        
+
         if (this.targetUsername) {
           // Confirm the action
           const confirmRemove = confirm(`Are you sure you want to remove ${this.targetUsername} from your friends list?`)
-          
+
           if (confirmRemove) {
             const result = await this.apiService.removeFriend(this.targetUsername)
-            
+
             if (result.success) {
               console.log('Friend removed successfully:', result.message)
-              
+
               // Hide Already Friends container and show Add Friend button
               if (alreadyFriendsContainer) alreadyFriendsContainer.style.display = 'none'
               if (addFriendBtn) addFriendBtn.style.display = 'block'
-              
+
               // Show success message
               alert(result.message || 'Friend removed successfully!')
             } else {
@@ -2511,7 +2516,7 @@ class UserProfileScreen extends Component {
             }
           }
         }
-        
+
         // Close the dropdown after action
         if (friendsActionDropdown) {
           friendsActionDropdown.classList.add('hidden')
@@ -2523,14 +2528,14 @@ class UserProfileScreen extends Component {
     if (addFriendBtn) {
       addFriendBtn.addEventListener('click', async () => {
         console.log('Add friend clicked for:', this.targetUsername)
-        
+
         if (this.targetUsername) {
           // Send the friend request
           const result = await this.apiService.sendFriendRequest(this.targetUsername)
-          
+
           if (result.success) {
             console.log('Friend request sent successfully:', result.message)
-            
+
             // Hide Add Friend button and show Request Sent button
             addFriendBtn.style.display = 'none'
             if (friendRequestSentBtn) {
@@ -2548,17 +2553,17 @@ class UserProfileScreen extends Component {
     if (acceptFriendBtn) {
       acceptFriendBtn.addEventListener('click', async () => {
         console.log('Accept friend request clicked for:', this.targetUsername)
-        
+
         if (this.targetUsername) {
           const result = await this.apiService.acceptFriendRequest(this.targetUsername)
-          
+
           if (result.success) {
             console.log('Friend request accepted successfully:', result.message)
-            
+
             // Hide Accept/Reject buttons and show Already Friends container
             if (friendRequestActions) friendRequestActions.style.display = 'none'
             if (alreadyFriendsContainer) alreadyFriendsContainer.style.display = 'block'
-            
+
             // Show success message
             alert(result.message || 'Friend request accepted!')
           } else {
@@ -2573,17 +2578,17 @@ class UserProfileScreen extends Component {
     if (rejectFriendBtn) {
       rejectFriendBtn.addEventListener('click', async () => {
         console.log('Reject friend request clicked for:', this.targetUsername)
-        
+
         if (this.targetUsername) {
           const result = await this.apiService.rejectFriendRequest(this.targetUsername)
-          
+
           if (result.success) {
             console.log('Friend request rejected successfully:', result.message)
-            
+
             // Hide Accept/Reject buttons and show Add Friend button
             if (friendRequestActions) friendRequestActions.style.display = 'none'
             if (addFriendBtn) addFriendBtn.style.display = 'block'
-            
+
             // Show success message
             alert(result.message || 'Friend request rejected!')
           } else {
@@ -2608,7 +2613,7 @@ class UserProfileScreen extends Component {
     // Handle dropdown toggle
     friendsListBtn.addEventListener('click', (e) => {
       e.stopPropagation()
-      
+
       if (friendsListDropdown.classList.contains('hidden')) {
         // Show dropdown and load data
         friendsListDropdown.classList.remove('hidden')
@@ -2634,7 +2639,7 @@ class UserProfileScreen extends Component {
 
     // Store the document click handler for cleanup
     ;(this.element as any).friendsListDocumentHandler = documentClickHandler
-    
+
     // Load initial notification badge status
     this.updateFriendsNotificationBadge()
   }
@@ -2642,28 +2647,28 @@ class UserProfileScreen extends Component {
   private async loadFriendsListData(): Promise<void> {
     const pendingRequestsList = this.element?.querySelector('#pendingRequestsList') as HTMLElement
     const friendsList = this.element?.querySelector('#friendsList') as HTMLElement
-    
+
     if (!pendingRequestsList) {
       console.log('Pending requests list element not found')
       return
     }
 
     console.log('Loading friends and pending requests from backend')
-    
+
     try {
       // Load both friends/requests and online users in parallel
       const [result, onlineUsers] = await Promise.all([
         this.apiService.getFriendsAndRequests(),
         this.apiService.getOnlineUsersList()
       ])
-      
+
       // Create a set of online usernames for quick lookup
       const onlineUsernames = new Set(onlineUsers.map(user => user.username))
-      
+
       if (result.success) {
         console.log('Friends and requests loaded:', result)
         console.log('Online users:', onlineUsers)
-        
+
         // Update notification badge based on pending requests
         const notificationBadge = this.element?.querySelector('#friendsNotificationBadge') as HTMLElement
         if (notificationBadge) {
@@ -2673,7 +2678,7 @@ class UserProfileScreen extends Component {
             notificationBadge.classList.add('hidden')
           }
         }
-        
+
         // Handle pending requests
         if (result.pendingRequests && result.pendingRequests.length > 0) {
           // Remove default message elements only when we have data
@@ -2683,21 +2688,21 @@ class UserProfileScreen extends Component {
               msg.remove()
             }
           })
-          
+
           result.pendingRequests.forEach((request: any) => {
             // Clone the pending request template
             const template = this.templateManager.cloneTemplate('pendingRequestItemTemplate')
             if (!template) return
-            
+
             const requestElement = template.firstElementChild as HTMLElement
             if (!requestElement) return
-            
+
             // Update the username text
             const usernameSpan = requestElement.querySelector('.pending-request-username') as HTMLElement
             if (usernameSpan) {
               usernameSpan.textContent = request.username
               usernameSpan.setAttribute('data-username', request.username)
-              
+
               // Add click handler for the username
               usernameSpan.addEventListener('click', (e) => {
                 e.stopPropagation()
@@ -2710,12 +2715,12 @@ class UserProfileScreen extends Component {
                 }
               })
             }
-            
+
             pendingRequestsList.appendChild(requestElement)
           })
         }
         // If no pending requests, default message remains visible
-        
+
         // Handle friends list if element exists
         if (friendsList && result.friends) {
           if (result.friends.length > 0) {
@@ -2726,21 +2731,21 @@ class UserProfileScreen extends Component {
                 msg.remove()
               }
             })
-            
+
             result.friends.forEach((friend: any) => {
               // Clone the friend item template
               const template = this.templateManager.cloneTemplate('friendItemTemplate')
               if (!template) return
-              
+
               const friendElement = template.firstElementChild as HTMLElement
               if (!friendElement) return
-              
+
               // Update the username text
               const usernameSpan = friendElement.querySelector('.friend-username') as HTMLElement
               if (usernameSpan) {
                 usernameSpan.textContent = friend.username
                 usernameSpan.setAttribute('data-username', friend.username)
-                
+
                 // Add click handler for the username
                 usernameSpan.addEventListener('click', (e) => {
                   e.stopPropagation()
@@ -2753,7 +2758,7 @@ class UserProfileScreen extends Component {
                   }
                 })
               }
-              
+
               // Update online status indicator
               const statusIndicator = friendElement.querySelector('.indicator-offline, .indicator-online') as HTMLElement
               if (statusIndicator) {
@@ -2766,7 +2771,7 @@ class UserProfileScreen extends Component {
                   statusIndicator.title = 'Offline'
                 }
               }
-              
+
               friendsList.appendChild(friendElement)
             })
           }
@@ -2789,7 +2794,7 @@ class UserProfileScreen extends Component {
     try {
       // Only get pending requests to check if badge should be shown
       const result = await this.apiService.getFriendsAndRequests()
-      
+
       if (result.success) {
         if (result.pendingRequests && result.pendingRequests.length > 0) {
           notificationBadge.classList.remove('hidden')
@@ -2859,12 +2864,12 @@ class UserProfileScreen extends Component {
     if (this.element && (this.element as any).friendsListDocumentHandler) {
       document.removeEventListener('click', (this.element as any).friendsListDocumentHandler)
     }
-    
+
     // Remove friends dropdown document click handler if it exists
     if (this.element && (this.element as any).friendsDropdownDocumentHandler) {
       document.removeEventListener('click', (this.element as any).friendsDropdownDocumentHandler)
     }
-    
+
     // Cleanup handled automatically by unmount
   }
 }
@@ -3013,7 +3018,7 @@ class UserSettingsScreen extends Component {
 
     // First verify the current password using login endpoint
     const verificationResult = await this.apiService.verifyCurrentPassword(currentPassword)
-    
+
     if (!verificationResult.success) {
       responseDiv.textContent = `Error: ${verificationResult.message || 'Current password is incorrect'}`
       responseDiv.className = 'text-error'
@@ -3083,7 +3088,7 @@ class UserSettingsScreen extends Component {
 
     // Verify current password using login endpoint
     const verificationResult = await this.apiService.verifyCurrentPassword(currentPassword)
-    
+
     if (!verificationResult.success) {
       responseDiv.textContent = `Error: ${verificationResult.message || 'Current password is incorrect'}`
       responseDiv.className = 'text-error'
@@ -3298,7 +3303,7 @@ class UserSettingsScreen extends Component {
 
     // Verify current password
     const verificationResult = await this.apiService.verifyCurrentPassword(password)
-    
+
     if (!verificationResult.success) {
       this.showResponse(responseDiv, verificationResult.message || 'Current password is incorrect', 'error')
       return
