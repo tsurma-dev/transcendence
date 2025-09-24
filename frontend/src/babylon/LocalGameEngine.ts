@@ -6,6 +6,9 @@ export class LocalGameEngine {
   private gameState: GameState;
   private isPausedState = false;
 
+  private paddleCollisionCooldown = 0;
+  private readonly COLLISION_COOLDOWN_TIME = 100; // 100ms cooldown
+
   private player1Input = { left: false, right: false };
   private player2Input = { left: false, right: false };
 
@@ -74,6 +77,10 @@ private createInitialGameState(): GameState {
       return;
     }
 
+    if (this.paddleCollisionCooldown > 0) {
+      this.paddleCollisionCooldown -= deltaTime;
+    }
+
     // Clear events from previous frame
     this.gameState.events = [];
 
@@ -81,7 +88,9 @@ private createInitialGameState(): GameState {
     this.updatePaddles(deltaTime);
     this.updateDuck(deltaTime);
     this.checkWallCollisions();
-    this.checkPaddleCollisions();
+    if (this.paddleCollisionCooldown <= 0) {
+      this.checkPaddleCollisions();
+    }
     this.checkScoring();
   }
 
@@ -141,83 +150,94 @@ private createInitialGameState(): GameState {
     const paddle1FaceZ = -GAME_CONFIG.TABLE_DEPTH / 2;
     const paddle1BackZ = paddle1FaceZ - GAME_CONFIG.PADDLE_DEPTH;
 
-    // **ZONE 1: Duck hits paddle face (bounce back to game area)**
-    if (
-      duck.z - duckRadius <= paddle1FaceZ &&
-      duck.z - duckRadius >= paddle1FaceZ - 0.1 && // Small buffer for face detection
-      duck.dir > Math.PI && // Moving towards paddle
-      duck.x >= player1.x - paddleHalfWidth &&
-      duck.x <= player1.x + paddleHalfWidth
-    ) {
-      // Normal face bounce - reflect back into game area
-      duck.dir = -duck.dir;
-      this.normalizeDirection(duck);
-      duck.z = paddle1FaceZ + duckRadius;
-      this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
-    }
-    // **ZONE 2: Duck is past paddle face, check end collisions**
-    else if (
-      duck.z >= paddle1BackZ &&
-      duck.z <= paddle1FaceZ &&
-      Math.abs(duck.x - player1.x) > paddleHalfWidth && // Outside paddle width
-      Math.abs(duck.x - player1.x) <= paddleHalfWidth + duckRadius // But within collision range
-    ) {
-      // Duck hits paddle end - bounce toward side wall
-      const hitLeftEnd = duck.x < player1.x;
-
-      if (hitLeftEnd) {
-        // Hit left end - bounce to up-left
-        duck.dir = 3 * Math.PI / 4 // 135° (up-left)
-      } else {
-        // Hit right - bounce to down-left
-        duck.dir = 5 * Math.PI / 4 // 225° (down-left)
-
+    // **Check if duck is in paddle zone**
+    if (duck.z <= paddle1FaceZ && duck.z >= paddle1BackZ) {
+      // **FACE COLLISION: Duck hits paddle front face**
+      if (
+        duck.z >= paddle1FaceZ - duckRadius &&
+        duck.dir > Math.PI && // Moving towards paddle
+        duck.x >= player1.x - paddleHalfWidth &&
+        duck.x <= player1.x + paddleHalfWidth
+      ) {
+        // Normal face bounce - reflect back into game area
+        duck.dir = 2 * Math.PI - duck.dir; // Reflect across Z-axis
+        this.normalizeDirection(duck);
+        duck.z = paddle1FaceZ + duckRadius; // **Move duck out of paddle**
+        this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        this.paddleCollisionCooldown = this.COLLISION_COOLDOWN_TIME;
       }
+      // **END COLLISION: Duck hits paddle sides**
+      else if (
+        Math.abs(duck.x - player1.x) <= paddleHalfWidth + duckRadius &&
+        Math.abs(duck.x - player1.x) > paddleHalfWidth
+      ) {
+        const hitLeftEnd = duck.x < player1.x;
 
-      this.normalizeDirection(duck);
-      // Keep duck at current Z position (don't push back to game area)
-      this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        if (hitLeftEnd) {
+          // Hit left end - bounce toward left bottom corner
+          console.log("HIT LEFT PADDLE END");
+          duck.dir = 5 * Math.PI / 4; // 225° (down-left)
+          // **Push duck out of paddle**
+          duck.x = player1.x - paddleHalfWidth - duckRadius;
+        } else {
+          console.log("HIT RIGHT PADDLE END");
+          // Hit right end - bounce toward right bottom corner
+          duck.dir = 7 * Math.PI / 4; // 315° (down-right)
+          // **Push duck out of paddle**
+          duck.x = player1.x + paddleHalfWidth + duckRadius;
+        }
+
+        this.normalizeDirection(duck);
+        this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        this.paddleCollisionCooldown = this.COLLISION_COOLDOWN_TIME;
+      }
     }
 
     // --- Player 2 paddle (at positive Z end) ---
     const paddle2FaceZ = GAME_CONFIG.TABLE_DEPTH / 2;
     const paddle2BackZ = paddle2FaceZ + GAME_CONFIG.PADDLE_DEPTH;
 
-    // **ZONE 1: Duck hits paddle face (bounce back to game area)**
-    if (
-      duck.z + duckRadius >= paddle2FaceZ &&
-      duck.z + duckRadius <= paddle2FaceZ + 0.1 && // Small buffer for face detection
-      duck.dir < Math.PI && // Moving towards paddle
-      duck.x >= player2.x - paddleHalfWidth &&
-      duck.x <= player2.x + paddleHalfWidth
-    ) {
-      // Normal face bounce - reflect back into game area
-      duck.dir = -duck.dir;
-      this.normalizeDirection(duck);
-      duck.z = paddle2FaceZ - duckRadius;
-      this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
-    }
-    // **ZONE 2: Duck is past paddle face, check end collisions**
-    else if (
-      duck.z >= paddle2FaceZ &&
-      duck.z <= paddle2BackZ &&
-      Math.abs(duck.x - player2.x) > paddleHalfWidth && // Outside paddle width
-      Math.abs(duck.x - player2.x) <= paddleHalfWidth + duckRadius // But within collision range
-    ) {
-      // Duck hits paddle end - bounce toward side wall
-      const hitLeftEnd = duck.x < player2.x;
-
-      if (hitLeftEnd) {
-        // Hit left end - bounce to down-right
-        duck.dir = 7 * Math.PI / 4; // 315° (down-right)
-      } else {
-        // Hit right end- bounce to up-right
-         duck.dir = Math.PI / 4; // 45° (up-right)
+    // **Check if duck is in paddle zone**
+    if (duck.z >= paddle2FaceZ && duck.z <= paddle2BackZ) {
+      // **FACE COLLISION: Duck hits paddle front face**
+      if (
+        duck.z <= paddle2FaceZ + duckRadius &&
+        duck.dir < Math.PI && // Moving towards paddle
+        duck.x >= player2.x - paddleHalfWidth &&
+        duck.x <= player2.x + paddleHalfWidth
+      ) {
+        // Normal face bounce - reflect back into game area
+        duck.dir = 2 * Math.PI - duck.dir; // Reflect across Z-axis
+        this.normalizeDirection(duck);
+        duck.z = paddle2FaceZ - duckRadius; // **Move duck out of paddle**
+        this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        this.paddleCollisionCooldown = this.COLLISION_COOLDOWN_TIME;
       }
+      // **END COLLISION: Duck hits paddle sides**
+      else if (
+        Math.abs(duck.x - player2.x) <= paddleHalfWidth + duckRadius &&
+        Math.abs(duck.x - player2.x) > paddleHalfWidth
+      ) {
+        const hitLeftEnd = duck.x < player2.x;
 
-      this.normalizeDirection(duck);
-      // Keep duck at current Z position (don't push back to game area)
-      this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        if (hitLeftEnd) {
+          console.log("HIT LEFT PADDLE END");
+          // Hit left end - bounce toward left upper corner
+          duck.dir = 3 * Math.PI / 4; // 135 ° (up-left)
+          // **Push duck out of paddle**
+          duck.x = player2.x - paddleHalfWidth - duckRadius;
+        } else {
+          console.log("HIT RIGHT PADDLE END");
+          // Hit right end - bounce toward right upper corner
+          duck.dir = Math.PI / 4; // 45° (up-right)
+          // **Push duck out of paddle**
+          duck.x = player2.x + paddleHalfWidth + duckRadius;
+        }
+
+        this.normalizeDirection(duck);
+        this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        this.paddleCollisionCooldown = this.COLLISION_COOLDOWN_TIME;
+      }
     }
   }
 
@@ -271,6 +291,7 @@ private createInitialGameState(): GameState {
 }
 
   private resetDuck(): void {
+    this.paddleCollisionCooldown = 0;
     // Start with one of four diagonal directions
     const directions = [
       Math.PI / 4,     // 45° (up-right)

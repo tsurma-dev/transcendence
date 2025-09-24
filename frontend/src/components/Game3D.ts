@@ -153,7 +153,7 @@ export class Game3DComponent {
   private initializeScene(): void {
     try {
       const loadingStartTime = Date.now();
-      const minimumLoadingTime = 8000; // Minimum 2 seconds loading screen
+      const minimumLoadingTime = 8000; // Minimum 8 seconds loading screen
 
       this.poolScene = new PoolScene(this.canvas, this.gameMode, this.player1Name, this.player2Name);
       // Wait until PoolScene signals loaded
