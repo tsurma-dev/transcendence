@@ -196,7 +196,6 @@ export class PoolScene {
           return resolve();
         }
 
-        console.log(`🔢 Countdown: ${count}`);
         this.countdownElement.innerText = count.toString();
         count--;
 
@@ -249,7 +248,6 @@ export class PoolScene {
 
   // --- LOAD 3D MODELS ---
   private async load3DModels(): Promise<void> {
-    console.log('🔄 Loading 3D models...');
 
     // Initialize game objects and wait for them to load
     this.duck = new Duck(this.scene, this.shadowGenerator);
@@ -272,8 +270,6 @@ export class PoolScene {
       this.shadowGenerator
     );
     await this.Paddle2.waitForLoad();
-
-    console.log('✅ All 3D models loaded');
   }
 
  public async startGame(): Promise<void> {
@@ -341,6 +337,7 @@ export class PoolScene {
   // --- ONLINE GAME SETUP ---
   // **************************
   private initializeOnlineGame(): void {
+    console.log('Initializing online game');
     this.client = new GameClient(GAME_CONFIG.SERVER_URL);
     this.client.setSnapshotHandler((snapshot: Snapshot) => {
       if (!this.gameStarted) return; // ignore updates before start
