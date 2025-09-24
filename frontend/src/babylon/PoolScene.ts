@@ -505,7 +505,6 @@ export class PoolScene {
       const animatable = this.scene.beginAnimation(this.camera, 0, 300, false);
       animatable.onAnimationEndObservable.add(() => {
         this.isIntroPlaying = false;
-        this.camera.attachControl(this.canvas, true);
         resolve();
       });
     });
