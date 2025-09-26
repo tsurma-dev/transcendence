@@ -176,7 +176,7 @@ export class UserProfileScreen extends Component {
         // Navigate to match history screen, passing the target username
         if (this.targetUsername) {
           // Pass the username of the profile being viewed
-          this.router.navigateTo(MatchHistoryScreen, { targetUsername: this.targetUsername })
+          this.router.navigateTo(MatchHistoryScreen, this.targetUsername)
         } else {
           // Current user's profile, no username parameter needed
           this.router.navigateTo(MatchHistoryScreen)

@@ -37,7 +37,7 @@ export class MatchHistoryScreen extends Component {
       backToProfileBtn.addEventListener('click', () => {
         if (this.targetUsername) {
           // Go back to specific user's profile
-          this.router.navigateTo(UserProfileScreen, { targetUsername: this.targetUsername })
+          this.router.navigateTo(UserProfileScreen, this.targetUsername)
         } else {
           // Go back to current user's profile
           this.router.navigateTo(UserProfileScreen)
