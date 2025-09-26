@@ -196,19 +196,39 @@ export class UserProfileScreen extends Component {
     }
 
     try {
-      // Check if user is online by trying to get current user data
-      const currentUser = await this.apiService.getCurrentUser()
-
-      if (currentUser && currentUser.username) {
-        // User is online
-        onlineStatusDot.className = 'indicator-online'
-        onlineStatusText.textContent = 'Online'
-        onlineStatusText.className = 'text-green-600 font-mono text-sm font-bold'
+      const isViewingOtherUser = this.targetUsername !== undefined
+      
+      if (isViewingOtherUser && this.targetUsername) {
+        // Check if the target user is online by getting the online users list
+        const onlineUsers = await this.apiService.getOnlineUsersList()
+        const isTargetUserOnline = onlineUsers.some(user => user.username === this.targetUsername)
+        
+        if (isTargetUserOnline) {
+          // Target user is online
+          onlineStatusDot.className = 'indicator-online'
+          onlineStatusText.textContent = 'Online'
+          onlineStatusText.className = 'text-green-600 font-mono text-sm font-bold'
+        } else {
+          // Target user is offline
+          onlineStatusDot.className = 'indicator-offline'
+          onlineStatusText.textContent = 'Offline'
+          onlineStatusText.className = 'text-red-600 font-mono text-sm font-bold'
+        }
       } else {
-        // User is offline or not authenticated
-        onlineStatusDot.className = 'indicator-offline'
-        onlineStatusText.textContent = 'Offline'
-        onlineStatusText.className = 'text-red-600 font-mono text-sm font-bold'
+        // Check if current user is online (viewing own profile)
+        const currentUser = await this.apiService.getCurrentUser()
+
+        if (currentUser && currentUser.username) {
+          // Current user is online (obviously, since they're logged in)
+          onlineStatusDot.className = 'indicator-online'
+          onlineStatusText.textContent = 'Online'
+          onlineStatusText.className = 'text-green-600 font-mono text-sm font-bold'
+        } else {
+          // User is offline or not authenticated
+          onlineStatusDot.className = 'indicator-offline'
+          onlineStatusText.textContent = 'Offline'
+          onlineStatusText.className = 'text-red-600 font-mono text-sm font-bold'
+        }
       }
     } catch (error) {
       console.error('Error checking online status:', error)
