@@ -1,4 +1,5 @@
-import type { ServerToClient, ClientToServer, Snapshot, InputMessage, RoomCreatedPayload, RoomJoinedPayload, GameOverPayload, GameStartPayload} from "@shared/protocol";
+import type { ServerToClient, ClientToServer, Snapshot, InputMessage, RoomCreatedPayload, RoomJoinedPayload, GameOverPayload, GameStartPayload, GameStatePayload} from "@shared/protocol";
+import { GameState } from "@shared/types";
 
 export class GameClient {
   private ws?: WebSocket;
@@ -6,6 +7,8 @@ export class GameClient {
   private snapshotHandler: (snap: Snapshot) => void = () => {};
   private clientId: string | null = null;
   public playerName: string | null = null;
+  public opponentName: string | null = null;
+  public playerId: string | null = null;
   public playerPosition: 1 | 2 | null = null;
   private pingInterval: number | null = null;
   public roomId: string | null = null;
@@ -29,6 +32,7 @@ export class GameClient {
 
   private onOpen(): void {
     console.log("Connected to game server. Waiting for handshake...");
+    this.joinRoom(this.playerName, this.roomId);
   }
 
   private onClose(): void {
@@ -44,14 +48,15 @@ export class GameClient {
     this.ws.send(JSON.stringify(msg));
   }
 
-  public joinRoom(playerName: string, roomId?: string): void {
+  public joinRoom(playerName: string | null, roomId: string | null): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error("WebSocket not connected");
       return;
     }
     const msg = {
-      type: "join-room",
-      payload: { playerName, roomId }
+      action: "join",
+      roomId: roomId,
+      name: playerName
     };
     this.ws.send(JSON.stringify(msg));
   }
@@ -75,7 +80,7 @@ export class GameClient {
   }
 
   private onMessage(event: MessageEvent): void {
-    let message: ServerToClient;
+    let message : ServerToClient;
     try {
       message = JSON.parse(event.data);
     } catch (error) {
@@ -115,7 +120,9 @@ export class GameClient {
 
       case "state":
         // The payload is the snapshot. Pass it to the handler.
-        this.snapshotHandler(message.payload);
+        // convert message.payload to Snapshot type
+        const snapshot = this.makeSnapshot(message.payload);
+        this.snapshotHandler(snapshot);
         break;
 
       case "pong":
@@ -147,9 +154,14 @@ export class GameClient {
   }
 
   private handleRoomJoined(payload: RoomJoinedPayload): void {
-    this.roomId = payload.roomId;
-    this.playerPosition = payload.position;
-    console.log(`✅ Joined room: ${this.roomId}, you are player ${payload.position}`);
+    //console.log("Room joined:", payload);
+    this.roomId = payload.room;
+    this.playerId = payload.playerId;
+    if (payload.playerId === "first")
+    this.playerPosition = 1;
+    else if (payload.playerId === "second")
+      this.playerPosition = 2;
+    console.log(`✅ Joined room: ${this.roomId}, you are player ${this.playerPosition}`);
   }
 
   private handleGameStart(payload: GameStartPayload): void {
@@ -168,6 +180,31 @@ export class GameClient {
     // Notify UI of error
   }
 
+  private makeSnapshot(payload: GameStatePayload): Snapshot {
+    const state: GameState = {
+      players: { 
+        ["Player 1"]: { x: payload.paddle1X, position: 1 }, 
+        ["Player 2"]: { x: payload.paddle2X, position: 2 } 
+      },
+      //roomId: this.roomId,
+      scores: { 
+        ["Player 1"]: payload.player1Score, 
+        ["Player 2"]: payload.player2Score 
+      },
+      duck: {
+        x: payload.ballPosX, 
+        z: payload.ballPosZ, 
+        dir: 0
+      },
+      gameType: 'online',
+      status: payload.gameState, // 'waiting' | 'playing' | 'finished';
+      //winner: payload.winner, // present if status === 'finished'
+      events: [{ type: 'collision', collisionType: payload.collision }],
+    }
+    console.log("Snapshot received:", state);
+    return {state};
+  }
+
   /** Register a callback to be invoked for each game state snapshot */
   setSnapshotHandler(handler: (snap: Snapshot) => void): void {
     this.snapshotHandler = handler;
@@ -176,17 +213,33 @@ export class GameClient {
   /** Call this on key press/release to send input to the server */
   sendInput(key: string, pressed: boolean): void {
     // Construct the message according to the protocol
-    const inputPayload: InputMessage = {
-      at: Date.now(),
-      key: key,
-      pressed: pressed
-    };
+  //   const inputPayload: InputMessage = {
+  //     at: Date.now(),
+  //     key: key,
+  //     pressed: pressed
+  //   };
 
-    const message: ClientToServer = {
-      type: "input",
-      payload: inputPayload
-    };
+  let direction: number = 0;
 
+  if (key === "ArrowLeft" && pressed){
+    if (this.playerPosition === 1)
+      direction = 1;
+    else if (this.playerPosition === 2)
+      direction = -1;
+  }
+  else if (key === "ArrowRight" && pressed){
+    if (this.playerPosition === 1)
+      direction = -1;
+    else if (this.playerPosition === 2)
+      direction = 1;
+  }
+  
+    const message = {
+      action: "input",
+      roomId: this.roomId,
+      playerId: this.playerId,
+      direction: direction  
+   };
     this.ws?.send(JSON.stringify(message));
   }
 

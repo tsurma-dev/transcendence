@@ -22,7 +22,7 @@ export type GameStatus = 'waiting' | 'playing' | 'finished';
 export type GameType = 'local' | 'online';
 
 // Roommanagement
-export type RoomId = string;
+export type RoomId = string | null;
 export type RoomState = {
   id: RoomId;
   status: 'waiting' | 'ready' | 'playing' | 'finished';
@@ -38,7 +38,7 @@ export type RoomState = {
 
 // Different types of collisions that can occur in the game
 // Different sounds can be played based on the type of collision
-export type CollisionType = 'wall' | 'paddle';
+export type CollisionType = 'wall' | 'paddle' | null;
 
 export type CollisionEvent = {
   type: 'collision';

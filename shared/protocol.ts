@@ -2,7 +2,7 @@ import { GameState } from "./types";
 
 export type ServerToClient =
   | { type: "hello"; payload: { version: number; yourId: string } }
-  | { type: "state"; payload: Snapshot }
+  | { type: "state"; payload: GameStatePayload }
   | { type: "playerAssignment"; payload: PlayerAssignmentPayload }
   | { type: "pong"; payload: { t: number } }
   | { type: "room-created"; payload: RoomCreatedPayload }
@@ -18,9 +18,9 @@ export type PlayerAssignmentPayload = {
 };
 
 export type Snapshot = {
-  version: number;           // = GAME_CONFIG.VERSION
-  tick: number;              // server tick number
-  serverTime: number;        // ms (Date.now on server)
+  //version: number;           // = GAME_CONFIG.VERSION
+  //tick: number;              // server tick number
+  //serverTime: number;        // ms (Date.now on server)
   state: GameState;
 };
 
@@ -54,20 +54,32 @@ export type RoomCreatedPayload = {
 };
 
 export type RoomJoinedPayload = {
-  roomId: string;
-  playerName: string;
-  position: 1 | 2;
+  room: string;
+  playerId: string;
+  //position: 1 | 2;
 };
 
 export type GameStartPayload = {
-  roomId: string;
+  //roomId: string;
   player1Name: string;
   player2Name: string;
 };
 
 export type GameOverPayload = {
-  roomId: string;
-  winner: string;
+  //roomId: string;
   player1Score: number;
   player2Score: number;
+  winner: string;
+};
+
+export type GameStatePayload = {
+  ballPosX: number;
+  ballPosZ: number;
+  paddle1X: number;
+  paddle2X: number;
+  player1Score: number;
+  player2Score: number;
+  collision:  'wall' | 'paddle' | null;
+  gameState: "playing" | "finished";
+  winner?: string;
 };
