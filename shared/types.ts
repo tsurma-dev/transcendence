@@ -23,16 +23,6 @@ export type GameType = 'local' | 'online';
 
 // Roommanagement
 export type RoomId = string;
-export type RoomState = {
-  id: RoomId;
-  status: 'waiting' | 'ready' | 'playing' | 'finished';
-  players: {
-    player1?: PlayerName;
-    player2?: PlayerName;
-  };
-  createdAt: number;         // Timestamp
-  gameStartedAt?: number;    // Timestamp when game started
-};
 
 // --- EVENTS ---
 
@@ -51,13 +41,7 @@ export type ScoreEvent = {
   points: number;
 };
 
-export type RoomEvent = {
-  type: 'room';
-  roomEvent: 'player-joined' | 'player-left' | 'game-started' | 'game-ended';
-  playerName?: PlayerName;
-};
-
-export type GameEvent = CollisionEvent | ScoreEvent | RoomEvent;
+export type GameEvent = CollisionEvent | ScoreEvent;
 
 
 // --- GAME STATE ---
@@ -74,9 +58,6 @@ export type GameState = {
 
   // Duck state
   duck: DuckState;
-
-  // Game type (Local or Online)
-  gameType: GameType;
 
   // Overall game status
   status: GameStatus;
