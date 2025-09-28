@@ -1,7 +1,7 @@
 /* eslint-disable no-trailing-spaces */
 
 import { PoolScene } from "../babylon/PoolScene";
-export type GameMode = 'local' | 'online';
+export type GameMode = 'local' | 'online'; // TODO: add | 'tournament' | 'ai' ??
 
 export class Game3DComponent {
   private container: HTMLElement;
@@ -12,17 +12,22 @@ export class Game3DComponent {
   private gameMode: GameMode;
   private player1Name?: string;
   private player2Name?: string;
+  private player1Position: 1 | 2 = 1;
+  private roomId?: string;
 
   constructor(
     container: HTMLElement,
     gameMode: 'local' | 'online' = 'online',
-    player1Name?: string,
-    player2Name?: string
+    player1Name?: string, // current user
+    player2Name?: string, // opponent
+    player1Position: 1 | 2 = 1,
+    roomId?: string
   ) {
     this.container = container;
     this.gameMode = gameMode;
     this.player1Name = player1Name;
     this.player2Name = player2Name;
+    this.roomId = roomId;
   }
 
   initialize(): void {
@@ -44,7 +49,7 @@ export class Game3DComponent {
     this.container.appendChild(this.canvas);
   }
 
-    private static readonly PONG_ASCII = [
+  private static readonly PONG_ASCII = [
     "_|_|_|      _|_|    _|      _|    _|_|_|",
     "_|    _|  _|    _|  _|_|    _|  _|      ",
     "_|_|_|    _|    _|  _|  _|  _|  _|  _|_|",
@@ -152,20 +157,9 @@ export class Game3DComponent {
 
   private initializeScene(): void {
     try {
-      const loadingStartTime = Date.now();
-      const minimumLoadingTime = 8000; // Minimum 8 seconds loading screen
-
-      this.poolScene = new PoolScene(this.canvas, this.gameMode, this.player1Name, this.player2Name);
+      this.poolScene = new PoolScene(this.canvas, this.gameMode, this.player1Name, this.player2Name, this.player1Position, this.roomId);
       // Wait until PoolScene signals loaded
       this.poolScene.onLoaded(async () => {
-        const loadingDuration = Date.now() - loadingStartTime;
-        const remainingTime = minimumLoadingTime - loadingDuration;
-
-        if (remainingTime > 0) {
-          console.log(`Loading finished early, waiting ${remainingTime}ms more to show animation...`);
-          await new Promise(resolve => setTimeout(resolve, remainingTime));
-        }
-
         // Hide loading and show start button
         if (this.loadingOverlay) this.loadingOverlay.style.display = "none";
         if (this.startButton) this.startButton.style.display = "flex";
@@ -180,7 +174,7 @@ export class Game3DComponent {
       this.startButton?.addEventListener("click", async () => {
         if (!this.poolScene) return;
         this.startButton!.style.display = "none";
-        await this.poolScene.startGame();
+        await this.poolScene.startAnimation();
       });
 
     } catch (error) {

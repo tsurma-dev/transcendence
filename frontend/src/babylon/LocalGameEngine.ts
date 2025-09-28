@@ -1,13 +1,15 @@
 import { GAME_CONFIG } from "@shared/GameConfig";
-import type { GameState, GameType } from "@shared/types";
+import type { GameState} from "@shared/types";
 
 
 export class LocalGameEngine {
   private gameState: GameState;
-  private isPausedState = false;
 
   private paddleCollisionCooldown = 0;
   private readonly COLLISION_COOLDOWN_TIME = 100; // 100ms cooldown
+
+  private player1Name: string = "Player 1";
+  private player2Name: string = "Player 2";
 
   private player1Input = { left: false, right: false };
   private player2Input = { left: false, right: false };
@@ -15,44 +17,32 @@ export class LocalGameEngine {
   private readonly PADDLE_SPEED = GAME_CONFIG.PADDLE_SPEED;
   private readonly DUCK_SPEED = GAME_CONFIG.BALL_SPEED;
 
-  constructor() {
-    this.gameState = this.createInitialGameState();
-    console.log('Local game engine created');
-  }
+constructor(player1Name?: string, player2Name?: string) {
+  if (player1Name) this.player1Name = player1Name;
+  if (player2Name) this.player2Name = player2Name;
+
+  this.gameState = this.createInitialGameState();
+  console.log('Local game engine created');
+}
 
 private createInitialGameState(): GameState {
     return {
       players: {
-        "Player 1": { x: 0, position: 1 },
-        "Player 2": { x: 0, position: 2 }
+        [this.player1Name]: { x: 0, position: 1 },
+        [this.player2Name]: { x: 0, position: 2 }
       },
       scores: {
-        "Player 1": 0,
-        "Player 2": 0
+        [this.player1Name]: 0,
+        [this.player2Name]: 0
       },
       duck: {
         x: 0,
         z: 0,
         dir: Math.PI / 4
       },
-      gameType: 'local' as GameType,
       status: 'playing',
       events: []
     };
-  }
-
-  public pause(): void {
-    this.isPausedState = true;
-    console.log('🟡 Game paused for countdown');
-  }
-
-  public resume(): void {
-    this.isPausedState = false;
-    console.log('🟢 Game resumed after countdown');
-  }
-
-  public isPaused(): boolean {
-    return this.isPausedState;
   }
 
   private normalizeDirection(duck: { dir: number }): void {
@@ -67,13 +57,8 @@ private createInitialGameState(): GameState {
   // *******************************
   // Called every frame by Babylon's render loop
   public update(deltaTime: number): void {
-    if (this.isPausedState) {
-      this.gameState.events = [];
-      return;
-    }
 
     if (this.gameState.status === 'finished') {
-      console.log('Game is finished, stopping updates');
       return;
     }
 
@@ -95,8 +80,8 @@ private createInitialGameState(): GameState {
   }
 
   private updatePaddles(deltaTime: number): void {
-    const player1 = this.gameState.players["Player 1"];
-    const player2 = this.gameState.players["Player 2"];
+    const player1 = this.gameState.players[this.player1Name];
+    const player2 = this.gameState.players[this.player2Name];
 
     const step = this.PADDLE_SPEED * (deltaTime / 1000); // <-- frame-independent
 
@@ -140,8 +125,8 @@ private createInitialGameState(): GameState {
 
   private checkPaddleCollisions(): void {
     const duck = this.gameState.duck;
-    const player1 = this.gameState.players["Player 1"];
-    const player2 = this.gameState.players["Player 2"];
+    const player1 = this.gameState.players[this.player1Name];
+    const player2 = this.gameState.players[this.player2Name];
 
     const paddleHalfWidth = GAME_CONFIG.PADDLE_WIDTH / 2;
     const duckRadius = GAME_CONFIG.BALL_RADIUS;
@@ -242,7 +227,7 @@ private createInitialGameState(): GameState {
   }
 
   private checkScoring(): void {
-    if (this.isPausedState) return;
+    if (this.gameState.status === 'finished') return;
     const duck = this.gameState.duck;
     const duckRadius = GAME_CONFIG.BALL_RADIUS;
 
@@ -254,21 +239,21 @@ private createInitialGameState(): GameState {
 
     // Player 1 scores when duck hits the positive Z end of the pool
     if (duck.z + duckRadius > scoreZone2) {
-      this.gameState.scores["Player 1"]++;
+      this.gameState.scores[this.player1Name]++;
       this.gameState.events.push({
         type: 'score',
-        player: "Player 1",
-        points: this.gameState.scores["Player 1"]
+        player: this.player1Name,
+        points: this.gameState.scores[this.player1Name]
       });
       scored = true;
     }
     // Player 2 scores when duck hits the negative Z end of the pool
     else if (duck.z - duckRadius < scoreZone1) {
-      this.gameState.scores["Player 2"]++;
+      this.gameState.scores[this.player2Name]++;
       this.gameState.events.push({
         type: 'score',
-        player: "Player 2",
-        points: this.gameState.scores["Player 2"]
+        player: this.player2Name,
+        points: this.gameState.scores[this.player2Name]
       });
       scored = true;
     }
@@ -277,15 +262,13 @@ private createInitialGameState(): GameState {
     this.resetDuck();
 
     // Check win condition
-    const winningScore = 5;
-    if (this.gameState.scores["Player 1"] >= winningScore) {
+    const winningScore = 3;
+    if (this.gameState.scores[this.player1Name] >= winningScore) {
       this.gameState.status = 'finished';
-      this.gameState.winner = "Player 1";
-      console.log("🏆 Player 1 wins the game!");
-    } else if (this.gameState.scores["Player 2"] >= winningScore) {
+      this.gameState.winner = this.player1Name;
+    } else if (this.gameState.scores[this.player2Name] >= winningScore) {
       this.gameState.status = 'finished';
-      this.gameState.winner = "Player 2";
-      console.log("🏆 Player 2 wins the game!");
+      this.gameState.winner = this.player2Name;
     }
   }
 }

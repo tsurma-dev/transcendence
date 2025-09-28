@@ -38,7 +38,7 @@ export class Scoreboard {
 
   private createTextElements(): void {
     // Game Status (TOP)
-    this.gameStatusText = new TextBlock("gameStatus", "Waiting for players...");
+    this.gameStatusText = new TextBlock("gameStatus", "Game starting...");
     this.gameStatusText.color = "white";
     this.gameStatusText.fontSize = 16;
     this.gameStatusText.fontWeight = "bold";
@@ -99,7 +99,7 @@ export class Scoreboard {
     // Update game status
     switch (state.status) {
       case 'waiting':
-        this.gameStatusText.text = "Waiting for players...";
+        this.gameStatusText.text = "Game starting...";
         this.gameStatusText.color = "yellow";
         break;
       case 'playing':
