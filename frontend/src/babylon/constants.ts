@@ -28,5 +28,19 @@ export const CAMERA_SETTINGS = {
   POSITION2: new Vector3(0, 6, 8),
   TARGET_LOCAL: new Vector3(-0.5, 0, 0),
   POSITION_LOCAL: new Vector3(1, 8, 0),
-  WHEEL_PRECISION: 50
+  WHEEL_PRECISION: 50,
+  INTRO_START_POSITION: new Vector3(-2, 0, 0),     // Low, side view of duck
+  INTRO_START_TARGET: new Vector3(0, 0, 0),       // Looking at duck
+  INTRO_MID_POSITION: new Vector3(2, 4, 0),       // Higher up, still side view
+  INTRO_MID_TARGET: new Vector3(0, 0, 0),         // Still looking at center
+// Online intro animation settings
+  INTRO_CLOSE_ORBIT_RADIUS: 3,           // Close orbit around duck
+  INTRO_CLOSE_ORBIT_HEIGHT: 1.5,        // Low for intimate view
+  INTRO_SKYBOX_POSITION: new Vector3(20, 3, 0), // Far out for skybox
+  INTRO_SKYBOX_TARGET: new Vector3(0, 0, 0),      // Still looking at center
+
+  // Timing (in frames at 60fps)
+  INTRO_CLOSE_ORBIT_DURATION: 240,      // 4 seconds
+  INTRO_SKYBOX_ZOOM_DURATION: 180,      // 3 seconds
+  INTRO_FINAL_ZOOM_DURATION: 240,       // 4 seconds
 } as const;

@@ -11,10 +11,12 @@ export class Scoreboard {
   private gameStatusText!: TextBlock;
   private initialPlayer1Name: string;
   private initialPlayer2Name: string;
+  private gameMode: 'local' | 'online' = 'local';
 
-  constructor(player1Name: string, player2Name: string) {
+  constructor(player1Name: string, player2Name: string, gameMode: 'local' | 'online' = 'local') {
     this.initialPlayer1Name = player1Name || "Player 1";
     this.initialPlayer2Name = player2Name || "Player 2";
+    this.gameMode = gameMode;
 
     // Create GUI texture
     this.guiTexture = AdvancedDynamicTexture.CreateFullscreenUI("ScoreboardUI");
@@ -27,9 +29,19 @@ export class Scoreboard {
     this.scoreboardContainer.color = "white";
     this.scoreboardContainer.thickness = 2;
     this.scoreboardContainer.background = "rgba(0, 0, 0, 0.7)";
-    this.scoreboardContainer.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    this.scoreboardContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-    this.scoreboardContainer.topInPixels = 20;
+   // **POSITIONING BASED ON GAME MODE**
+    if (gameMode === 'local') {
+      // **LOCAL: Center top (original position)**
+      this.scoreboardContainer.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+      this.scoreboardContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+      this.scoreboardContainer.topInPixels = 20;
+    } else {
+      // **ONLINE: Right top corner**
+      this.scoreboardContainer.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+      this.scoreboardContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+      this.scoreboardContainer.topInPixels = 20;
+      this.scoreboardContainer.leftInPixels = -20; // **20px from right edge**
+    }
     this.guiTexture.addControl(this.scoreboardContainer);
 
     // Create text elements

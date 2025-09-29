@@ -120,7 +120,7 @@ export class PoolScene {
       }
 
       this.scene = this.CreateScene();
-      this.scoreboard = new Scoreboard(this.player1Name, this.player2Name);
+      this.scoreboard = new Scoreboard(this.player1Name, this.player2Name, this.gameMode);
       this.createCountdownUI();
 
       // Load assets in the background
@@ -291,7 +291,7 @@ export class PoolScene {
 
       // **PHASE 2: Show Animation**
       console.log('🎬 Phase 2: Playing animation...');
-      await this.playCameraIntro();
+      await this.playOnlineIntro(this.player1Position);
       console.log('✅ Animation complete');
 
       // **PHASE 3: Join Room & Wait**
@@ -505,7 +505,8 @@ export class PoolScene {
   // ------------------------------
   // --- ANIMATIONS ---
   // ------------------------------
-  // Camera intro animation**
+
+  //***Camera intro animation for LOCAL GAME***
   public async playCameraIntro(): Promise<void> {
     if (this.isIntroPlaying) return;
 
@@ -516,9 +517,8 @@ export class PoolScene {
     await this.playSkyOrbitIntro();
 
     // **2. ZOOM ANIMATION - Use current camera position as start**
-    const startPosition = this.camera.position.clone(); // Use actual current position
-    const startTarget = this.camera.getTarget().clone(); // Use actual current target
-
+    const startPosition = this.camera.position.clone();
+    const startTarget = this.camera.getTarget().clone();
     // Create easing
     const easingFunction = new CubicEase();
     easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
@@ -597,10 +597,10 @@ export class PoolScene {
       });
     }
 
-    // **VERIFY: Last position should match zoom start**
+    // Last position should match zoom start
     const lastPos = positionKeys[positionKeys.length - 1].value;
 
-    // Always look at pool center (skybox will be visible)
+    // Always look at pool center
     const targetKeys = [
       { frame: 0, value: center },
       { frame: orbitFrames, value: center }
@@ -642,6 +642,162 @@ export class PoolScene {
     });
   }
 
+  //***Camera intro for ONLINE GAME ***
+  public async playOnlineIntro(playerPosition: 1 | 2): Promise<void> {
+    if (this.isIntroPlaying) return;
+
+    this.isIntroPlaying = true;
+    this.camera.detachControl();
+
+    // **PHASE 1: Close orbit around the duck**
+    await this.playCloseOrbitAroundDuck();
+
+    // **PHASE 2: Zoom out far to show skybox horizon**
+    await this.animateToPosition(
+      CAMERA_SETTINGS.INTRO_SKYBOX_POSITION,
+      CAMERA_SETTINGS.INTRO_SKYBOX_TARGET,
+      CAMERA_SETTINGS.INTRO_SKYBOX_ZOOM_DURATION,
+    );
+
+    // **PHASE 3: Zoom into final player position**
+    const finalPosition = playerPosition === 1 ?
+      CAMERA_SETTINGS.POSITION1 :
+      CAMERA_SETTINGS.POSITION2;
+
+    const finalTarget = playerPosition === 1 ?
+      CAMERA_SETTINGS.TARGET1 :
+      CAMERA_SETTINGS.TARGET2;
+
+    await this.animateToPosition(
+      finalPosition,
+      finalTarget,
+      240, // 4 seconds for dramatic zoom in
+    );
+
+    this.isIntroPlaying = false;
+  }
+
+  // **Helper method for smooth camera transitions**
+  private async animateToPosition(
+    targetPosition: Vector3,
+    targetLookAt: Vector3,
+    durationFrames: number,
+  ): Promise<void> {
+    return new Promise((resolve) => {
+
+      const startPosition = this.camera.position.clone();
+      const startTarget = this.camera.getTarget().clone();
+
+      // Create easing
+      const easingFunction = new CubicEase();
+      easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
+
+      // Position animation
+      const positionAnimation = new Animation(
+        "cameraPosition",
+        "position",
+        60,
+        Animation.ANIMATIONTYPE_VECTOR3,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+
+      positionAnimation.setKeys([
+        { frame: 0, value: startPosition },
+        { frame: durationFrames, value: targetPosition }
+      ]);
+      positionAnimation.setEasingFunction(easingFunction);
+
+      // Target animation
+      const targetAnimation = new Animation(
+        "cameraTarget",
+        "target",
+        60,
+        Animation.ANIMATIONTYPE_VECTOR3,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+
+      targetAnimation.setKeys([
+        { frame: 0, value: startTarget },
+        { frame: durationFrames, value: targetLookAt }
+      ]);
+      targetAnimation.setEasingFunction(easingFunction);
+
+      // Apply animations
+      this.camera.animations = [positionAnimation, targetAnimation];
+
+      const animatable = this.scene.beginAnimation(this.camera, 0, durationFrames, false);
+      animatable.onAnimationEndObservable.add(() => {
+        resolve();
+      });
+    });
+  }
+
+  // Close orbit around duck
+  private async playCloseOrbitAroundDuck(): Promise<void> {
+    return new Promise((resolve) => {
+      const orbitFrames = CAMERA_SETTINGS.INTRO_CLOSE_ORBIT_DURATION;
+      const radius = CAMERA_SETTINGS.INTRO_CLOSE_ORBIT_RADIUS;
+      const height = CAMERA_SETTINGS.INTRO_CLOSE_ORBIT_HEIGHT;
+      const center = new Vector3(0, 0, 0); // Duck position
+
+      const startPos = CAMERA_SETTINGS.INTRO_START_POSITION;
+      const startAngle = Math.atan2(startPos.z, startPos.x);
+
+      // Generate keyframes for full 360° rotation
+      const positionKeys = [];
+      for (let i = 0; i <= orbitFrames; i++) {
+        const progress = i / orbitFrames;
+        const angle = startAngle + (progress * Math.PI) ; // 180° rotation
+
+        // Calculate position on the circle
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+
+        positionKeys.push({
+          frame: i,
+          value: new Vector3(x, height, z)
+        });
+      }
+
+      // Always look at duck center
+      const targetKeys = [
+        { frame: 0, value: center },
+        { frame: orbitFrames, value: center }
+      ];
+
+      // Create animations
+      const positionAnimation = new Animation(
+        "closeOrbitPosition",
+        "position",
+        60,
+        Animation.ANIMATIONTYPE_VECTOR3,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+      positionAnimation.setKeys(positionKeys);
+
+      const targetAnimation = new Animation(
+        "closeOrbitTarget",
+        "target",
+        60,
+        Animation.ANIMATIONTYPE_VECTOR3,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+      targetAnimation.setKeys(targetKeys);
+
+      // Smooth easing
+      const easingFunction = new CubicEase();
+      easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
+      positionAnimation.setEasingFunction(easingFunction);
+
+      // Apply and start
+      this.camera.animations = [positionAnimation, targetAnimation];
+
+      const animatable = this.scene.beginAnimation(this.camera, 0, orbitFrames, false);
+      animatable.onAnimationEndObservable.add(() => {
+        resolve();
+      });
+    });
+  }
 
   // -------------------------------
   // --- SCENE CREATION METHODS  ---
