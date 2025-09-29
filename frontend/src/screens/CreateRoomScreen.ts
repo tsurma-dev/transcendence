@@ -26,7 +26,9 @@ export class CreateRoomScreen extends Component {
   setupEvents(): void {
     this.initializeRoomId()
     this.setupCopyRoomIdButton()
+    this.setupStartGameButton()
     this.setupCancelRoomButton()
+    this.simulatePlayerJoining()
   }
 
   cleanup(): void {
@@ -57,6 +59,19 @@ export class CreateRoomScreen extends Component {
     if (copyRoomIdBtn) {
       copyRoomIdBtn.addEventListener('click', () => {
         this.copyRoomIdToClipboard()
+      })
+    }
+  }
+
+  /**
+   * Set up the start game button functionality
+   */
+  private setupStartGameButton(): void {
+    const startGameBtn = this.element?.querySelector('#startGameBtn') as HTMLButtonElement
+    
+    if (startGameBtn) {
+      startGameBtn.addEventListener('click', () => {
+        this.startGame()
       })
     }
   }
@@ -137,29 +152,64 @@ export class CreateRoomScreen extends Component {
   }
 
   /**
-   * Simulate a player joining the room
+   * Start the game (placeholder functionality)
+   */
+  private startGame(): void {
+    console.log('Starting game in room:', this.roomId)
+    
+    // TODO: In a real implementation, this would:
+    // 1. Send a start game request to the backend
+    // 2. Initialize game parameters
+    // 3. Navigate to the actual game screen
+    // 4. Start WebSocket communication for game updates
+    
+    alert('Game starting! (Placeholder functionality)')
+    // For now, just show an alert
+  }
+
+  /**
+   * Simulate a player joining the room after a delay
+   * This would be replaced by real WebSocket events
+   */
+  private simulatePlayerJoining(): void {
+    // Simulate a player joining after 5 seconds for demo purposes
+    setTimeout(() => {
+      this.onPlayerJoined('Player2')
+    }, 5000)
+  }
+
+  /**
+   * Called when a player joins the room
    * This would be called by WebSocket events in a real implementation
    */
   public onPlayerJoined(playerName: string): void {
     console.log('Player joined room:', playerName)
     
-    // TODO: In a real implementation, this would:
-    // 1. Update the UI to show the joined player
-    // 2. Start the game initialization
-    // 3. Navigate to the game screen
-    
-    // For now, just log the event
-    const waitingSection = this.element?.querySelector('.container-white:nth-of-type(2)')
+    // Update the waiting section to show player joined
+    // Target the specific waiting section by ID to ensure we get the right element
+    const waitingSection = this.element?.querySelector('#waitingForPlayerSection')
     if (waitingSection) {
       waitingSection.innerHTML = `
         <div class="text-green-600 font-mono text-lg mb-2">✅</div>
         <div class="text-black font-mono text-lg font-bold">
           ${playerName} joined the room!
         </div>
-        <div class="text-black font-mono text-sm mt-2">
-          Starting game...
+        <div class="text-black font-mono text-lg">
+          Ready to start game
         </div>
       `
+    }
+
+    // Show the start game button
+    const startGameBtn = this.element?.querySelector('#startGameBtn') as HTMLButtonElement
+    if (startGameBtn) {
+      startGameBtn.classList.remove('hidden')
+    }
+
+    // Hide the copy room ID button since it's no longer needed
+    const copyRoomIdBtn = this.element?.querySelector('#copyRoomIdBtn') as HTMLButtonElement
+    if (copyRoomIdBtn) {
+      copyRoomIdBtn.classList.add('hidden')
     }
   }
 }
