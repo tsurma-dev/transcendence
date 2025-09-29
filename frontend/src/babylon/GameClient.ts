@@ -38,6 +38,16 @@ export class GameClient {
     this.ws.onerror = (error) => console.error("WebSocket Error:", error);
   }
 
+  public sendMsg(msg: string): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.error("WebSocket not connected");
+      return;
+    }
+    if (msg === "play") {
+      this.ws.send(JSON.stringify({ type: "play", roomId: this.roomId, playerId: this.playerId }));
+    }
+  }
+
   private onOpen(): void {
     console.log("✅ Connected to game server");
     // Auto-join room after connection
@@ -83,7 +93,7 @@ export class GameClient {
   }
 
   private onMessage(event: MessageEvent): void {
-    let message: ServerToClient;
+    let message : ServerToClient;
     try {
       message = JSON.parse(event.data);
     } catch (error) {
@@ -139,7 +149,22 @@ export class GameClient {
       return;
     }
 
-    const message: ClientToServer = {
+  let direction: number = 0;
+
+  if (key === "ArrowLeft" && pressed){
+    if (this.playerPosition === 1)
+      direction = 1;
+    else if (this.playerPosition === 2)
+      direction = -1;
+  }
+  else if (key === "ArrowRight" && pressed){
+    if (this.playerPosition === 1)
+      direction = -1;
+    else if (this.playerPosition === 2)
+      direction = 1;
+  }
+  
+    const message = {
       type: "input",
       payload: {
         at: Date.now(),

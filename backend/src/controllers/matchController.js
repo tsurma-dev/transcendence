@@ -15,7 +15,8 @@ roomsLoop(rooms);
 
 //rooms.set("42", { player1: { id: null, socket: null}, player2: { id: null, socket: null}, game: null});
 
-export function handlePongWebSocket(socket) {
+export function handlePongWebSocket(socket, req) {
+	//db = req.server.db;
 	socket.on("message", (msg) => {
 	console.log("received ws msg: " + msg);
 
@@ -28,17 +29,17 @@ export function handlePongWebSocket(socket) {
 		return;
 	}
 
-	switch (data.action) {
+	switch (data.type) {
 		case "create":
 			createRoom(socket);
 			break;
 		case "join":
-			joinRoom(socket, data.roomId);
+			joinRoom(socket, data.roomId); // data.playerName
 			break;
-		//case "play":
-		//startGame(data.roomId);
-		//break;
-		case "update":
+		case "play":
+			setReady(data.roomId, data.playerId, socket);
+			break;
+		case "input":
 			//console.log("Updating player " + data.playerId + " room " + data.roomId + " with direction " + data.direction);
 			updatePlayer(socket, data.roomId, data.playerId, data.direction);
 			break;
@@ -50,7 +51,7 @@ export function handlePongWebSocket(socket) {
 }
 
 //update player direction in room.game instance
-function updatePlayer(roomId, playerId, direction) {
+function updatePlayer(socket, roomId, playerId, direction) {
 	const room = rooms.get(roomId);
 	if (!room || !room.game) return;
 	if (playerId === "first") {
@@ -62,16 +63,35 @@ function updatePlayer(roomId, playerId, direction) {
 	}
 }
 
+function setReady(roomId, playerId, socket) {
+	const room = rooms.get(roomId);
+	if (!room) return;
+	if (playerId === "first") {
+		if (room.player1.socket !== socket) return;
+		room.player1.ready = true;
+	}
+	else if (playerId === "second") {
+		if (room.player2.socket !== socket) return;
+		room.player2.ready = true;
+	}
+	if (room.player1.ready && room.player2.ready) {
+		startGame(roomId);
+	}
+}
+
 //set new Game instance to room and send "game-start" to both players
 function startGame(roomId) {
 	const room = rooms.get(roomId);
 	if (!room || room.game) return;
 	if (!room.player1.socket || !room.player2.socket) return;
 	console.log("Starting game in room " + roomId);
-	room.game = new Game("running");
+	room.game = new Game("playing");
 	const startState = {
 		type: "game-start",
-		gameState: room.game.gameState,
+		payload: {
+			player1Name: room.player1.name,
+			player2Name: room.player2.name,
+		}
 	};
 	room.player1.socket.send(JSON.stringify(startState));
 	room.player2.socket.send(JSON.stringify(startState));
@@ -84,8 +104,11 @@ function endGame(roomId) {
 	if (!room || !room.game) return;
 	const endState = {
 		type: "game-over",
-		P1Score: room.game.score.player1,
-		P2Score: room.game.score.player2,
+		payload: {
+			player1Score: room.game.score.player1,
+			player2Score: room.game.score.player2,
+			winner: room.game.score.player1 > room.game.score.player2 ? "first" : "second",
+		},
 	};
 	if (room.player1.socket) {
 		room.player1.socket.send(JSON.stringify(endState));
@@ -108,16 +131,12 @@ function roomsLoop(rooms) {
 	setInterval(() => {
 		if (!rooms || rooms.size === 0) return;
 		rooms.forEach((room, roomId) => {
-			if (room.game && room.game.gameState === "running") {
+			if (room.game && room.game.gameState === "playing") {
 				room.game.update();
+				const body = room.game.getState();
 				const gameState = {
-					type: "game-state",
-					ballPosX: room.game.ball.x,
-					ballPosY: room.game.ball.y,
-					paddle1Y: room.game.paddle1.y,
-					paddle2Y: room.game.paddle2.y,
-					P1Score: room.game.score.player1,
-					P2Score: room.game.score.player2,
+					type: "state",
+					payload: body,
 				};
 				if (room.player1.socket) {
 					room.player1.socket.send(JSON.stringify(gameState));
@@ -126,7 +145,7 @@ function roomsLoop(rooms) {
 					room.player2.socket.send(JSON.stringify(gameState));
 				}
 				//end game if one of players disconnected
-				if (!room.player1.socket || !room.player2.socket || room.game.gameState === "game-over") {
+				if (!room.player1.socket || !room.player2.socket || room.game.gameState === "finished") {
 					endGame(roomId);
 				}
 			}
@@ -136,7 +155,11 @@ function roomsLoop(rooms) {
 
 function createRoom(access) {
   const roomId = Math.random().toString(36).slice(2, 8);
-  rooms.set(roomId, { player1: { id: null, socket: null }, player2: { id: null, socket: null}, game: null});
+  rooms.set(roomId, { 
+			player1: { id: null, socket: null, name: null, ready: false }, 
+			player2: { id: null, socket: null, name: null, ready: false }, 
+			game: null
+		});
   if (access === 'public') {
 	waitingRoom = roomId;
   }
@@ -144,6 +167,7 @@ function createRoom(access) {
   return roomId;
 }
 
+// add names received from client
 function joinRoom(socket, roomId) {
   if (!roomId) {
 	if (waitingRoom && rooms.has(waitingRoom)) {
@@ -161,7 +185,9 @@ function joinRoom(socket, roomId) {
   if (!room.player1.socket) {
 	room.player1.id = "first";
 	room.player1.socket = socket;
-	socket.send(JSON.stringify({ type: "room-joined", room: roomId, playerId: "first" }));
+	room.player1.name = "undefined1";
+	let message = { type: "room-joined", payload: { room: roomId, playerId: "first" } };
+	socket.send(JSON.stringify(message));
 	setupCloseHandler(roomId, socket);
 	return;
   }
@@ -171,8 +197,10 @@ function joinRoom(socket, roomId) {
 	}
 	room.player2.id = "second";
 	room.player2.socket = socket;
-	socket.send(JSON.stringify({ type: "room-joined", room: roomId, playerId: "second" }));
-	startGame(roomId);
+	room.player2.name = "undefined2";
+	let message = { type: "room-joined", payload: { room: roomId, playerId: "second" } };
+	socket.send(JSON.stringify(message));
+	//startGame(roomId);
 	setupCloseHandler(roomId, socket);
 	return;
   }
