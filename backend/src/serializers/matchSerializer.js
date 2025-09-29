@@ -1,5 +1,6 @@
 export function serializeMatch(match) {
   return {
+    tournament_id: match.tournament_id,
     player1: match.player1_username,
     player2: match.player2_username,
     player1Score: match.player1_score,
