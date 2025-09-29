@@ -1,24 +1,35 @@
-import type { ServerToClient, ClientToServer, Snapshot, InputMessage, RoomCreatedPayload, RoomJoinedPayload, GameOverPayload, GameStartPayload} from "@shared/protocol";
+import type { ServerToClient, ClientToServer, Snapshot, InputMessage} from "@shared/protocol";
 
 export class GameClient {
   private ws?: WebSocket;
   private serverUrl: string;
   private snapshotHandler: (snap: Snapshot) => void = () => {};
-  private clientId: string | null = null;
-  public playerName: string | null = null;
-  public playerPosition: 1 | 2 | null = null;
-  private pingInterval: number | null = null;
-  public roomId: string | null = null;
 
-  constructor(serverUrl: string) {
+  public playerName: string;
+  public playerPosition: 1 | 2;
+  public opponentName: string;
+  public roomId: string;
+
+
+  // Event handlers for game flow
+  private roomJoinedHandler?: () => void;
+  private gameStartHandler?: () => void;
+
+  constructor(
+    serverUrl: string,
+    playerName: string,
+    playerPosition: 1 | 2,
+    opponentName: string,
+    roomId: string
+  ) {
     this.serverUrl = serverUrl;
-    // Don't connect immediately
+    this.playerName = playerName;
+    this.playerPosition = playerPosition;
+    this.opponentName = opponentName;
+    this.roomId = roomId;
   }
 
-  // Connect when ready**
   public connect(): void {
-    if (this.ws) return; // Already connected
-
     this.ws = new WebSocket(this.serverUrl);
     console.log(`Connecting to game server at ${this.serverUrl}...`);
     this.ws.onopen = () => this.onOpen();
@@ -28,50 +39,47 @@ export class GameClient {
   }
 
   private onOpen(): void {
-    console.log("Connected to game server. Waiting for handshake...");
+    console.log("✅ Connected to game server");
+    // Auto-join room after connection
+    this.joinRoom();
   }
 
-  private onClose(): void {
+   private onClose(): void {
     console.log("Disconnected from server");
   }
 
-  public createRoom(): void {
+  private joinRoom(): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error("WebSocket not connected");
       return;
     }
-    const msg = { action: "create" };
-    this.ws.send(JSON.stringify(msg));
-  }
 
-  public joinRoom(playerName: string, roomId?: string): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.error("WebSocket not connected");
-      return;
-    }
-    const msg = {
+    const message: ClientToServer = {
       type: "join-room",
-      payload: { playerName, roomId }
+      payload: {
+        playerName: this.playerName,
+        roomId: this.roomId,
+        playerPosition: this.playerPosition
+      }
     };
-    this.ws.send(JSON.stringify(msg));
+
+    console.log(`Joining room ${this.roomId} as ${this.playerName} (position ${this.playerPosition})`);
+    this.ws.send(JSON.stringify(message));
   }
 
-  public leaveRoom(): void {
+  public sendReadyToPlay(): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error("WebSocket not connected");
       return;
     }
-    const msg = { type: "leave-room" };
-    this.ws.send(JSON.stringify(msg));
-  }
 
-  public setReady(): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.error("WebSocket not connected");
-      return;
-    }
-    const msg = { type: "ready" };
-    this.ws.send(JSON.stringify(msg));
+    const message: ClientToServer = {
+      type: "start-game",
+      payload: { playerName: this.playerName }
+    };
+
+    console.log(`${this.playerName} is ready to play`);
+    this.ws.send(JSON.stringify(message));
   }
 
   private onMessage(event: MessageEvent): void {
@@ -83,121 +91,68 @@ export class GameClient {
       return;
     }
 
+    console.log("Received from server:", message);
+
     switch (message.type) {
-      case "hello":
-        this.clientId = message.payload.yourId;
-        console.log(`Handshake complete. ${this.clientId} has joined!`);
-        // Start sending pings to measure latency
-        this.startPingLoop();
-        break;
-
-      case "room-created":
-        this.handleRoomCreated(message.payload);
-        break;
       case "room-joined":
-        this.handleRoomJoined(message.payload);
-        break;
-      case "room-error":
-        this.handleRoomError(message.payload);
-        break;
-      case "game-start":
-        this.handleGameStart(message.payload);
-        break;
-      case "game-over":
-        this.handleGameOver(message.payload);
+        console.log(`✅ Successfully joined room ${this.roomId}`);
+        if (this.roomJoinedHandler) {
+          this.roomJoinedHandler();
+        }
         break;
 
-      case 'playerAssignment':
-          this.playerName = message.payload.playerName;
-          this.playerPosition = message.payload.position;
-          console.log(`Paddle ${this.playerPosition} assigned to ${this.playerName}`);
-          break;
+      case "ready-to-start":
+        console.log(`🎮 Both players ready! Game starting...`);
+        if (this.gameStartHandler) {
+          this.gameStartHandler();
+        }
+        break;
 
       case "state":
-        // The payload is the snapshot. Pass it to the handler.
+        // Pass snapshot to game logic
         this.snapshotHandler(message.payload);
         break;
 
-      case "pong":
-        // Calculate latency if needed
-        const latency = Date.now() - message.payload.t;
-        console.log(`Pong received. Latency: ${latency}ms`);
+      default:
+        console.warn("Unknown message type:", message);
         break;
     }
   }
 
-  /**
-   * Sends a ping to the server every 2 seconds to keep the connection alive
-   * and measure latency.
-   */
-  private startPingLoop(): void {
-    this.pingInterval = setInterval(() => {
-      const message: ClientToServer = {
-        type: "ping",
-        payload: { t: Date.now() }
-      };
-      this.ws?.send(JSON.stringify(message));
-    }, 2000);
+  // Event handler setters
+  public setRoomJoinedHandler(handler: () => void): void {
+    this.roomJoinedHandler = handler;
   }
 
-    private handleRoomCreated(payload: RoomCreatedPayload): void {
-    this.roomId = payload.roomId;
-    this.playerPosition = payload.position;
-    console.log(`✅ Room created: ${this.roomId}, you are player ${payload.position}`);
-  }
-
-  private handleRoomJoined(payload: RoomJoinedPayload): void {
-    this.roomId = payload.roomId;
-    this.playerPosition = payload.position;
-    console.log(`✅ Joined room: ${this.roomId}, you are player ${payload.position}`);
-  }
-
-  private handleGameStart(payload: GameStartPayload): void {
-    console.log(`🎮 Game starting! ${payload.player1Name} vs ${payload.player2Name}`);
-    // Notify UI that game is starting
-  }
-
-  private handleGameOver(payload: GameOverPayload): void {
-    console.log(`🏁 Game over! Winner: ${payload.winner}`);
-    console.log(`Final score: ${payload.player1Score} - ${payload.player2Score}`);
-    // Notify UI of game results
-  }
-
-  private handleRoomError(payload: { message: string }): void {
-    console.error(`❌ Room error: ${payload.message}`);
-    // Notify UI of error
+  public setGameStartHandler(handler: () => void): void {
+    this.gameStartHandler = handler;
   }
 
   /** Register a callback to be invoked for each game state snapshot */
-  setSnapshotHandler(handler: (snap: Snapshot) => void): void {
+  public setSnapshotHandler(handler: (snap: Snapshot) => void): void {
     this.snapshotHandler = handler;
   }
 
-  /** Call this on key press/release to send input to the server */
-  sendInput(key: string, pressed: boolean): void {
-    // Construct the message according to the protocol
-    const inputPayload: InputMessage = {
-      at: Date.now(),
-      key: key,
-      pressed: pressed
-    };
+  /** Send input to server */
+  public sendInput(key: string, pressed: boolean): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
 
     const message: ClientToServer = {
       type: "input",
-      payload: inputPayload
+      payload: {
+        at: Date.now(),
+        key: key,
+        pressed: pressed
+      }
     };
 
-    this.ws?.send(JSON.stringify(message));
+    this.ws.send(JSON.stringify(message));
   }
 
   /** Clean up WebSocket connection and resources */
-  dispose(): void {
-    // Stop ping loop
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
-      this.pingInterval = null;
-    }
-
+  public dispose(): void {
     // Close WebSocket connection
     if (this.ws) {
       // Remove event listeners to prevent callbacks after disposal
@@ -213,10 +168,9 @@ export class GameClient {
     }
 
     // Clear references
-    this.snapshotHandler = () => {}; // Reset to empty function
-    this.clientId = null;
-    this.playerName = null;
-    this.playerPosition = null;
+    this.snapshotHandler = () => {};
+    this.roomJoinedHandler = undefined;
+    this.gameStartHandler = undefined;
 
     console.log("GameClient disposed");
   }

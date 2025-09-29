@@ -46,6 +46,7 @@ export class PoolScene {
   private loadingPromises: Promise<any>[] = [];
   private onLoadedCallback?: () => void;
   private gameStarted = false;
+  private gameEnded = false;
 
   // Camera and lighting
   private light!: DirectionalLight;
@@ -61,7 +62,7 @@ export class PoolScene {
   private Paddle2!: Paddle;
 
   // Game mode properties
-  private gameMode: 'local' | 'online';
+  private gameMode: 'local' | 'online'
   private localGameEngine?: LocalGameEngine;
   private client?: GameClient;
 
@@ -77,8 +78,10 @@ export class PoolScene {
   private scoreboard!: Scoreboard;
   private countdownElement?: HTMLElement;
   private isCountdownRunning = false;
-  private player1Name: string;
-  private player2Name: string;
+  private player1Name: string; // current user
+  private player2Name: string; // opponent
+  private roomId: string;
+  private player1Position: 1 | 2;
 
   // Event handlers for cleanup
   private keyDownHandler!: (e: KeyboardEvent) => void;
@@ -93,12 +96,16 @@ export class PoolScene {
     canvas: HTMLCanvasElement,
     gameMode: 'local' | 'online' = 'online',
     player1Name?: string,
-    player2Name?: string
+    player2Name?: string,
+    player1Position: 1 | 2 = 1,
+    roomId?: string
   ) {
     this.canvas = canvas;
     this.gameMode = gameMode;
     this.player1Name = player1Name || "Player 1";
     this.player2Name = player2Name || "Player 2";
+    this.roomId = roomId || "42"; // Default room for testing.
+    this.player1Position = player1Position;
 
     try {
       this.engine = new Engine(this.canvas, true, {
@@ -196,7 +203,6 @@ export class PoolScene {
           return resolve();
         }
 
-        console.log(`🔢 Countdown: ${count}`);
         this.countdownElement.innerText = count.toString();
         count--;
 
@@ -214,25 +220,15 @@ export class PoolScene {
     });
   }
 
-  private async handleScoreEvent(event: any): Promise<void> {
-    console.log(`${event.player} scored ${event.points} points!`);
+  private handleGameEnd(finalState: GameState): void {
+    console.log(`🏆 Final Result: ${finalState.winner} WINS!`);
 
-    if (this.localGameEngine && !this.localGameEngine.isPaused()) {
-      this.localGameEngine.pause();
+    // Update scoreboard one final time
+    this.scoreboard.updateFromGameState(finalState);
 
-      // Check if game is over
-      const gameState = this.localGameEngine.getGameState();
-      if (gameState?.status === 'finished') {
-        console.log(`🏆 Game Over: ${gameState.winner} WINS!`);
-        // TO DO: Show win screen instead of countdown
-        return;
-      }
-
-      // Show countdown for next round
-      await this.runCountdown();
-
-      this.localGameEngine.resume();
-    }
+    // TODO: Show game over screen
+    // TODO: Add play again button
+    // TODO: Stop input handling
   }
 
   // --- AUDIO ---
@@ -249,7 +245,6 @@ export class PoolScene {
 
   // --- LOAD 3D MODELS ---
   private async load3DModels(): Promise<void> {
-    console.log('🔄 Loading 3D models...');
 
     // Initialize game objects and wait for them to load
     this.duck = new Duck(this.scene, this.shadowGenerator);
@@ -272,35 +267,41 @@ export class PoolScene {
       this.shadowGenerator
     );
     await this.Paddle2.waitForLoad();
-
-    console.log('✅ All 3D models loaded');
   }
 
- public async startGame(): Promise<void> {
-    if (this.gameStarted) return;
-
+ public async startAnimation(): Promise<void> {
     // Enable audio on first user interaction
     await this.enableAudio();
-
     console.log('🎮 Starting game...');
 
-    // **0. INITIALIZE GAME LOGIC**
+    // **INITIALIZE GAME LOGIC**
     if (this.gameMode === 'local') {
+      // LOCAL GAME
       this.initializeLocalGame();
+      this.setupInputListeners();
+      await this.playCameraIntro();
+      await this.runCountdown();
+      this.gameStarted = true;
     } else {
-      this.initializeOnlineGame();
+      // ONLINE GAME
+      this.setupInputListeners();
+
+      // **PHASE 1: Load Scene (already done)**
+      console.log('✅ Phase 1: Scene loaded');
+
+      // **PHASE 2: Show Animation**
+      console.log('🎬 Phase 2: Playing animation...');
+      await this.playCameraIntro();
+      console.log('✅ Animation complete');
+
+      // **PHASE 3: Join Room & Wait**
+      console.log('🔗 Phase 3: Joining room and waiting for opponent...');
+      await this.initializeOnlineGameAndWait();
+
+      // **PHASE 4: Countdown** (triggered by server)
+      // **PHASE 5: Start Game** (triggered by server)
+      // These are handled by the event handlers set up in initializeOnlineGameAndWait
     }
-
-    // Setup input and render loop
-    this.setupInputListeners();
-
-    // **1. PLAY CAMERA INTRO FIRST**
-    await this.playCameraIntro();
-
-    // **2. THEN SHOW COUNTDOWN**
-    await this.runCountdown();
-
-    this.gameStarted = true;
   }
 
   public onLoaded(callback: () => void): void {
@@ -320,7 +321,7 @@ export class PoolScene {
   // ********************
   private initializeLocalGame(): void {
     console.log('Initializing local game');
-    this.localGameEngine = new LocalGameEngine();
+    this.localGameEngine = new LocalGameEngine(this.player1Name, this.player2Name);
 
     // Use the same updateFromState method as online games
     this.scene.registerBeforeRender(() => {
@@ -332,7 +333,6 @@ export class PoolScene {
         this.updateFromState(gameState);
       }
     });
-
     // Camera setup...
     this.camera.detachControl();
   }
@@ -340,14 +340,57 @@ export class PoolScene {
   // **************************
   // --- ONLINE GAME SETUP ---
   // **************************
-  private initializeOnlineGame(): void {
-    this.client = new GameClient(GAME_CONFIG.SERVER_URL);
-    this.client.setSnapshotHandler((snapshot: Snapshot) => {
-      if (!this.gameStarted) return; // ignore updates before start
-      this.updateFromState(snapshot.state);
+  private async initializeOnlineGameAndWait(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      console.log('Initializing online game');
+
+      // Create client
+      this.client = new GameClient(
+        GAME_CONFIG.SERVER_URL,
+        this.player1Name,
+        this.player1Position,
+        this.player2Name,
+        this.roomId
+      );
+
+      // Set up the flow handlers
+      this.client.setRoomJoinedHandler(() => {
+        console.log('✅ Phase 3a: Successfully joined room, sending ready-to-play...');
+        // Send ready-to-play immediately after joining room
+        this.client?.sendReadyToPlay();
+      });
+
+      this.client.setGameStartHandler(async () => {
+        console.log('🎮 Phase 4: Both players ready! Starting countdown...');
+
+        // **PHASE 4: Countdown**
+        await this.runCountdown();
+        console.log('✅ Countdown finished');
+
+        // **PHASE 5: Start Game**
+        console.log('🚀 Phase 5: Game starting!');
+        this.gameStarted = true;
+
+        // Set up game state handler now that game has started
+        this.client?.setSnapshotHandler((snapshot: Snapshot) => {
+          if (!this.gameStarted || this.gameEnded) return;
+          this.updateFromState(snapshot.state);
+        });
+
+        resolve(); // Resolve the promise to complete the flow
+      });
+
+      // Handle connection errors
+      setTimeout(() => {
+        if (!this.gameStarted) {
+          console.error('❌ Timeout waiting for game to start');
+          reject(new Error('Game start timeout'));
+        }
+      }, 30000); // 30 second timeout
+
+      // Connect to server (this will trigger the room joining)
+      this.client.connect();
     });
-    // **Connect after initialization**
-    this.client.connect();
   }
 
   // --- INPUT HANDLING ---
@@ -378,8 +421,6 @@ export class PoolScene {
       };
     }
 
-    this.resizeHandler = () => this.engine.resize();
-
     window.addEventListener("keydown", this.keyDownHandler);
     window.addEventListener("keyup", this.keyUpHandler);
     window.addEventListener("resize", this.resizeHandler);
@@ -393,8 +434,19 @@ export class PoolScene {
   private async updateFromState(state: GameState): Promise<void> {
     if (!this.gameStarted) return; // nothing moves before Start
 
+    // Stop all updates when game ends
+    if (state.status === 'finished' && !this.gameEnded) {
+      this.gameEnded = true;
+      console.log(`🎮 Game finished!`);
+      this.handleGameEnd(state);
+      return; // Stop processing any further updates
+    }
+
+    // **Skip updates if game already ended**
+    if (this.gameEnded) return;
+
     // Update camera position for online game
-    if (!this.cameraPositioned && state.gameType === 'online') {
+    if (!this.cameraPositioned && this.gameMode === 'online') {
       this._updateCameraPosition(state);
     }
 
@@ -432,7 +484,7 @@ export class PoolScene {
           }
           break;
         case 'score':
-          await this.handleScoreEvent(event);
+          console.log(`${event.player} scored ${event.points} points!`);
           break;
       }
     }
@@ -508,7 +560,6 @@ export class PoolScene {
       const animatable = this.scene.beginAnimation(this.camera, 0, 300, false);
       animatable.onAnimationEndObservable.add(() => {
         this.isIntroPlaying = false;
-        this.camera.attachControl(this.canvas, true);
         resolve();
       });
     });

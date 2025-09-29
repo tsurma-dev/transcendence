@@ -1,10 +1,15 @@
 import { GAME_CONFIG } from "@shared/GameConfig";
-import type { GameState, GameType } from "@shared/types";
+import type { GameState} from "@shared/types";
 
 
 export class LocalGameEngine {
   private gameState: GameState;
-  private isPausedState = false;
+
+  private paddleCollisionCooldown = 0;
+  private readonly COLLISION_COOLDOWN_TIME = 100; // 100ms cooldown
+
+  private player1Name: string = "Player 1";
+  private player2Name: string = "Player 2";
 
   private player1Input = { left: false, right: false };
   private player2Input = { left: false, right: false };
@@ -12,44 +17,32 @@ export class LocalGameEngine {
   private readonly PADDLE_SPEED = GAME_CONFIG.PADDLE_SPEED;
   private readonly DUCK_SPEED = GAME_CONFIG.BALL_SPEED;
 
-  constructor() {
-    this.gameState = this.createInitialGameState();
-    console.log('Local game engine created');
-  }
+constructor(player1Name?: string, player2Name?: string) {
+  if (player1Name) this.player1Name = player1Name;
+  if (player2Name) this.player2Name = player2Name;
+
+  this.gameState = this.createInitialGameState();
+  console.log('Local game engine created');
+}
 
 private createInitialGameState(): GameState {
     return {
       players: {
-        "Player 1": { x: 0, position: 1 },
-        "Player 2": { x: 0, position: 2 }
+        [this.player1Name]: { x: 0, position: 1 },
+        [this.player2Name]: { x: 0, position: 2 }
       },
       scores: {
-        "Player 1": 0,
-        "Player 2": 0
+        [this.player1Name]: 0,
+        [this.player2Name]: 0
       },
       duck: {
         x: 0,
         z: 0,
         dir: Math.PI / 4
       },
-      gameType: 'local' as GameType,
       status: 'playing',
       events: []
     };
-  }
-
-  public pause(): void {
-    this.isPausedState = true;
-    console.log('🟡 Game paused for countdown');
-  }
-
-  public resume(): void {
-    this.isPausedState = false;
-    console.log('🟢 Game resumed after countdown');
-  }
-
-  public isPaused(): boolean {
-    return this.isPausedState;
   }
 
   private normalizeDirection(duck: { dir: number }): void {
@@ -64,14 +57,13 @@ private createInitialGameState(): GameState {
   // *******************************
   // Called every frame by Babylon's render loop
   public update(deltaTime: number): void {
-    if (this.isPausedState) {
-      this.gameState.events = [];
+
+    if (this.gameState.status === 'finished') {
       return;
     }
 
-    if (this.gameState.status === 'finished') {
-      console.log('Game is finished, stopping updates');
-      return;
+    if (this.paddleCollisionCooldown > 0) {
+      this.paddleCollisionCooldown -= deltaTime;
     }
 
     // Clear events from previous frame
@@ -81,13 +73,15 @@ private createInitialGameState(): GameState {
     this.updatePaddles(deltaTime);
     this.updateDuck(deltaTime);
     this.checkWallCollisions();
-    this.checkPaddleCollisions();
+    if (this.paddleCollisionCooldown <= 0) {
+      this.checkPaddleCollisions();
+    }
     this.checkScoring();
   }
 
   private updatePaddles(deltaTime: number): void {
-    const player1 = this.gameState.players["Player 1"];
-    const player2 = this.gameState.players["Player 2"];
+    const player1 = this.gameState.players[this.player1Name];
+    const player2 = this.gameState.players[this.player2Name];
 
     const step = this.PADDLE_SPEED * (deltaTime / 1000); // <-- frame-independent
 
@@ -131,8 +125,8 @@ private createInitialGameState(): GameState {
 
   private checkPaddleCollisions(): void {
     const duck = this.gameState.duck;
-    const player1 = this.gameState.players["Player 1"];
-    const player2 = this.gameState.players["Player 2"];
+    const player1 = this.gameState.players[this.player1Name];
+    const player2 = this.gameState.players[this.player2Name];
 
     const paddleHalfWidth = GAME_CONFIG.PADDLE_WIDTH / 2;
     const duckRadius = GAME_CONFIG.BALL_RADIUS;
@@ -141,88 +135,99 @@ private createInitialGameState(): GameState {
     const paddle1FaceZ = -GAME_CONFIG.TABLE_DEPTH / 2;
     const paddle1BackZ = paddle1FaceZ - GAME_CONFIG.PADDLE_DEPTH;
 
-    // **ZONE 1: Duck hits paddle face (bounce back to game area)**
-    if (
-      duck.z - duckRadius <= paddle1FaceZ &&
-      duck.z - duckRadius >= paddle1FaceZ - 0.1 && // Small buffer for face detection
-      duck.dir > Math.PI && // Moving towards paddle
-      duck.x >= player1.x - paddleHalfWidth &&
-      duck.x <= player1.x + paddleHalfWidth
-    ) {
-      // Normal face bounce - reflect back into game area
-      duck.dir = -duck.dir;
-      this.normalizeDirection(duck);
-      duck.z = paddle1FaceZ + duckRadius;
-      this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
-    }
-    // **ZONE 2: Duck is past paddle face, check end collisions**
-    else if (
-      duck.z >= paddle1BackZ &&
-      duck.z <= paddle1FaceZ &&
-      Math.abs(duck.x - player1.x) > paddleHalfWidth && // Outside paddle width
-      Math.abs(duck.x - player1.x) <= paddleHalfWidth + duckRadius // But within collision range
-    ) {
-      // Duck hits paddle end - bounce toward side wall
-      const hitLeftEnd = duck.x < player1.x;
-
-      if (hitLeftEnd) {
-        // Hit left end - bounce to up-left
-        duck.dir = 3 * Math.PI / 4 // 135° (up-left)
-      } else {
-        // Hit right - bounce to down-left
-        duck.dir = 5 * Math.PI / 4 // 225° (down-left)
-
+    // **Check if duck is in paddle zone**
+    if (duck.z <= paddle1FaceZ && duck.z >= paddle1BackZ) {
+      // **FACE COLLISION: Duck hits paddle front face**
+      if (
+        duck.z >= paddle1FaceZ - duckRadius &&
+        duck.dir > Math.PI && // Moving towards paddle
+        duck.x >= player1.x - paddleHalfWidth &&
+        duck.x <= player1.x + paddleHalfWidth
+      ) {
+        // Normal face bounce - reflect back into game area
+        duck.dir = 2 * Math.PI - duck.dir; // Reflect across Z-axis
+        this.normalizeDirection(duck);
+        duck.z = paddle1FaceZ + duckRadius; // **Move duck out of paddle**
+        this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        this.paddleCollisionCooldown = this.COLLISION_COOLDOWN_TIME;
       }
+      // **END COLLISION: Duck hits paddle sides**
+      else if (
+        Math.abs(duck.x - player1.x) <= paddleHalfWidth + duckRadius &&
+        Math.abs(duck.x - player1.x) > paddleHalfWidth
+      ) {
+        const hitLeftEnd = duck.x < player1.x;
 
-      this.normalizeDirection(duck);
-      // Keep duck at current Z position (don't push back to game area)
-      this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        if (hitLeftEnd) {
+          // Hit left end - bounce toward left bottom corner
+          console.log("HIT LEFT PADDLE END");
+          duck.dir = 5 * Math.PI / 4; // 225° (down-left)
+          // **Push duck out of paddle**
+          duck.x = player1.x - paddleHalfWidth - duckRadius;
+        } else {
+          console.log("HIT RIGHT PADDLE END");
+          // Hit right end - bounce toward right bottom corner
+          duck.dir = 7 * Math.PI / 4; // 315° (down-right)
+          // **Push duck out of paddle**
+          duck.x = player1.x + paddleHalfWidth + duckRadius;
+        }
+
+        this.normalizeDirection(duck);
+        this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        this.paddleCollisionCooldown = this.COLLISION_COOLDOWN_TIME;
+      }
     }
 
     // --- Player 2 paddle (at positive Z end) ---
     const paddle2FaceZ = GAME_CONFIG.TABLE_DEPTH / 2;
     const paddle2BackZ = paddle2FaceZ + GAME_CONFIG.PADDLE_DEPTH;
 
-    // **ZONE 1: Duck hits paddle face (bounce back to game area)**
-    if (
-      duck.z + duckRadius >= paddle2FaceZ &&
-      duck.z + duckRadius <= paddle2FaceZ + 0.1 && // Small buffer for face detection
-      duck.dir < Math.PI && // Moving towards paddle
-      duck.x >= player2.x - paddleHalfWidth &&
-      duck.x <= player2.x + paddleHalfWidth
-    ) {
-      // Normal face bounce - reflect back into game area
-      duck.dir = -duck.dir;
-      this.normalizeDirection(duck);
-      duck.z = paddle2FaceZ - duckRadius;
-      this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
-    }
-    // **ZONE 2: Duck is past paddle face, check end collisions**
-    else if (
-      duck.z >= paddle2FaceZ &&
-      duck.z <= paddle2BackZ &&
-      Math.abs(duck.x - player2.x) > paddleHalfWidth && // Outside paddle width
-      Math.abs(duck.x - player2.x) <= paddleHalfWidth + duckRadius // But within collision range
-    ) {
-      // Duck hits paddle end - bounce toward side wall
-      const hitLeftEnd = duck.x < player2.x;
-
-      if (hitLeftEnd) {
-        // Hit left end - bounce to down-right
-        duck.dir = 7 * Math.PI / 4; // 315° (down-right)
-      } else {
-        // Hit right end- bounce to up-right
-         duck.dir = Math.PI / 4; // 45° (up-right)
+    // **Check if duck is in paddle zone**
+    if (duck.z >= paddle2FaceZ && duck.z <= paddle2BackZ) {
+      // **FACE COLLISION: Duck hits paddle front face**
+      if (
+        duck.z <= paddle2FaceZ + duckRadius &&
+        duck.dir < Math.PI && // Moving towards paddle
+        duck.x >= player2.x - paddleHalfWidth &&
+        duck.x <= player2.x + paddleHalfWidth
+      ) {
+        // Normal face bounce - reflect back into game area
+        duck.dir = 2 * Math.PI - duck.dir; // Reflect across Z-axis
+        this.normalizeDirection(duck);
+        duck.z = paddle2FaceZ - duckRadius; // **Move duck out of paddle**
+        this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        this.paddleCollisionCooldown = this.COLLISION_COOLDOWN_TIME;
       }
+      // **END COLLISION: Duck hits paddle sides**
+      else if (
+        Math.abs(duck.x - player2.x) <= paddleHalfWidth + duckRadius &&
+        Math.abs(duck.x - player2.x) > paddleHalfWidth
+      ) {
+        const hitLeftEnd = duck.x < player2.x;
 
-      this.normalizeDirection(duck);
-      // Keep duck at current Z position (don't push back to game area)
-      this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        if (hitLeftEnd) {
+          console.log("HIT LEFT PADDLE END");
+          // Hit left end - bounce toward left upper corner
+          duck.dir = 3 * Math.PI / 4; // 135 ° (up-left)
+          // **Push duck out of paddle**
+          duck.x = player2.x - paddleHalfWidth - duckRadius;
+        } else {
+          console.log("HIT RIGHT PADDLE END");
+          // Hit right end - bounce toward right upper corner
+          duck.dir = Math.PI / 4; // 45° (up-right)
+          // **Push duck out of paddle**
+          duck.x = player2.x + paddleHalfWidth + duckRadius;
+        }
+
+        this.normalizeDirection(duck);
+        this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        this.paddleCollisionCooldown = this.COLLISION_COOLDOWN_TIME;
+      }
     }
   }
 
   private checkScoring(): void {
-    if (this.isPausedState) return;
+    if (this.gameState.status === 'finished') return;
     const duck = this.gameState.duck;
     const duckRadius = GAME_CONFIG.BALL_RADIUS;
 
@@ -234,21 +239,21 @@ private createInitialGameState(): GameState {
 
     // Player 1 scores when duck hits the positive Z end of the pool
     if (duck.z + duckRadius > scoreZone2) {
-      this.gameState.scores["Player 1"]++;
+      this.gameState.scores[this.player1Name]++;
       this.gameState.events.push({
         type: 'score',
-        player: "Player 1",
-        points: this.gameState.scores["Player 1"]
+        player: this.player1Name,
+        points: this.gameState.scores[this.player1Name]
       });
       scored = true;
     }
     // Player 2 scores when duck hits the negative Z end of the pool
     else if (duck.z - duckRadius < scoreZone1) {
-      this.gameState.scores["Player 2"]++;
+      this.gameState.scores[this.player2Name]++;
       this.gameState.events.push({
         type: 'score',
-        player: "Player 2",
-        points: this.gameState.scores["Player 2"]
+        player: this.player2Name,
+        points: this.gameState.scores[this.player2Name]
       });
       scored = true;
     }
@@ -257,20 +262,19 @@ private createInitialGameState(): GameState {
     this.resetDuck();
 
     // Check win condition
-    const winningScore = 5;
-    if (this.gameState.scores["Player 1"] >= winningScore) {
+    const winningScore = 3;
+    if (this.gameState.scores[this.player1Name] >= winningScore) {
       this.gameState.status = 'finished';
-      this.gameState.winner = "Player 1";
-      console.log("🏆 Player 1 wins the game!");
-    } else if (this.gameState.scores["Player 2"] >= winningScore) {
+      this.gameState.winner = this.player1Name;
+    } else if (this.gameState.scores[this.player2Name] >= winningScore) {
       this.gameState.status = 'finished';
-      this.gameState.winner = "Player 2";
-      console.log("🏆 Player 2 wins the game!");
+      this.gameState.winner = this.player2Name;
     }
   }
 }
 
   private resetDuck(): void {
+    this.paddleCollisionCooldown = 0;
     // Start with one of four diagonal directions
     const directions = [
       Math.PI / 4,     // 45° (up-right)

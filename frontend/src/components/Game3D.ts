@@ -1,7 +1,7 @@
 /* eslint-disable no-trailing-spaces */
 
 import { PoolScene } from "../babylon/PoolScene";
-export type GameMode = 'local' | 'online';
+export type GameMode = 'local' | 'online'; // TODO: add | 'tournament' | 'ai' ??
 
 export class Game3DComponent {
   private container: HTMLElement;
@@ -12,17 +12,22 @@ export class Game3DComponent {
   private gameMode: GameMode;
   private player1Name?: string;
   private player2Name?: string;
+  private player1Position: 1 | 2 = 1;
+  private roomId?: string;
 
   constructor(
     container: HTMLElement,
     gameMode: 'local' | 'online' = 'online',
-    player1Name?: string,
-    player2Name?: string
+    player1Name?: string, // current user
+    player2Name?: string, // opponent
+    player1Position: 1 | 2 = 1,
+    roomId?: string
   ) {
     this.container = container;
     this.gameMode = gameMode;
     this.player1Name = player1Name;
     this.player2Name = player2Name;
+    this.roomId = roomId;
   }
 
   initialize(): void {
@@ -44,6 +49,14 @@ export class Game3DComponent {
     this.container.appendChild(this.canvas);
   }
 
+  private static readonly PONG_ASCII = [
+    "_|_|_|      _|_|    _|      _|    _|_|_|",
+    "_|    _|  _|    _|  _|_|    _|  _|      ",
+    "_|_|_|    _|    _|  _|  _|  _|  _|  _|_|",
+    "_|        _|    _|  _|    _|_|  _|    _|",
+    "_|          _|_|    _|      _|    _|_|_|"
+  ].join('\n');
+
   private setupUI(): void {
     this.loadingOverlay = document.createElement("div");
     this.loadingOverlay.style.cssText = `
@@ -62,21 +75,18 @@ export class Game3DComponent {
     this.loadingOverlay.innerHTML = `
       <div class="container-main-pink max-w-lg">
         <div class="text-center mb-8">
-          <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">
-  _|_|_|      _|_|    _|      _|    _|_|_|
-  _|    _|  _|    _|  _|_|    _|  _|
-  _|_|_|    _|    _|  _|  _|  _|  _|  _|_|
-  _|        _|    _|  _|    _|_|  _|    _|
-  _|          _|_|    _|      _|    _|_|_|</pre>
+          <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">${Game3DComponent.PONG_ASCII}</pre>
         </div>
-        <p class="font-mono text-black text-2xl font-bold drop-shadow-lg mb-4">Loading Game...</p>
-        <div class="animate-pulse">
-          <div class="text-black font-mono text-lg">Please wait</div>
+        <div>
+          <div class="text-black font-mono text-2xl font-bold drop-shadow-lg" style="text-align: left;">
+            Loading game<span id="loading-dots" style="display: inline-block; width: 1.5em; text-align: left;"></span>
+          </div>
         </div>
       </div>
     `;
 
     this.container.appendChild(this.loadingOverlay);
+    this.startLoadingDotsAnimation();
 
     this.startButton = document.createElement("div");
     this.startButton.style.cssText = `
@@ -96,12 +106,7 @@ export class Game3DComponent {
     this.startButton.innerHTML = `
       <div class="container-main-pink max-w-lg text-center">
         <div class="text-center mb-8">
-          <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">
-  _|_|_|      _|_|    _|      _|    _|_|_|
-  _|    _|  _|    _|  _|_|    _|  _|
-  _|_|_|    _|    _|  _|  _|  _|  _|  _|_|
-  _|        _|    _|  _|    _|_|  _|    _|
-  _|          _|_|    _|      _|    _|_|_|</pre>
+          <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">${Game3DComponent.PONG_ASCII}</pre>
         </div>
         <p class="font-mono text-black text-3xl font-bold drop-shadow-lg mb-6">Ready to Play!</p>
         <div class="animate-pulse">
@@ -115,29 +120,70 @@ export class Game3DComponent {
     this.container.appendChild(this.startButton);
   }
 
+  private startLoadingDotsAnimation(): void {
+    // Clear any existing interval first
+    if (this.loadingDotsInterval) {
+      clearInterval(this.loadingDotsInterval);
+    }
+
+    const dotsElement = document.getElementById('loading-dots');
+    if (!dotsElement) return;
+
+    let dotCount = 0;
+    const maxDots = 3;
+
+    this.loadingDotsInterval = setInterval(() => {
+      // Check if element still exists (component not disposed)
+      const currentDotsElement = document.getElementById('loading-dots');
+      if (!currentDotsElement) {
+        if (this.loadingDotsInterval) {
+          clearInterval(this.loadingDotsInterval);
+          this.loadingDotsInterval = undefined;
+        }
+        return;
+      }
+
+      dotCount++;
+      dotCount = dotCount % (maxDots + 1);
+
+      // Cycle through 0, 1, 2, 3, repeat
+      if (dotCount === 0) {
+        currentDotsElement.textContent = '';
+      } else {
+        currentDotsElement.textContent = '.'.repeat(dotCount);
+      }
+    }, 400);
+  }
+
   private initializeScene(): void {
     try {
-      this.poolScene = new PoolScene(this.canvas, this.gameMode, this.player1Name, this.player2Name);
-
+      this.poolScene = new PoolScene(this.canvas, this.gameMode, this.player1Name, this.player2Name, this.player1Position, this.roomId);
       // Wait until PoolScene signals loaded
-      this.poolScene.onLoaded(() => {
+      this.poolScene.onLoaded(async () => {
+        // Hide loading and show start button
         if (this.loadingOverlay) this.loadingOverlay.style.display = "none";
         if (this.startButton) this.startButton.style.display = "flex";
+
+        // **Clean up the dots animation when we actually hide the loading**
+        if (this.loadingDotsInterval) {
+         clearInterval(this.loadingDotsInterval);
+        }
       });
 
       // Start button click handler
       this.startButton?.addEventListener("click", async () => {
         if (!this.poolScene) return;
-
-        // Hide Start button
         this.startButton!.style.display = "none";
-
-        // Start game logic
-        await this.poolScene.startGame();
+        await this.poolScene.startAnimation();
       });
 
     } catch (error) {
       console.error('Failed to initialize Babylon.js scene:', error);
+
+      // Clean up dots animation on error too
+      if (this.loadingDotsInterval) {
+        clearInterval(this.loadingDotsInterval);
+      }
 
       // Show error message
       if (this.loadingOverlay) {
@@ -151,8 +197,13 @@ export class Game3DComponent {
     }
   }
 
+  private loadingDotsInterval?: number;
 
   dispose(): void {
+    if (this.loadingDotsInterval) {
+      clearInterval(this.loadingDotsInterval);
+      this.loadingDotsInterval = undefined;
+    }
     if (this.poolScene) {
       this.poolScene.dispose();
     }

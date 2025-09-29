@@ -35,7 +35,6 @@ export class Paddle {
     shadowGenerator.addShadowCaster(this.mesh);
 
     this.loadingPromise = Promise.resolve();
-    console.log(`✅ ${name} paddle created`);
   }
 
   public async waitForLoad(): Promise<void> {
