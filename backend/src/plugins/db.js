@@ -65,6 +65,7 @@ export default fp(async function (fastify, opts) {
   CREATE TABLE IF NOT EXISTS matches_players (
     match_id INTEGER NOT NULL,
     player_id INTEGER NOT NULL DEFAULT 0,
+    player_score INTEGER DEFAULT 0,
     PRIMARY KEY (match_id, player_id),
     FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
     FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE SET DEFAULT

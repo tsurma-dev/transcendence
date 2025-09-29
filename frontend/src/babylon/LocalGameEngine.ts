@@ -85,7 +85,7 @@ private createInitialGameState(): GameState {
     this.checkScoring();
 
     // Debug: Log duck position and direction
-    //console.log(`Duck pos: (${this.gameState.duck.x}, ${this.gameState.duck.z}) dir: ${this.gameState.duck.dir} rad`);
+    console.log(`Duck pos: (${this.gameState.duck.x}, ${this.gameState.duck.z}) dir: ${this.gameState.duck.dir} rad`);
   }
 
   private updatePaddles(deltaTime: number): void {
