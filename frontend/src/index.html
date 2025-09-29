@@ -816,6 +816,61 @@ _|          _|_|    _|      _|    _|_|_|</pre>
     </div>
   </template>
 
+  <!-- Remote Game template -->
+  <template id="remoteGameTemplate">
+    <div class="container-main-pink max-w-lg">
+      <div class="text-center mb-8">
+        <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">_|_|_|      _|_|    _|      _|    _|_|_|
+_|    _|  _|    _|  _|_|    _|  _|      
+_|_|_|    _|    _|  _|  _|  _|  _|  _|_|
+_|        _|    _|  _|    _|_|  _|    _|
+_|          _|_|    _|      _|    _|_|_|</pre>
+      </div>
+      
+      <h1 class="text-4xl font-bold text-white mb-6 drop-shadow-lg text-center">
+        Remote Game Options
+      </h1>
+      
+      <div class="space-y-6">
+        <!-- Create Room Button -->
+        <div class="text-center">
+          <button 
+            id="createRoomBtn"
+            class="btn-green w-full">
+            Create Room
+          </button>
+          <p class="text-black font-mono text-sm mt-2">
+            Create a room and invite another player
+          </p>
+        </div>
+        
+        <!-- Join Room Button -->
+        <div class="text-center">
+          <button 
+            id="joinRoomBtn"
+            class="btn-blue w-full">
+            Join Room
+          </button>
+          <p class="text-black font-mono text-sm mt-2">
+            Join an existing room using a code
+          </p>
+        </div>
+        
+        <!-- Get Matched Button -->
+        <div class="text-center">
+          <button 
+            id="getMatchedBtn"
+            class="btn-purple w-full">
+            Get Matched
+          </button>
+          <p class="text-black font-mono text-sm mt-2">
+            Get matched with a random player
+          </p>
+        </div>
+      </div>
+    </div>
+  </template>
+
   <script type="module" src="index.ts"></script>
 </body>
 </html>
