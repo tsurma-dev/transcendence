@@ -75,11 +75,6 @@ export class JoinRoomScreen extends Component {
       return
     }
 
-    if (roomId.length < 3) {
-      this.showError('Room ID must be at least 3 characters long')
-      return
-    }
-
     // Disable submit button and show loading state
     joinRoomSubmitBtn.disabled = true
     joinRoomSubmitBtn.textContent = 'Joining...'

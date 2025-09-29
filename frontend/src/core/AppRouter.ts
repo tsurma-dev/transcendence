@@ -10,6 +10,7 @@ import {
   LoggedInLandingScreen, 
   RemoteGameScreen,
   JoinRoomScreen,
+  CreateRoomScreen,
   TournamentLobbyScreen, 
   PlayerSetupScreen, 
   GameScreen, 
@@ -51,6 +52,7 @@ export class AppRouter {
     this.routes.set('/landing', { component: LoggedInLandingScreen })
     this.routes.set('/remote-game', { component: RemoteGameScreen })
     this.routes.set('/join-room', { component: JoinRoomScreen })
+    this.routes.set('/create-room', { component: CreateRoomScreen })
     this.routes.set('/profile', { component: UserProfileScreen })
     this.routes.set('/settings', { component: UserSettingsScreen })
     this.routes.set('/match-history', { component: MatchHistoryScreen })
@@ -193,6 +195,8 @@ export class AppRouter {
         return '/remote-game'
       case 'JoinRoomScreen':
         return '/join-room'
+      case 'CreateRoomScreen':
+        return '/create-room'
       case 'UserProfileScreen':
         // Handle username parameter for viewing other users' profiles
         const profileUser = args[0] ? encodeURIComponent(args[0]) : undefined
@@ -261,6 +265,7 @@ export class AppRouter {
       'LoggedInLandingScreen',
       'RemoteGameScreen',
       'JoinRoomScreen',
+      'CreateRoomScreen',
       'UserProfileScreen',
       'UserSettingsScreen',
       'MatchHistoryScreen',
