@@ -602,12 +602,13 @@ export class PoolScene {
 
   private async playSkyOrbitIntro(): Promise<void> {
     const orbitFrames = 480;
-    const radius = 18;
+    const startRadius = 20; // Start far out for skybox view
+    const endRadius = 2; // End very close to the duck
     const startHeight = 1;
-    const endHeight = 12;
+    const endHeight = 3;
     const center = new Vector3(0, 0, 0);
 
-    const zoomStartPosition = new Vector3(15, 12, 15);
+    const zoomStartPosition = new Vector3(15, 8, 15);
     const endAngle = Math.atan2(zoomStartPosition.z, zoomStartPosition.x);
     const startAngle = endAngle - Math.PI; // rotate 180 degrees
 
@@ -618,6 +619,9 @@ export class PoolScene {
 
       // Smoothly interpolate from start angle to end angle
       const angle = startAngle + (progress * Math.PI);
+
+      // Interpolate radius from startRadius to endRadius
+      const radius = startRadius + ((endRadius - startRadius) * progress);
 
       // Interpolate height from startHeight to endHeight
       const height = startHeight + ((endHeight - startHeight) * progress);
@@ -781,7 +785,7 @@ export class PoolScene {
       const positionKeys = [];
       for (let i = 0; i <= orbitFrames; i++) {
         const progress = i / orbitFrames;
-        const angle = startAngle + (progress * Math.PI) ; // 180° rotation
+        const angle = startAngle - (progress * Math.PI) ; // 180° rotation (reversed direction)
 
         // Calculate position on the circle
         const x = Math.cos(angle) * radius;
