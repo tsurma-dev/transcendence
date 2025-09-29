@@ -2,6 +2,7 @@ import { Component, TemplateManager, AppRouter } from '../core'
 import { JoinRoomScreen } from './JoinRoomScreen'
 import { CreateRoomScreen } from './CreateRoomScreen'
 import { RandomMatchScreen } from './RandomMatchScreen'
+import { LoggedInLandingScreen } from './LoggedInLandingScreen'
 
 /**
  * Remote Game Screen
@@ -27,6 +28,7 @@ export class RemoteGameScreen extends Component {
     const createRoomBtn = this.element?.querySelector('#createRoomBtn') as HTMLButtonElement
     const joinRoomBtn = this.element?.querySelector('#joinRoomBtn') as HTMLButtonElement
     const getMatchedBtn = this.element?.querySelector('#getMatchedBtn') as HTMLButtonElement
+    const backToLandingBtn = this.element?.querySelector('#backToLandingBtn') as HTMLButtonElement
 
     if (createRoomBtn) {
       createRoomBtn.addEventListener('click', () => {
@@ -46,6 +48,13 @@ export class RemoteGameScreen extends Component {
       getMatchedBtn.addEventListener('click', () => {
         console.log('Navigating to Random Match screen')
         this.router.navigateTo(RandomMatchScreen)
+      })
+    }
+
+    if (backToLandingBtn) {
+      backToLandingBtn.addEventListener('click', () => {
+        console.log('Navigating back to Logged In Landing screen')
+        this.router.navigateTo(LoggedInLandingScreen)
       })
     }
   }
