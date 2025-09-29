@@ -16,7 +16,7 @@ roomsLoop(rooms);
 //rooms.set("42", { player1: { id: null, socket: null}, player2: { id: null, socket: null}, game: null});
 
 export function handlePongWebSocket(socket, req) {
-	db = req.server.db;
+	//db = req.server.db;
 	socket.on("message", (msg) => {
 	console.log("received ws msg: " + msg);
 
@@ -29,16 +29,16 @@ export function handlePongWebSocket(socket, req) {
 		return;
 	}
 
-	switch (data.action) {
+	switch (data.type) {
 		case "create":
 			createRoom(socket);
 			break;
 		case "join":
 			joinRoom(socket, data.roomId); // data.playerName
 			break;
-		//case "play":
-		//startGame(data.roomId);
-		//break;
+		case "play":
+			setReady(data.roomId, data.playerId, socket);
+			break;
 		case "input":
 			//console.log("Updating player " + data.playerId + " room " + data.roomId + " with direction " + data.direction);
 			updatePlayer(socket, data.roomId, data.playerId, data.direction);
@@ -51,7 +51,7 @@ export function handlePongWebSocket(socket, req) {
 }
 
 //update player direction in room.game instance
-function updatePlayer(roomId, playerId, direction) {
+function updatePlayer(socket, roomId, playerId, direction) {
 	const room = rooms.get(roomId);
 	if (!room || !room.game) return;
 	if (playerId === "first") {
@@ -60,6 +60,22 @@ function updatePlayer(roomId, playerId, direction) {
 	} else if (playerId === "second") {
 		if (room.player2.socket !== socket) return;
 		room.game.paddle2.direction = direction; // -1 up, 1 down, 0 stop
+	}
+}
+
+function setReady(roomId, playerId, socket) {
+	const room = rooms.get(roomId);
+	if (!room) return;
+	if (playerId === "first") {
+		if (room.player1.socket !== socket) return;
+		room.player1.ready = true;
+	}
+	else if (playerId === "second") {
+		if (room.player2.socket !== socket) return;
+		room.player2.ready = true;
+	}
+	if (room.player1.ready && room.player2.ready) {
+		startGame(roomId);
 	}
 }
 
@@ -139,7 +155,11 @@ function roomsLoop(rooms) {
 
 function createRoom(access) {
   const roomId = Math.random().toString(36).slice(2, 8);
-  rooms.set(roomId, { player1: { id: null, socket: null, name: null }, player2: { id: null, socket: null, name: null }, game: null });
+  rooms.set(roomId, { 
+			player1: { id: null, socket: null, name: null, ready: false }, 
+			player2: { id: null, socket: null, name: null, ready: false }, 
+			game: null
+		});
   if (access === 'public') {
 	waitingRoom = roomId;
   }
@@ -180,7 +200,7 @@ function joinRoom(socket, roomId) {
 	room.player2.name = "undefined2";
 	let message = { type: "room-joined", payload: { room: roomId, playerId: "second" } };
 	socket.send(JSON.stringify(message));
-	startGame(roomId);
+	//startGame(roomId);
 	setupCloseHandler(roomId, socket);
 	return;
   }

@@ -28,7 +28,7 @@ export class Game {
 			player1: 0,
 			player2: 0,
 		};
-		this.gameState = gameState; // 'playing' | 'finished'
+		this.gameState = gameState; // 'waiting' | 'playing' | 'finished'
 		this.ballCount = 0;
 		this.winner = null;
 	}
@@ -62,9 +62,9 @@ export class Game {
 
 		// Move paddles
 		this.paddle1.x = this.movePaddle(this.paddle1);
-		//console.log("Paddle1 new position: " + this.paddle1.x + ", direction: " + this.paddle1.direction);
+		console.log("Paddle1 new position: " + this.paddle1.x + ", direction: " + this.paddle1.direction);
 		this.paddle2.x = this.movePaddle(this.paddle2);
-		//console.log("Paddle2 new position: " + this.paddle2.x + ", direction: " + this.paddle2.direction);
+		console.log("Paddle2 new position: " + this.paddle2.x + ", direction: " + this.paddle2.direction);
 
 		// Ball collision with top/bottom
 		if (this.ball.x - this.ball.radius < -gameProperties.GAME_HEIGHT / 2 

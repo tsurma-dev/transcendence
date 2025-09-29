@@ -299,8 +299,13 @@ export class PoolScene {
 
     // **2. THEN SHOW COUNTDOWN**
     await this.runCountdown();
-
+    
     this.gameStarted = true;
+
+    if (this.gameMode === 'online' && this.client) {
+      this.client.sendMsg("play");
+    }
+
   }
 
   public onLoaded(callback: () => void): void {

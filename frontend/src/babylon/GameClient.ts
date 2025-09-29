@@ -30,6 +30,16 @@ export class GameClient {
     this.ws.onerror = (error) => console.error("WebSocket Error:", error);
   }
 
+  public sendMsg(msg: string): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.error("WebSocket not connected");
+      return;
+    }
+    if (msg === "play") {
+      this.ws.send(JSON.stringify({ type: "play", roomId: this.roomId, playerId: this.playerId }));
+    }
+  }
+
   private onOpen(): void {
     console.log("Connected to game server. Waiting for handshake...");
     this.joinRoom(this.playerName, this.roomId);
@@ -44,7 +54,7 @@ export class GameClient {
       console.error("WebSocket not connected");
       return;
     }
-    const msg = { action: "create" };
+    const msg = { type: "create" };
     this.ws.send(JSON.stringify(msg));
   }
 
@@ -54,7 +64,7 @@ export class GameClient {
       return;
     }
     const msg = {
-      action: "join",
+      type: "join",
       roomId: roomId,
       name: playerName
     };
@@ -235,7 +245,7 @@ export class GameClient {
   }
   
     const message = {
-      action: "input",
+      type: "input",
       roomId: this.roomId,
       playerId: this.playerId,
       direction: direction  
