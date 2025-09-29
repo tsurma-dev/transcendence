@@ -82,7 +82,7 @@ export class PoolScene {
   private player1Name: string; // current user
   private player2Name: string; // opponent
   private roomId: string;
-  private player1Position: 1 | 2;
+  private stateProcessCount = 0; // For debugging
 
   // Event handlers for cleanup
   private keyDownHandler!: (e: KeyboardEvent) => void;
@@ -100,7 +100,6 @@ export class PoolScene {
     gameMode: 'local' | 'online' = 'online',
     player1Name?: string,
     player2Name?: string,
-    player1Position: 1 | 2 = 1,
     roomId?: string
   ) {
     this.canvas = canvas;
@@ -108,7 +107,6 @@ export class PoolScene {
     this.player1Name = player1Name || "Player 1";
     this.player2Name = player2Name || "Player 2";
     this.roomId = roomId || "42"; // Default room for testing.
-    this.player1Position = player1Position;
 
     try {
       this.engine = new Engine(this.canvas, true, {
@@ -213,6 +211,7 @@ export class PoolScene {
           console.log('✅ Countdown finished');
           this.countdownElement.style.display = "none";
           this.isCountdownRunning = false;
+          
           resolve();
         } else {
           setTimeout(updateCountdown, 1000);
@@ -291,17 +290,13 @@ export class PoolScene {
       // **PHASE 1: Load Scene (already done)**
       console.log('✅ Phase 1: Scene loaded');
 
-      // **PHASE 2: Show Animation**
-      console.log('🎬 Phase 2: Playing animation...');
-      await this.playOnlineIntro(this.player1Position);
-      console.log('✅ Animation complete');
-
-      // **PHASE 3: Join Room & Wait**
-      console.log('🔗 Phase 3: Joining room and waiting for opponent...');
+      // **PHASE 2: Join Room & Wait for Position Assignment**
+      console.log('🔗 Phase 2: Joining room and waiting for position assignment...');
       await this.initializeOnlineGameAndWait();
 
-      // **PHASE 4: Countdown** (triggered by server)
-      // **PHASE 5: Start Game** (triggered by server)
+      // Animation will be played after room is joined and position is assigned
+      // **PHASE 3: Countdown** (triggered by server)
+      // **PHASE 4: Start Game** (triggered by server)
       // These are handled by the event handlers set up in initializeOnlineGameAndWait
     }
   }
@@ -386,28 +381,27 @@ export class PoolScene {
       this.client = new GameClient(
         GAME_CONFIG.SERVER_URL,
         this.player1Name,
-        this.player1Position,
         this.player2Name,
         this.roomId
       );
 
       // Set up the flow handlers
-      this.client.setRoomJoinedHandler(() => {
-        console.log('✅ Phase 3a: Successfully joined room, sending ready-to-play...');
-        // Send ready-to-play immediately after joining room
+      this.client.setRoomJoinedHandler(async () => {
+        console.log('✅ Phase 2a: Successfully joined room, playing intro animation...');
+        
+        // Play intro animation now that we know our position
+        if (this.client?.playerPosition) {
+          await this.playOnlineIntro(this.client.playerPosition);
+          console.log('✅ Animation complete');
+        }
+        
+        console.log('💫 Phase 2b: Sending ready-to-play...');
+        // Send ready-to-play after animation
         this.client?.sendReadyToPlay();
       });
 
       this.client.setGameStartHandler(async () => {
-        console.log('🎮 Phase 4: Both players ready! Starting countdown...');
-
-        // **PHASE 4: Countdown**
-        await this.runCountdown();
-        console.log('✅ Countdown finished');
-
-        // **PHASE 5: Start Game**
-        console.log('🚀 Phase 5: Game starting!');
-        this.gameStarted = true;
+        console.log('🎮 Phase 3: Both players ready! Starting countdown...');
 
         // Set up game state handler now that game has started
         this.client?.setSnapshotHandler((snapshot: Snapshot) => {
@@ -415,16 +409,17 @@ export class PoolScene {
           this.updateFromState(snapshot.state);
         });
 
+        // **PHASE 3: Countdown**
+        await this.runCountdown();
+        console.log('✅ Countdown finished');
+
+        // **PHASE 4: Game is now fully active**
+        // Start accepting game state updates
+        this.gameStarted = true;
+        console.log('🚀 Phase 4: Game fully active!');
+
         resolve(); // Resolve the promise to complete the flow
       });
-
-      // Handle connection errors
-      setTimeout(() => {
-        if (!this.gameStarted) {
-          console.error('❌ Timeout waiting for game to start');
-          reject(new Error('Game start timeout'));
-        }
-      }, 30000); // 30 second timeout
 
       // Connect to server (this will trigger the room joining)
       this.client.connect();
@@ -470,7 +465,17 @@ export class PoolScene {
   // --------------------------------
   //  Receives state from the server and updates the scene.
   private async updateFromState(state: GameState): Promise<void> {
-    if (!this.gameStarted) return; // nothing moves before Start
+    if (!this.gameStarted) {
+      console.log("⚠️  Ignoring state update - game not started yet");
+      return; // nothing moves before Start
+    }
+
+    // Debug: Log first few state updates
+    if (!this.stateProcessCount) this.stateProcessCount = 0;
+    this.stateProcessCount++;
+    if (this.stateProcessCount <= 3) {
+      console.log(`🔄 Processing state update #${this.stateProcessCount}:`, state);
+    }
 
     // Stop all updates when game ends
     if (state.status === 'finished' && !this.gameEnded) {
@@ -687,6 +692,10 @@ export class PoolScene {
 
     this.isIntroPlaying = true;
 
+    // **SETUP: Position camera at the starting position immediately to avoid visual jump**
+    this.camera.position = CAMERA_SETTINGS.INTRO_START_POSITION.clone();
+    this.camera.setTarget(new Vector3(0, 0, 0)); // Look at duck/center
+
     // **PHASE 1: Close orbit around the duck**
     await this.playCloseOrbitAroundDuck();
 
@@ -874,7 +883,17 @@ export class PoolScene {
 
   private _createCamera(scene: Scene): void {
     this.camera = new ArcRotateCamera("camera", 0, 0, 1, CAMERA_SETTINGS.TARGET_LOCAL, scene);
-    this.camera.setPosition(CAMERA_SETTINGS.POSITION_LOCAL);
+    
+    // Set initial camera position based on game mode to avoid flash
+    if (this.gameMode === 'online') {
+      // For online games, start at intro position to avoid overhead flash
+      this.camera.setPosition(CAMERA_SETTINGS.INTRO_START_POSITION);
+      this.camera.setTarget(new Vector3(0, 0, 0)); // Look at duck/center
+    } else {
+      // For local games, use the standard overhead position
+      this.camera.setPosition(CAMERA_SETTINGS.POSITION_LOCAL);
+    }
+    
     // Camera is not user-controllable in this pong game
   }
 

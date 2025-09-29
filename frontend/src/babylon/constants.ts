@@ -30,7 +30,7 @@ export const CAMERA_SETTINGS = {
   POSITION_LOCAL: new Vector3(1, 8, 0),
   WHEEL_PRECISION: 50,
   
-  INTRO_START_POSITION: new Vector3(-2, 0, 0),     // Low, side view of duck
+  INTRO_START_POSITION: new Vector3(-3, 1.5, 0),   // Matches orbit start position exactly
   INTRO_START_TARGET: new Vector3(0, 0, 0),       // Looking at duck
   INTRO_MID_POSITION: new Vector3(2, 4, 0),       // Higher up, still side view
   INTRO_MID_TARGET: new Vector3(0, 0, 0),         // Still looking at center

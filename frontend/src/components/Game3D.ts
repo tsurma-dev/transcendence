@@ -13,7 +13,6 @@ export class Game3DComponent {
   private gameMode: GameMode;
   private player1Name?: string;
   private player2Name?: string;
-  private player1Position: 1 | 2 = 1;
   private roomId?: string;
   private onReturnToMenuCallback?: () => void;
 
@@ -22,7 +21,6 @@ export class Game3DComponent {
     gameMode: 'local' | 'online' = 'online',
     player1Name?: string, // current user
     player2Name?: string, // opponent
-    player1Position: 1 | 2 = 1,
     roomId?: string,
     onReturnToMenuCallback?: () => void
   ) {
@@ -130,7 +128,7 @@ export class Game3DComponent {
 
   private initializeScene(): void {
     try {
-      this.poolScene = new PoolScene(this.canvas, this.gameMode, this.player1Name, this.player2Name, this.player1Position, this.roomId);
+      this.poolScene = new PoolScene(this.canvas, this.gameMode, this.player1Name, this.player2Name, this.roomId);
       
       // Set up game end callback
       this.poolScene.setOnGameEndCallback((finalState) => {
