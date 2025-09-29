@@ -1,4 +1,5 @@
 import { Component, TemplateManager, AppRouter } from '../core'
+import { JoinRoomScreen } from './JoinRoomScreen'
 
 /**
  * Remote Game Screen
@@ -35,9 +36,8 @@ export class RemoteGameScreen extends Component {
 
     if (joinRoomBtn) {
       joinRoomBtn.addEventListener('click', () => {
-        console.log('Join Room button clicked - TODO: implement JoinRoomScreen')
-        // TODO: Navigate to JoinRoomScreen when it's implemented
-        // this.router.navigateTo(JoinRoomScreen)
+        console.log('Navigating to Join Room screen')
+        this.router.navigateTo(JoinRoomScreen)
       })
     }
 
