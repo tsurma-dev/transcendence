@@ -816,6 +816,62 @@ _|          _|_|    _|      _|    _|_|_|</pre>
     </div>
   </template>
 
+  <!-- Logged-in Landing Page template -->
+  <template id="loggedInLandingTemplate">
+    <div class="container-main-pink max-w-lg">
+      
+      <!-- Online Users Counter -->
+      <div class="text-center mb-4 relative">
+        <button 
+          id="onlineUsersToggle"
+          class="inline-flex items-center bg-gradient-to-b from-gray-300 to-gray-400 hover:from-gray-200 hover:to-gray-300 px-4 py-2 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider cursor-pointer">
+          <div class="indicator-online"></div>
+          <span id="onlineUsersCount" class="text-black text-sm font-bold">
+            Loading...
+          </span>
+          <span class="ml-2 text-black text-xs">▾</span>
+        </button>
+        
+        <!-- Online Users Dropdown -->
+        <div id="onlineUsersDropdown" class="hidden absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-10">
+          <div class="p-4">
+            <h3 class="text-black font-mono font-bold text-sm mb-3 text-center uppercase">Currently Online</h3>
+            <div id="onlineUsersList" class="space-y-2 max-h-48 overflow-y-auto">
+              <!-- Online users will be populated here -->
+              <div class="text-center text-gray-500 font-mono text-sm">Loading users...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h1 class="text-4xl font-bold text-white mb-6 drop-shadow-lg">
+        Welcome Back, <span id="welcomeUsername">User</span>!
+      </h1>
+      <div class="space-y-4">
+        <button 
+          id="startSinglePlayerBtn"
+          class="btn-green">
+          Single Player Game
+        </button>
+        <button 
+          id="start2PlayerBtn"
+          class="btn-green">
+          Remote 2-player Game
+        </button>
+        <button 
+          id="startTournamentBtn"
+          class="btn-purple">
+          Tournament
+        </button>
+        <button 
+          id="userProfileLandingBtn"
+          class="btn-blue">
+          User Profile
+        </button>
+      </div>
+    </div>
+  </template>
+
   <!-- Remote Game template -->
   <template id="remoteGameTemplate">
     <div class="container-main-pink max-w-lg">
@@ -874,58 +930,3 @@ _|          _|_|    _|      _|    _|_|_|</pre>
   <script type="module" src="index.ts"></script>
 </body>
 </html>
-  <!-- Logged-in Landing Page template -->
-  <template id="loggedInLandingTemplate">
-    <div class="container-main-pink max-w-lg">
-      
-      <!-- Online Users Counter -->
-      <div class="text-center mb-4 relative">
-        <button 
-          id="onlineUsersToggle"
-          class="inline-flex items-center bg-gradient-to-b from-gray-300 to-gray-400 hover:from-gray-200 hover:to-gray-300 px-4 py-2 rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider cursor-pointer">
-          <div class="indicator-online"></div>
-          <span id="onlineUsersCount" class="text-black text-sm font-bold">
-            Loading...
-          </span>
-          <span class="ml-2 text-black text-xs">▾</span>
-        </button>
-        
-        <!-- Online Users Dropdown -->
-        <div id="onlineUsersDropdown" class="hidden absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-10">
-          <div class="p-4">
-            <h3 class="text-black font-mono font-bold text-sm mb-3 text-center uppercase">Currently Online</h3>
-            <div id="onlineUsersList" class="space-y-2 max-h-48 overflow-y-auto">
-              <!-- Online users will be populated here -->
-              <div class="text-center text-gray-500 font-mono text-sm">Loading users...</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <h1 class="text-4xl font-bold text-white mb-6 drop-shadow-lg">
-        Welcome Back, <span id="welcomeUsername">User</span>!
-      </h1>
-      <div class="space-y-4">
-        <button 
-          id="startSinglePlayerBtn"
-          class="btn-green">
-          Single Player Game
-        </button>
-        <button 
-          id="start2PlayerBtn"
-          class="btn-green">
-          Remote 2-player Game
-        </button>
-        <button 
-          id="startTournamentBtn"
-          class="btn-purple">
-          Tournament
-        </button>
-        <button 
-          id="userProfileLandingBtn"
-          class="btn-blue">
-          User Profile
-        </button>
-      </div>
-    </div>
-  </template>
