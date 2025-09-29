@@ -1,6 +1,7 @@
 import { Component, TemplateManager, AppRouter } from '../core'
 import { JoinRoomScreen } from './JoinRoomScreen'
 import { CreateRoomScreen } from './CreateRoomScreen'
+import { RandomMatchScreen } from './RandomMatchScreen'
 
 /**
  * Remote Game Screen
@@ -43,9 +44,8 @@ export class RemoteGameScreen extends Component {
 
     if (getMatchedBtn) {
       getMatchedBtn.addEventListener('click', () => {
-        console.log('Get Matched button clicked - TODO: implement RandomMatchScreen')
-        // TODO: Navigate to RandomMatchScreen when it's implemented
-        // this.router.navigateTo(RandomMatchScreen)
+        console.log('Navigating to Random Match screen')
+        this.router.navigateTo(RandomMatchScreen)
       })
     }
   }
