@@ -16,8 +16,7 @@ import {
   GlowLayer,
   Animation,
   CubicEase,
-  EasingFunction,
-  AnimationGroup
+  EasingFunction
 } from "@babylonjs/core";
 
 import "@babylonjs/loaders/glTF";
@@ -320,7 +319,7 @@ export class PoolScene {
   // --LOCAL GAME SETUP --
   // ********************
   private initializeLocalGame(): void {
-    console.log('Initializing local game');
+    console.log('🔄 Initializing local game');
     this.localGameEngine = new LocalGameEngine(this.player1Name, this.player2Name);
 
     // Use the same updateFromState method as online games
@@ -333,8 +332,6 @@ export class PoolScene {
         this.updateFromState(gameState);
       }
     });
-    // Camera setup...
-    this.camera.detachControl();
   }
 
   // **************************
@@ -342,7 +339,7 @@ export class PoolScene {
   // **************************
   private async initializeOnlineGameAndWait(): Promise<void> {
     return new Promise((resolve, reject) => {
-      console.log('Initializing online game');
+      console.log('🔄 Initializing online game');
 
       // Create client
       this.client = new GameClient(
@@ -462,9 +459,6 @@ export class PoolScene {
       }
     });
 
-    // Update scoreboard
-    this.scoreboard.updateFromGameState(state);
-
     // Handle events (score, sounds)
     for (const event of state.events) {
       switch (event.type) {
@@ -484,7 +478,7 @@ export class PoolScene {
           }
           break;
         case 'score':
-          console.log(`${event.player} scored ${event.points} points!`);
+          this.scoreboard.updateFromGameState(state);
           break;
       }
     }
@@ -511,7 +505,7 @@ export class PoolScene {
     if (this.isIntroPlaying) return;
 
     this.isIntroPlaying = true;
-    this.camera.detachControl();
+    console.log('🎬 Playing animation...');
 
     // **1. PLAY ORBIT ANIMATION**
     await this.playSkyOrbitIntro();
@@ -647,7 +641,6 @@ export class PoolScene {
     if (this.isIntroPlaying) return;
 
     this.isIntroPlaying = true;
-    this.camera.detachControl();
 
     // **PHASE 1: Close orbit around the duck**
     await this.playCloseOrbitAroundDuck();
@@ -837,8 +830,7 @@ export class PoolScene {
   private _createCamera(scene: Scene): void {
     this.camera = new ArcRotateCamera("camera", 0, 0, 1, CAMERA_SETTINGS.TARGET_LOCAL, scene);
     this.camera.setPosition(CAMERA_SETTINGS.POSITION_LOCAL);
-    this.camera.attachControl(this.canvas, true);
-    this.camera.wheelPrecision = CAMERA_SETTINGS.WHEEL_PRECISION;
+    // Camera is not user-controllable in this pong game
   }
 
 	private _createLights(scene: Scene): void {
@@ -850,10 +842,10 @@ export class PoolScene {
 		this.hemilight.intensity = LIGHT_SETTINGS.HEMISPHERE_INTENSITY;
 		// Shadow
 		this.shadowGenerator = new ShadowGenerator(RENDERING_SETTINGS.SHADOW_MAP_SIZE, this.light);
-		this.shadowGenerator.useBlurExponentialShadowMap = true; // produces soft, realistic shadows with smooth edges (better than hard-edged shadows).
-		this.shadowGenerator.bias = 0.002; // prevent "shadow acne" (self-shadowing artifacts)
-		this.shadowGenerator.normalBias = 0.02; // Sets the normal bias to further reduce shadow artifacts, especially on surfaces at grazing angle
-    this.shadowGenerator.darkness = 0.0; // 0.0 (black) to 1.0 (no shadow)
+		this.shadowGenerator.usePoissonSampling = true;
+		this.shadowGenerator.bias = 0.00001;
+    this.shadowGenerator.darkness = 0.5;
+		this.shadowGenerator.setDarkness(0.5);
   }
 
 	private _createSkybox(scene: Scene): void {
@@ -862,7 +854,7 @@ export class PoolScene {
     scene.environmentTexture = skyboxTexture; // enables correct reflections and lighting for PBR materials.
 	}
 
-  // ---POOL ---
+  // --- POOL ---
 	private _createPool(scene: Scene, materials: Materials): void {
     this._createPoolFloor(scene, materials);
     this._createPoolWalls(scene, materials);
@@ -1091,6 +1083,7 @@ export class PoolScene {
     const waterPlane = MeshBuilder.CreateGround("waterPlane", { width: GAME_CONFIG.TABLE_WIDTH, height: GAME_CONFIG.TABLE_DEPTH + 2*GAME_CONFIG.WATER_EXTRA_SPACE}, scene);
     waterPlane.material = materials.waterMaterial;
 		waterPlane.position.y = GAME_CONFIG.WATER_LEVEL;
+		waterPlane.receiveShadows = true;
 	}
 
   // --- CLEANUP METHOD ---

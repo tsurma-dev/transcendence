@@ -31,7 +31,7 @@ export class Game3DComponent {
   }
 
   initialize(): void {
-    console.log('Initializing 3D Game... Mode:', this.gameMode);
+    console.log('... Initializing 3D Game... Mode:', this.gameMode);
     this.createCanvas();
     this.setupUI();
     this.initializeScene();
