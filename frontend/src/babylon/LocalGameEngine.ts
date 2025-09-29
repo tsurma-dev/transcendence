@@ -295,7 +295,7 @@ private createInitialGameState(): GameState {
   // Input handlers
   handleKeyDown(key: string): void {
     if (this.gameState.status === 'finished') {
-      console.log('Game is finished, ignoring input');
+      console.log('⛔ Game is finished, ignoring input');
       return;
     }
 

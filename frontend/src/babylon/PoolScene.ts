@@ -16,7 +16,9 @@ import {
   GlowLayer,
   Animation,
   CubicEase,
-  EasingFunction
+  EasingFunction,
+  Observer,
+  Nullable
 } from "@babylonjs/core";
 
 import "@babylonjs/loaders/glTF";
@@ -86,6 +88,8 @@ export class PoolScene {
   private keyDownHandler!: (e: KeyboardEvent) => void;
   private keyUpHandler!: (e: KeyboardEvent) => void;
   private resizeHandler!: () => void;
+  private renderCallback?: () => void;
+  private onGameEndCallback?: (finalState: GameState) => void;
 
   // -------------------
   // --- CONSTRUCTOR ---
@@ -221,13 +225,12 @@ export class PoolScene {
 
   private handleGameEnd(finalState: GameState): void {
     console.log(`🏆 Final Result: ${finalState.winner} WINS!`);
-
-    // Update scoreboard one final time
     this.scoreboard.updateFromGameState(finalState);
 
     // TODO: Show game over screen
-    // TODO: Add play again button
-    // TODO: Stop input handling
+    if (this.onGameEndCallback) {
+      this.onGameEndCallback(finalState);
+    }
   }
 
   // --- AUDIO ---
@@ -315,6 +318,36 @@ export class PoolScene {
     return this.isLoaded;
   }
 
+  public setOnGameEndCallback(callback: (finalState: GameState) => void): void {
+    this.onGameEndCallback = callback;
+  }
+
+  public async restartQuick(): Promise<void> {
+    console.log('🔄 Quick restart for local game');
+    
+    // Reset game state flags
+    this.gameStarted = false;
+    this.gameEnded = false;
+    
+    // Dispose and recreate local game engine
+    if (this.localGameEngine) {
+      this.localGameEngine.dispose();
+    }
+    this.initializeLocalGame();
+    
+    // Position duck at center before countdown
+    this.duck.updatePosition({ x: 0, z: 0, dir: Math.PI / 2 });
+    
+    // Reset paddle positions to center
+    this.Paddle1.updatePosition({ x: 0, position: 1 });
+    this.Paddle2.updatePosition({ x: 0, position: 2 });
+    
+    // Skip animation and go straight to countdown
+    await this.enableAudio();
+    await this.runCountdown();
+    this.gameStarted = true;
+  }
+
   // ********************
   // --LOCAL GAME SETUP --
   // ********************
@@ -322,8 +355,13 @@ export class PoolScene {
     console.log('🔄 Initializing local game');
     this.localGameEngine = new LocalGameEngine(this.player1Name, this.player2Name);
 
-    // Use the same updateFromState method as online games
-    this.scene.registerBeforeRender(() => {
+    // Clean up any existing render callback
+    if (this.renderCallback) {
+      this.scene.unregisterBeforeRender(this.renderCallback);
+    }
+
+    // Create new render callback
+    this.renderCallback = () => {
       if (!this.gameStarted) return; // prevent updates before Start
       const deltaTime = this.engine.getDeltaTime();
       if (this.localGameEngine) {
@@ -331,7 +369,10 @@ export class PoolScene {
         const gameState = this.localGameEngine.getGameState();
         this.updateFromState(gameState);
       }
-    });
+    };
+
+    // Register the callback
+    this.scene.registerBeforeRender(this.renderCallback);
   }
 
   // **************************
