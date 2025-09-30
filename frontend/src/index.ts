@@ -46,7 +46,7 @@ import {
   LoggedInLandingScreen,
   TournamentLobbyScreen,
 
-  GameScreen,
+  QuickPlayScreen,
   UserProfileScreen,
   UserSettingsScreen,
   MatchHistoryScreen

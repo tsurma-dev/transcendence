@@ -13,7 +13,7 @@ import {
   CreateRoomScreen,
   RandomMatchScreen,
   TournamentLobbyScreen, 
-  GameScreen, 
+  QuickPlayScreen, 
   UserProfileScreen, 
   UserSettingsScreen, 
   MatchHistoryScreen 
@@ -59,7 +59,7 @@ export class AppRouter {
     this.routes.set('/match-history', { component: MatchHistoryScreen })
     this.routes.set('/quick-play', { component: QuickPlaySetupScreen })
     this.routes.set('/tournament-lobby', { component: TournamentLobbyScreen })
-    this.routes.set('/game', { component: GameScreen })
+    this.routes.set('/game', { component: QuickPlayScreen })
     this.routes.set('/logged-out', { component: LoggedOutScreen })
     this.routes.set('/auth-error', { component: AuthErrorScreen })
   }
@@ -213,7 +213,7 @@ export class AppRouter {
         return '/quick-play'
       case 'TournamentLobbyScreen':
         return '/tournament-lobby'
-      case 'GameScreen':
+      case ' QuickPlayScreen':
         // Handle game parameters: player1Name, player2Name, isQuickPlay
         const player1 = args[0] ? encodeURIComponent(args[0]) : 'Player1'
         const player2 = args[1] ? encodeURIComponent(args[1]) : 'Player2'
