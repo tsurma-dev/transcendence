@@ -1,4 +1,4 @@
-import { Component, TemplateManager, AppRouter, ApiService } from '../core'
+import { Component, AppRouter, ApiService } from '../core'
 // ApiService imported from core
 import { Game3DComponent, GameMode } from '../components/Game3D'
 
@@ -6,7 +6,6 @@ import { Game3DComponent, GameMode } from '../components/Game3D'
  * Game Screen with Player Names
  */
 export class GameScreen extends Component {
-  private templateManager = TemplateManager.getInstance()
   private router = AppRouter.getInstance()
   private apiService = new ApiService()
   private game3D: Game3DComponent | null = null
@@ -22,41 +21,12 @@ export class GameScreen extends Component {
   }
 
   render(): HTMLElement {
-    const fragment = this.templateManager.cloneTemplate('gameScreenTemplate')
-    const div = document.createElement('div')
-    if (fragment) {
-      div.appendChild(fragment)
-
-      // Set the global button state based on quick play or authenticated mode
-      if (this.isQuickPlay) {
-        // App.getInstance().setUserLoggedIn(false)
-      } else {
-        // App.getInstance().setUserLoggedIn(true)
-      }
-      // Menu/back toggle handled by setUserLoggedIn
-
-    }
-    return div
+    return document.createElement('div')
   }
 
   setupEvents(): void {
-    // Update player names display
-    const player1Display = this.element?.querySelector('#player1Display')
-    const player2Display = this.element?.querySelector('#player2Display')
-    const player1Controls = this.element?.querySelector('#player1Controls')
-    const player2Controls = this.element?.querySelector('#player2Controls')
-    const player1Score = this.element?.querySelector('#player1Score')
-    const player2Score = this.element?.querySelector('#player2Score')
-
-    if (player1Display) player1Display.textContent = this.player1Name
-    if (player2Display) player2Display.textContent = this.player2Name
-    if (player1Controls) player1Controls.textContent = `${this.player1Name}:`
-    if (player2Controls) player2Controls.textContent = `${this.player2Name}:`
-
     // Initialize and start the Pong game
-    const oldCanvas = this.element?.querySelector('#pongCanvas') as HTMLCanvasElement | null
-    const host = oldCanvas?.parentElement || this.element!
-    if (oldCanvas) oldCanvas.remove()
+    const host = this.element!
 
     const game3DContainer = document.createElement('div')
     game3DContainer.id = 'game3DContainer'
