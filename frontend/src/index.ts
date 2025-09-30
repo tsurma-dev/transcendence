@@ -45,7 +45,7 @@ import {
   AuthErrorScreen,
   LoggedInLandingScreen,
   TournamentLobbyScreen,
-  PlayerSetupScreen,
+
   GameScreen,
   UserProfileScreen,
   UserSettingsScreen,

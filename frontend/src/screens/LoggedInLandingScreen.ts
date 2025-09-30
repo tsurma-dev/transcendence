@@ -1,5 +1,4 @@
 import { Component, TemplateManager, AppRouter, ApiService } from '../core'
-import { PlayerSetupScreen } from './PlayerSetupScreen'
 import { RemoteGameScreen } from './RemoteGameScreen'
 import { TournamentLobbyScreen } from './TournamentLobbyScreen'
 import { UserProfileScreen } from './UserProfileScreen'

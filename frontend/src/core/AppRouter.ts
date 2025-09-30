@@ -13,7 +13,6 @@ import {
   CreateRoomScreen,
   RandomMatchScreen,
   TournamentLobbyScreen, 
-  PlayerSetupScreen, 
   GameScreen, 
   UserProfileScreen, 
   UserSettingsScreen, 
@@ -59,7 +58,6 @@ export class AppRouter {
     this.routes.set('/settings', { component: UserSettingsScreen })
     this.routes.set('/match-history', { component: MatchHistoryScreen })
     this.routes.set('/quick-play', { component: QuickPlaySetupScreen })
-    this.routes.set('/player-setup', { component: PlayerSetupScreen })
     this.routes.set('/tournament-lobby', { component: TournamentLobbyScreen })
     this.routes.set('/game', { component: GameScreen })
     this.routes.set('/logged-out', { component: LoggedOutScreen })
@@ -213,8 +211,6 @@ export class AppRouter {
         return historyUser ? `/match-history?user=${historyUser}` : '/match-history'
       case 'QuickPlaySetupScreen':
         return '/quick-play'
-      case 'PlayerSetupScreen':
-        return '/player-setup'
       case 'TournamentLobbyScreen':
         return '/tournament-lobby'
       case 'GameScreen':
@@ -274,7 +270,6 @@ export class AppRouter {
       'UserProfileScreen',
       'UserSettingsScreen',
       'MatchHistoryScreen',
-      'PlayerSetupScreen',
       'TournamentLobbyScreen'
     ]
 

@@ -13,13 +13,6 @@ export class QuickPlaySetupScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
-
-      // Remove the online users count and logout button for quick play
-      const onlineUsersDiv = div.querySelector('#onlineUsersCount')?.closest('.text-center')
-      if (onlineUsersDiv) onlineUsersDiv.remove()
-
-      // Back button toggle now handled by setUserLoggedIn
-      // App.getInstance().setUserLoggedIn(false)
     }
     return div
   }
