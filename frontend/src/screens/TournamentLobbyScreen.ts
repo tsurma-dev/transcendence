@@ -81,20 +81,24 @@ export class TournamentLobbyScreen extends Component {
 
   private async loadTournamentPlayers(): Promise<void> {
     try {
-      // Get online users who could join the tournament
-      const onlineUsers = await this.apiService.getOnlineUsersList()
-      console.log('Online users for tournament:', onlineUsers)
-
-      // Get current user to include them
+      // TODO: Implement proper tournament lobby management with backend support
+      // For now, only show current user as being in the tournament lobby
+      // A full implementation would need:
+      // - Backend API to join/leave tournament lobbies
+      // - Real-time updates when players join/leave
+      // - Tournament lobby state management
+      
+      // Get current user - they are the only one in the tournament lobby initially
       const currentUser = await this.apiService.getCurrentUser()
       
       if (currentUser) {
-        // Make sure current user is included in the tournament
-        const usersInTournament = [currentUser, ...onlineUsers.filter(u => u.username !== currentUser.username)]
-        this.populateTournamentSlots(usersInTournament.slice(0, 4)) // Max 4 players for tournament
+        // Only shows current user as in the tournament lobby
+        // Other users would need to explicitly join the tournament lobby
+        this.populateTournamentSlots([currentUser])
+        console.log('Tournament lobby populated with current user:', currentUser.username)
       } else {
-        // Fallback to online users only
-        this.populateTournamentSlots(onlineUsers.slice(0, 4))
+        console.error('Could not get current user for tournament lobby')
+        this.showNoPlayersMessage()
       }
       
     } catch (error) {
