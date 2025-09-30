@@ -554,15 +554,15 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       <!-- Match Statistics Overview -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div class="container-white p-4">
-          <div class="text-black text-2xl font-bold" id="totalMatches">2</div>
+          <div class="text-black text-2xl font-bold" id="totalMatches">-</div>
           <div class="text-black text-sm font-mono uppercase">Total Matches</div>
         </div>
         <div class="container-white p-4">
-          <div class="text-green-600 text-2xl font-bold" id="matchesWon">1</div>
+          <div class="text-green-600 text-2xl font-bold" id="matchesWon">-</div>
           <div class="text-black text-sm font-mono uppercase">Matches Won</div>
         </div>
         <div class="container-white p-4">
-          <div class="text-blue-600 text-2xl font-bold" id="winPercentage">50 %</div>
+          <div class="text-blue-600 text-2xl font-bold" id="winPercentage">-%</div>
           <div class="text-black text-sm font-mono uppercase">Win Rate</div>
         </div>
       </div>
@@ -581,35 +581,9 @@ _|          _|_|    _|      _|    _|_|_|</pre>
 
         <!-- Match History Entries -->
         <div id="matchHistoryList" class="space-y-2">
-          <!-- Match entries (placeholders) -->
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-3 border-2 border-gray-300 rounded-none hover:bg-gray-50">
-            <div class="text-content">
-              <span class="md:hidden font-bold">Date: </span>2025-08-19
-            </div>
-            <div class="text-content">
-              <span class="md:hidden font-bold">Opponent: </span>DuckOverflow
-            </div>
-            <div class="text-content">
-              <span class="md:hidden font-bold">Score: </span>5-1
-            </div>
-            <div class="text-green-600 font-mono text-sm font-bold">
-              <span class="md:hidden text-black font-bold">Result: </span>WIN
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-3 border-2 border-gray-300 rounded-none hover:bg-gray-50">
-            <div class="text-content">
-              <span class="md:hidden font-bold">Date: </span>2025-08-18
-            </div>
-            <div class="text-content">
-              <span class="md:hidden font-bold">Opponent: </span>PongMaster
-            </div>
-            <div class="text-content">
-              <span class="md:hidden font-bold">Score: </span>2-5
-            </div>
-            <div class="text-red-600 font-mono text-sm font-bold">
-              <span class="md:hidden text-black font-bold">Result: </span>LOSS
-            </div>
+          <!-- Match entries will be populated dynamically -->
+          <div class="text-center text-gray-500 font-mono p-8">
+            Loading match history...
           </div>
         </div>
       </div>
