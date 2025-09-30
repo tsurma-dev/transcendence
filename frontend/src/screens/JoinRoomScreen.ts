@@ -104,7 +104,7 @@ export class JoinRoomScreen extends Component {
         this.showStatus('Successfully joined room! Starting game...')
         
         // TODO: Navigate to actual game screen when implemented
-        // this.router.navigateTo(GameScreen, roomId, 'remote')
+        // this.router.navigateTo(QuickPlayScreen, roomId, 'remote')
         
       } else {
         throw new Error('Room not found or is full')

@@ -1,5 +1,5 @@
 import { Component, TemplateManager, AppRouter, ApiService } from '../core'
-import { GameScreen } from './GameScreen'
+import {  QuickPlayScreen } from './QuickPlayScreen'
 
 /**
  * Quick Play Setup Screen (no authentication required)
@@ -13,13 +13,6 @@ export class QuickPlaySetupScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
-
-      // Remove the online users count and logout button for quick play
-      const onlineUsersDiv = div.querySelector('#onlineUsersCount')?.closest('.text-center')
-      if (onlineUsersDiv) onlineUsersDiv.remove()
-
-      // Back button toggle now handled by setUserLoggedIn
-      // App.getInstance().setUserLoggedIn(false)
     }
     return div
   }
@@ -45,7 +38,7 @@ export class QuickPlaySetupScreen extends Component {
       const player2Name = player2Input.value.trim()
 
       if (player1Name && player2Name) {
-        this.router.navigateTo(GameScreen, player1Name, player2Name, true)
+        this.router.navigateTo(QuickPlayScreen, player1Name, player2Name, true)
       }
     }
 

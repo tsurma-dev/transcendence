@@ -5,7 +5,7 @@ import { Game3DComponent, GameMode } from '../components/Game3D'
 /**
  * Game Screen with Player Names
  */
-export class GameScreen extends Component {
+export class  QuickPlayScreen extends Component {
   private router = AppRouter.getInstance()
   private apiService = new ApiService()
   private game3D: Game3DComponent | null = null

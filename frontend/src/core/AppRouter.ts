@@ -13,8 +13,7 @@ import {
   CreateRoomScreen,
   RandomMatchScreen,
   TournamentLobbyScreen, 
-  PlayerSetupScreen, 
-  GameScreen, 
+  QuickPlayScreen, 
   UserProfileScreen, 
   UserSettingsScreen, 
   MatchHistoryScreen 
@@ -59,9 +58,8 @@ export class AppRouter {
     this.routes.set('/settings', { component: UserSettingsScreen })
     this.routes.set('/match-history', { component: MatchHistoryScreen })
     this.routes.set('/quick-play', { component: QuickPlaySetupScreen })
-    this.routes.set('/player-setup', { component: PlayerSetupScreen })
     this.routes.set('/tournament-lobby', { component: TournamentLobbyScreen })
-    this.routes.set('/game', { component: GameScreen })
+    this.routes.set('/game', { component: QuickPlayScreen })
     this.routes.set('/logged-out', { component: LoggedOutScreen })
     this.routes.set('/auth-error', { component: AuthErrorScreen })
   }
@@ -213,11 +211,9 @@ export class AppRouter {
         return historyUser ? `/match-history?user=${historyUser}` : '/match-history'
       case 'QuickPlaySetupScreen':
         return '/quick-play'
-      case 'PlayerSetupScreen':
-        return '/player-setup'
       case 'TournamentLobbyScreen':
         return '/tournament-lobby'
-      case 'GameScreen':
+      case ' QuickPlayScreen':
         // Handle game parameters: player1Name, player2Name, isQuickPlay
         const player1 = args[0] ? encodeURIComponent(args[0]) : 'Player1'
         const player2 = args[1] ? encodeURIComponent(args[1]) : 'Player2'
@@ -274,7 +270,6 @@ export class AppRouter {
       'UserProfileScreen',
       'UserSettingsScreen',
       'MatchHistoryScreen',
-      'PlayerSetupScreen',
       'TournamentLobbyScreen'
     ]
 
