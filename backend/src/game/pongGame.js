@@ -1,24 +1,26 @@
 import { gameProperties } from "./gameProperties.js";
 
+const PAD_MAX_POS_X = (gameProperties.GAME_HEIGHT - gameProperties.PADDLE_HEIGHT) / 2;
+
 export class Game {
 	constructor(gameState) {
 		this.ball = {
-			x: gameProperties.GAME_WIDTH / 2,
-			y: gameProperties.GAME_HEIGHT / 2,
+			z: 0,
+			x: 0,
 			radius: gameProperties.BALL_SIZE / 2,
+			speedZ: gameProperties.BALL_SPEED_Z,
 			speedX: gameProperties.BALL_SPEED_X,
-			speedY: gameProperties.BALL_SPEED_Y,
 			collision: null, // "paddle1", "paddle2", "wall"
 		};
 		this.paddle1 = {
-			x: 0 + gameProperties.PADDLE_WIDTH,
-			y: gameProperties.GAME_HEIGHT / 2 - gameProperties.PADDLE_HEIGHT / 2,
+			z: -gameProperties.GAME_WIDTH / 2, // -PADDLE_WIDTH/2
+			x: 0,
 			speed: gameProperties.PADDLE_SPEED,
 			direction: 0,
 		};
 		this.paddle2 = {
-			x: gameProperties.GAME_WIDTH - gameProperties.PADDLE_WIDTH,
-			y: gameProperties.GAME_HEIGHT / 2 - gameProperties.PADDLE_HEIGHT / 2,
+			z: gameProperties.GAME_WIDTH / 2, // + gameProperties.PADDLE_WIDTH,
+			x: 0,
 			speed: gameProperties.PADDLE_SPEED,
 			direction: 0,
 		};
@@ -26,75 +28,82 @@ export class Game {
 			player1: 0,
 			player2: 0,
 		};
-		this.gameState = gameState; // "running", "game-over"
+		this.gameState = gameState; // 'waiting' | 'playing' | 'finished'
 		this.ballCount = 0;
+		this.winner = null;
 	}
 
 	resetBall() {
 		this.ballCount += 1;
 		if (this.ballCount >= gameProperties.BALL_COUNT) {
-			this.gameState = "game-over";
+			this.gameState = "finished";
+			this.winner = this.score.player1 > this.score.player2 ? "first" : "second";
 			return;
 		}
-		this.ball.x = gameProperties.GAME_WIDTH / 2;
-		this.ball.y = gameProperties.GAME_HEIGHT / 2;
-		this.ball.speedX = (Math.random() > 0.5 ? 1 : -1) * gameProperties.BALL_SPEED_X;
-		this.ball.speedY = (Math.random() > 0.5 ? 1 : -1) * gameProperties.BALL_SPEED_Y;
+		this.ball.z = 0;
+		this.ball.x = 0;
+		this.ball.speedZ = (Math.random() > 0.5 ? 1 : -1) * gameProperties.BALL_SPEED_Z / 10;
+		this.ball.speedX = (Math.random() > 0.5 ? 1 : -1) * gameProperties.BALL_SPEED_X / 10;
 	}
 
 	movePaddle(paddle) {
 		if (paddle.direction === -1) {
-			paddle.y = Math.max(gameProperties.PADDLE_HEIGHT / 2, paddle.y - paddle.speed);
+			paddle.x = Math.max(-PAD_MAX_POS_X, paddle.x - paddle.speed / 10);
 		} else if (paddle.direction === 1) {
-			paddle.y = Math.min(gameProperties.GAME_HEIGHT - gameProperties.PADDLE_HEIGHT / 2, paddle.y + paddle.speed);
+			paddle.x = Math.min(PAD_MAX_POS_X, paddle.x + paddle.speed / 10);
 		}
-		return paddle.y;
+		return paddle.x;
 	}
 
 	update() {
 		// Move ball
-		this.ball.x += this.ball.speedX;
-		this.ball.y += this.ball.speedY;
+		this.ball.z += this.ball.speedZ / 10;
+		this.ball.x += this.ball.speedX / 10;
 
 		// Move paddles
-		this.paddle1.y = this.movePaddle(this.paddle1);
-		//console.log("Paddle1 new position: " + this.paddle1.y + ", direction: " + this.paddle1.direction);
-		this.paddle2.y = this.movePaddle(this.paddle2);
-		//console.log("Paddle2 new position: " + this.paddle2.y + ", direction: " + this.paddle2.direction);
+		this.paddle1.x = this.movePaddle(this.paddle1);
+		console.log("Paddle1 new position: " + this.paddle1.x + ", direction: " + this.paddle1.direction);
+		this.paddle2.x = this.movePaddle(this.paddle2);
+		console.log("Paddle2 new position: " + this.paddle2.x + ", direction: " + this.paddle2.direction);
 
 		// Ball collision with top/bottom
-		if (this.ball.y - this.ball.radius < 0 || this.ball.y + this.ball.radius > gameProperties.GAME_HEIGHT) {
-			this.ball.speedY *= -1;
+		if (this.ball.x - this.ball.radius < -gameProperties.GAME_HEIGHT / 2 
+			|| this.ball.x + this.ball.radius > gameProperties.GAME_HEIGHT / 2) {
+			this.ball.speedX *= -1;
 			this.ball.collision = "wall";
 		}
 
 		// Ball collision with paddles
-		if (
-			this.ball.x - this.ball.radius < this.paddle1.x &&
-			this.ball.y > this.paddle1.y &&
-			this.ball.y < this.paddle1.y + gameProperties.PADDLE_HEIGHT
-		) {
-			this.ball.speedX *= -1;
-			this.ball.x = this.paddle1.x + this.ball.radius;
-			//this.ball.x = this.paddle1.x + gameProperties.PADDLE_WIDTH / 2 + this.ball.radius;
-			this.ball.collision = "paddle1";
+		if (this.ball.collision) {
+			// reset collision after sending it once
+			this.ball.collision = null;
 		}
 
 		if (
-			this.ball.x + this.ball.radius > this.paddle2.x &&
-			this.ball.y > this.paddle2.y &&
-			this.ball.y < this.paddle2.y + gameProperties.PADDLE_HEIGHT
+			this.ball.z - this.ball.radius < this.paddle1.z &&
+			this.ball.x > this.paddle1.x - gameProperties.PADDLE_HEIGHT / 2 &&
+			this.ball.x < this.paddle1.x + gameProperties.PADDLE_HEIGHT / 2
 		) {
-			this.ball.speedX *= -1;
-			this.ball.x = this.paddle2.x - this.ball.radius;
-			this.ball.collision = "paddle2";
+			this.ball.speedZ *= -1;
+			this.ball.z = this.paddle1.z + this.ball.radius;
+			this.ball.collision = "paddle";
+		}
+
+		if (
+			this.ball.z + this.ball.radius > this.paddle2.z &&
+			this.ball.x > this.paddle2.x - gameProperties.PADDLE_HEIGHT / 2 &&
+			this.ball.x < this.paddle2.x + gameProperties.PADDLE_HEIGHT / 2
+		) {
+			this.ball.speedZ *= -1;
+			this.ball.z = this.paddle2.z - this.ball.radius;
+			this.ball.collision = "paddle";
 		}
 
 		// Score update
-		if (this.ball.x < 0) {
+		if (this.ball.z < -gameProperties.GAME_WIDTH / 2 - gameProperties.PADDLE_WIDTH) {
 			this.score.player2 += 1;
 			this.resetBall();
-		} else if (this.ball.x > gameProperties.GAME_WIDTH) {
+		} else if (this.ball.z > gameProperties.GAME_WIDTH / 2 + gameProperties.PADDLE_WIDTH) {
 			this.score.player1 += 1;
 			this.resetBall();
 		}
@@ -102,10 +111,15 @@ export class Game {
 
 	getState() {
 		return {
-			ball: { ...this.ball },
-			paddle1: { ...this.paddle1 },
-			paddle2: { ...this.paddle2 },
-			score: { ...this.score },
+			ballPosX: this.ball.x,
+			ballPosZ: this.ball.z,
+			paddle1X: this.paddle1.x,
+			paddle2X: this.paddle2.x,
+			player1Score: this.score.player1,
+			player2Score: this.score.player2,
+			collision: this.ball.collision,
+			gameState: this.gameState,
+			winner: this.winner,
 		};
 	}
 }

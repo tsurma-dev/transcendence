@@ -9,6 +9,7 @@ export class GameClient {
   public playerPosition: 1 | 2;
   public opponentName: string;
   public roomId: string;
+  public playerId: string | null = null; // Assigned by server upon joining, needs to be send with inputs
 
 
   // Event handlers for game flow
@@ -59,7 +60,7 @@ export class GameClient {
       payload: {
         playerName: this.playerName,
         roomId: this.roomId,
-        playerPosition: this.playerPosition
+        playerPosition: this.playerPosition // should be assigned by server
       }
     };
 
@@ -139,14 +140,36 @@ export class GameClient {
       return;
     }
 
-    const message: ClientToServer = {
+    // const message: ClientToServer = {
+    //   type: "input",
+    //   payload: {
+    //     at: Date.now(),
+    //     key: key,
+    //     pressed: pressed
+    //   }
+    // };
+
+    let direction: number = 0;
+
+    if (key === "ArrowLeft" && pressed){
+      if (this.playerPosition === 1)
+        direction = 1;
+      else if (this.playerPosition === 2)
+        direction = -1;
+    }
+    else if (key === "ArrowRight" && pressed){
+      if (this.playerPosition === 1)
+        direction = -1;
+      else if (this.playerPosition === 2)
+        direction = 1;
+    }
+  
+    const message = {
       type: "input",
-      payload: {
-        at: Date.now(),
-        key: key,
-        pressed: pressed
-      }
-    };
+      roomId: this.roomId,
+      playerId: this.playerId,
+      direction: direction  
+   };
 
     this.ws.send(JSON.stringify(message));
   }
