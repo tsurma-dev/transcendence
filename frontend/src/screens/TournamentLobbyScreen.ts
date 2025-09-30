@@ -11,6 +11,8 @@ export class TournamentLobbyScreen extends Component {
   private router = AppRouter.getInstance()
   private apiService = new ApiService()
   private refreshInterval: number | null = null
+  private tournamentPlayers: any[] = []
+  private tournamentBracket: any = null
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('tournamentLobbyTemplate')
@@ -43,6 +45,9 @@ export class TournamentLobbyScreen extends Component {
     
     // Set up auto-refresh to keep player list updated
     this.startAutoRefresh()
+
+    // Set up tournament start button (will be added dynamically)
+    this.setupTournamentStartButton()
   }
 
   private startAutoRefresh(): void {
@@ -100,7 +105,14 @@ export class TournamentLobbyScreen extends Component {
 
   private populateTournamentSlots(users: any[]): void {
     const tournamentPlayersList = this.element?.querySelector('#tournamentPlayersList')
-    if (!tournamentPlayersList) return
+    if (!tournamentPlayersList) {
+      console.error('Tournament players list element not found')
+      return
+    }
+
+    // Store tournament players
+    this.tournamentPlayers = users.slice(0, 4)
+    console.log('Populating tournament slots with users:', this.tournamentPlayers)
 
     // Clear existing slots
     tournamentPlayersList.innerHTML = ''
@@ -118,6 +130,19 @@ export class TournamentLobbyScreen extends Component {
     for (let i = users.length; i < maxSlots; i++) {
       const emptySlot = this.createEmptySlot()
       tournamentPlayersList.appendChild(emptySlot)
+    }
+
+    console.log('Tournament slots populated, player count:', this.tournamentPlayers.length)
+
+    // Check if we have 4 players and generate tournament bracket
+    if (this.tournamentPlayers.length >= 4) {
+      console.log('4 players found, generating tournament bracket')
+      this.generateTournamentBracket()
+      this.displayTournamentBracket()
+    } else {
+      // Show placeholder when we don't have enough players
+      console.log('Not enough players, showing placeholder')
+      this.showPlaceholder()
     }
   }
 
@@ -212,7 +237,7 @@ export class TournamentLobbyScreen extends Component {
     // Update status based on player count
     if (tournamentStatus) {
       if (actualPlayers.length >= 4) {
-        tournamentStatus.textContent = 'Ready to Start'
+        tournamentStatus.textContent = 'Bracket Generated - Ready to Start!'
       } else if (actualPlayers.length >= 2) {
         tournamentStatus.textContent = 'Waiting for More Players'
       } else {
@@ -241,6 +266,162 @@ export class TournamentLobbyScreen extends Component {
         </div>
       `
     }
+  }
+
+  private generateTournamentBracket(): void {
+    if (this.tournamentPlayers.length < 4) return
+
+    // Shuffle players randomly for fair matchmaking
+    const shuffledPlayers = [...this.tournamentPlayers].sort(() => Math.random() - 0.5)
+
+    // Create tournament bracket structure
+    this.tournamentBracket = {
+      semifinals: [
+        {
+          id: 'semi1',
+          player1: shuffledPlayers[0],
+          player2: shuffledPlayers[1],
+          winner: null,
+          status: 'pending'
+        },
+        {
+          id: 'semi2', 
+          player1: shuffledPlayers[2],
+          player2: shuffledPlayers[3],
+          winner: null,
+          status: 'pending'
+        }
+      ],
+      final: {
+        id: 'final',
+        player1: null, // Winner of semi1
+        player2: null, // Winner of semi2
+        winner: null,
+        status: 'waiting'
+      }
+    }
+
+    console.log('Tournament bracket generated:', this.tournamentBracket)
+  }
+
+  private displayTournamentBracket(): void {
+    if (!this.tournamentBracket) {
+      console.error('No tournament bracket to display')
+      return
+    }
+
+    console.log('Displaying tournament bracket')
+
+    // Hide the placeholder
+    const placeholder = this.element?.querySelector('#tournamentPlaceholder')
+    if (placeholder) {
+      console.log('Hiding tournament matches placeholder')
+      ;(placeholder as HTMLElement).style.display = 'none'
+    }
+
+    // Show the tournament bracket container
+    const bracketContainer = this.element?.querySelector('#tournamentBracketContainer')
+    if (bracketContainer) {
+      console.log('Showing tournament bracket container')
+      ;(bracketContainer as HTMLElement).style.display = 'block'
+      
+      // Update the bracket with actual player data
+      this.populateBracketData()
+    } else {
+      console.error('Tournament bracket container not found')
+    }
+  }
+
+  private populateBracketData(): void {
+    if (!this.tournamentBracket) return
+
+    const { semifinals, final } = this.tournamentBracket
+
+    // Populate Semifinal 1
+    const semi1Player1 = this.element?.querySelector('#semi1Player1')
+    const semi1Player2 = this.element?.querySelector('#semi1Player2')
+    const semi1Status = this.element?.querySelector('#semi1Status')
+    
+    if (semi1Player1) semi1Player1.textContent = semifinals[0].player1.username
+    if (semi1Player2) semi1Player2.textContent = semifinals[0].player2.username
+    if (semi1Status) semi1Status.textContent = semifinals[0].status.toUpperCase()
+
+    // Populate Semifinal 2
+    const semi2Player1 = this.element?.querySelector('#semi2Player1')
+    const semi2Player2 = this.element?.querySelector('#semi2Player2')
+    const semi2Status = this.element?.querySelector('#semi2Status')
+    
+    if (semi2Player1) semi2Player1.textContent = semifinals[1].player1.username
+    if (semi2Player2) semi2Player2.textContent = semifinals[1].player2.username
+    if (semi2Status) semi2Status.textContent = semifinals[1].status.toUpperCase()
+
+    // Populate Final (initially shows placeholders)
+    const finalPlayer1 = this.element?.querySelector('#finalPlayer1')
+    const finalPlayer2 = this.element?.querySelector('#finalPlayer2')
+    const finalStatus = this.element?.querySelector('#finalStatus')
+    
+    if (finalPlayer1) finalPlayer1.textContent = 'Winner of SF1'
+    if (finalPlayer2) finalPlayer2.textContent = 'Winner of SF2'
+    if (finalStatus) finalStatus.textContent = final.status.toUpperCase()
+
+    console.log('Tournament bracket data populated')
+  }
+
+
+
+  private showPlaceholder(): void {
+    console.log('Restoring placeholder')
+    
+    // Hide the tournament bracket container
+    const bracketContainer = this.element?.querySelector('#tournamentBracketContainer')
+    if (bracketContainer) {
+      console.log('Hiding tournament bracket container')
+      ;(bracketContainer as HTMLElement).style.display = 'none'
+    }
+
+    // Show the placeholder
+    const placeholder = this.element?.querySelector('#tournamentPlaceholder')
+    if (placeholder) {
+      console.log('Showing tournament matches placeholder')
+      ;(placeholder as HTMLElement).style.display = 'block'
+    } else {
+      console.error('Tournament matches placeholder not found for restoration')
+    }
+  }
+
+  private setupTournamentStartButton(): void {
+    // Use event delegation to handle dynamically added button
+    this.element?.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement
+      if (target?.id === 'startTournamentBtn') {
+        this.startTournament()
+      }
+    })
+  }
+
+  private startTournament(): void {
+    if (!this.tournamentBracket) {
+      console.error('Tournament bracket not generated')
+      return
+    }
+
+    console.log('Starting tournament with bracket:', this.tournamentBracket)
+    
+    // Update tournament status
+    const tournamentStatus = this.element?.querySelector('#tournamentStatus')
+    if (tournamentStatus) {
+      tournamentStatus.textContent = 'Tournament Started!'
+    }
+
+    // Here you would typically:
+    // 1. Start the first semifinal matches
+    // 2. Navigate to game screens
+    // 3. Handle match progression
+    // For now, we'll just log the action
+    alert('Tournament is starting! First matches: ' + 
+          this.tournamentBracket.semifinals[0].player1.username + ' vs ' + this.tournamentBracket.semifinals[0].player2.username + 
+          ' and ' + 
+          this.tournamentBracket.semifinals[1].player1.username + ' vs ' + this.tournamentBracket.semifinals[1].player2.username)
   }
 
   cleanup(): void {
