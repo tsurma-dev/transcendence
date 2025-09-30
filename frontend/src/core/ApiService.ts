@@ -113,6 +113,42 @@ export class ApiService {
     }
   }
 
+  async getUserMatches(username: string): Promise<{
+    tournament_id: number | null,
+    player1: string,
+    player2: string,
+    player1Score: number,
+    player2Score: number,
+    winner: string,
+    playedAt: string
+  }[] | null> {
+    try {
+      console.log('Fetching user matches from:', `${this.baseUrl}/users/${encodeURIComponent(username)}/matches`)
+      const response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(username)}/matches`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include'
+      })
+
+      console.log('getUserMatches response status:', response.status)
+
+      if (response.ok) {
+        const matches = await response.json()
+        console.log('User matches data:', matches)
+        return Array.isArray(matches) ? matches : []
+      } else {
+        console.log('getUserMatches failed with status:', response.status)
+        if (response.status === 404) {
+          console.log('User not found:', username)
+        }
+        return null
+      }
+    } catch (error) {
+      console.error('Failed to fetch user matches:', error)
+      return null
+    }
+  }
+
   async logout(): Promise<boolean> {
     try {
       console.log('Logging out from:', `${this.baseUrl}/api/logout`)
