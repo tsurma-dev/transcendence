@@ -43,6 +43,14 @@ export class AppRouter {
     return AppRouter.instance
   }
 
+  getCurrentComponent(): Component | null {
+    return this.currentComponent
+  }
+
+  isCurrentScreen(componentClass: new(...args: any[]) => Component): boolean {
+    return this.currentComponent instanceof componentClass
+  }
+
   private setupRoutes(): void {
     // Define URL routes mapping to components
     this.routes.set('/', { component: StartPageScreen })

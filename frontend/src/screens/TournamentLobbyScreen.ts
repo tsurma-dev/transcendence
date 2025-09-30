@@ -24,6 +24,10 @@ export class TournamentLobbyScreen extends Component {
   }
 
   setupEvents(): void {
+    // User is now in Tournament Lobby - you can add any logic here
+    console.log('User is currently visiting TournamentLobbyScreen!')
+    this.onTournamentLobbyVisit()
+
     const leaveTournamentBtn = this.element?.querySelector('#leaveTournamentBtn') as HTMLButtonElement
 
     if (leaveTournamentBtn) {
@@ -35,6 +39,11 @@ export class TournamentLobbyScreen extends Component {
 
     // Load initial tournament state
     this.loadTournamentData()
+  }
+
+  private onTournamentLobbyVisit(): void {
+    // This method is called whenever user visits the tournament lobby
+    console.log('Tournament lobby visited at:', new Date().toISOString())
   }
 
   private loadTournamentData(): void {
