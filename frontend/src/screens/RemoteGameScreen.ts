@@ -1,7 +1,4 @@
 import { Component, TemplateManager, AppRouter } from '../core'
-import { JoinRoomScreen } from './JoinRoomScreen'
-import { CreateRoomScreen } from './CreateRoomScreen'
-import { RandomMatchScreen } from './RandomMatchScreen'
 import { LoggedInLandingScreen } from './LoggedInLandingScreen'
 
 /**
@@ -9,7 +6,6 @@ import { LoggedInLandingScreen } from './LoggedInLandingScreen'
  * This screen displays options for remote multiplayer games:
  * - Create Room: Create a private room for another player to join
  * - Join Room: Join an existing room using a room ID
- * - Get Matched: Join matchmaking to be paired with a random player
  */
 export class RemoteGameScreen extends Component {
   private templateManager = TemplateManager.getInstance()
@@ -27,27 +23,19 @@ export class RemoteGameScreen extends Component {
   setupEvents(): void {
     const createRoomBtn = this.element?.querySelector('#createRoomBtn') as HTMLButtonElement
     const joinRoomBtn = this.element?.querySelector('#joinRoomBtn') as HTMLButtonElement
-    const getMatchedBtn = this.element?.querySelector('#getMatchedBtn') as HTMLButtonElement
     const backToLandingBtn = this.element?.querySelector('#backToLandingBtn') as HTMLButtonElement
 
     if (createRoomBtn) {
       createRoomBtn.addEventListener('click', () => {
-        console.log('Navigating to Create Room screen')
-        this.router.navigateTo(CreateRoomScreen)
+        // TODO: Implement create room navigation, new instance of GameMode
+        console.log('Creating room - new instance of GameMode (not implemented yet)')
       })
     }
 
     if (joinRoomBtn) {
       joinRoomBtn.addEventListener('click', () => {
-        console.log('Navigating to Join Room screen')
-        this.router.navigateTo(JoinRoomScreen)
-      })
-    }
-
-    if (getMatchedBtn) {
-      getMatchedBtn.addEventListener('click', () => {
-        console.log('Navigating to Random Match screen')
-        this.router.navigateTo(RandomMatchScreen)
+        // TODO: Implement join room navigation, new instance of GameMode
+        console.log('Joining room - new instance of GameMode (not implemented yet)')
       })
     }
 
