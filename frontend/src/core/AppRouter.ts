@@ -195,12 +195,6 @@ export class AppRouter {
         return '/landing'
       case 'RemoteGameScreen':
         return '/remote-game'
-      case 'JoinRoomScreen':
-        return '/join-room'
-      case 'CreateRoomScreen':
-        return '/create-room'
-      case 'RandomMatchScreen':
-        return '/random-match'
       case 'UserProfileScreen':
         // Handle username parameter for viewing other users' profiles
         const profileUser = args[0] ? encodeURIComponent(args[0]) : undefined
@@ -266,9 +260,6 @@ export class AppRouter {
     const protectedRoutes = [
       'LoggedInLandingScreen',
       'RemoteGameScreen',
-      'JoinRoomScreen',
-      'CreateRoomScreen',
-      'RandomMatchScreen',
       'UserProfileScreen',
       'UserSettingsScreen',
       'MatchHistoryScreen',
