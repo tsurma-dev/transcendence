@@ -212,6 +212,9 @@ export class PoolScene {
           this.countdownElement.style.display = "none";
           this.isCountdownRunning = false;
           
+          // Update scoreboard to show game in progress
+          this.scoreboard.setGameInProgress();
+          
           resolve();
         } else {
           setTimeout(updateCountdown, 1000);
@@ -336,6 +339,9 @@ export class PoolScene {
     // Reset paddle positions to center
     this.Paddle1.updatePosition({ x: 0, position: 1 });
     this.Paddle2.updatePosition({ x: 0, position: 2 });
+    
+    // Reset scoreboard
+    this.scoreboard.reset();
     
     // Skip animation and go straight to countdown
     await this.enableAudio();

@@ -143,6 +143,25 @@ export class Scoreboard {
     this.player2ScoreText.text = player2Score.toString();
   }
 
+  reset(): void {
+    // Reset scores to 0
+    this.player1ScoreText.text = "0";
+    this.player2ScoreText.text = "0";
+    
+    // Reset game status
+    this.gameStatusText.text = "Game starting...";
+    this.gameStatusText.color = "yellow";
+    
+    // Reset player names to initial values (in case they were changed)
+    this.player1NameText.text = this.initialPlayer1Name;
+    this.player2NameText.text = this.initialPlayer2Name;
+  }
+
+  setGameInProgress(): void {
+    this.gameStatusText.text = "GAME IN PROGRESS";
+    this.gameStatusText.color = "lime";
+  }
+
   dispose(): void {
     this.guiTexture.dispose();
   }
