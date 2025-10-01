@@ -1,4 +1,5 @@
 import { Component, TemplateManager, AppRouter, ApiService } from '../core'
+import { QuickPlaySetupScreen } from './QuickPlaySetupScreen'
 import { RemoteGameScreen } from './RemoteGameScreen'
 import { TournamentLobbyScreen } from './TournamentLobbyScreen'
 import { UserProfileScreen } from './UserProfileScreen'
@@ -35,10 +36,18 @@ export class LoggedInLandingScreen extends Component {
 
     this.setupOnlineUsersDropdown()
 
+    // Setup button event listeners
+    const startQuickPlayBtn = this.element?.querySelector('#startQuickPlayBtn') as HTMLButtonElement
     const startSinglePlayerBtn = this.element?.querySelector('#startSinglePlayerBtn') as HTMLButtonElement
     const start2PlayerBtn = this.element?.querySelector('#start2PlayerBtn') as HTMLButtonElement
     const startTournamentBtn = this.element?.querySelector('#startTournamentBtn') as HTMLButtonElement
     const userProfileLandingBtn = this.element?.querySelector('#userProfileLandingBtn') as HTMLButtonElement
+
+    if (startQuickPlayBtn) {
+      startQuickPlayBtn.addEventListener('click', () => {
+        this.router.navigateTo(QuickPlaySetupScreen, true) // true = quick play mode
+      })
+    }
 
     if (startSinglePlayerBtn) {
       startSinglePlayerBtn.addEventListener('click', () => {
