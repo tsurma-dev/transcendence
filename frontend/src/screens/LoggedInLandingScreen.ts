@@ -7,7 +7,7 @@ import { UserProfileScreen } from './UserProfileScreen'
 /**
  * Logged-in Landing Page Screen
  * This screen is shown when logged-in users successfully log in
- * It provides options for single player game, tournament, and profile access
+ * It provides options for quick play, remote game, single player game, tournament
  */
 export class LoggedInLandingScreen extends Component {
   private templateManager = TemplateManager.getInstance()
@@ -20,9 +20,6 @@ export class LoggedInLandingScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
-
-      // Show user menu for authenticated users
-      // App.getInstance().setUserLoggedIn(true)
     }
     return div
   }
@@ -41,7 +38,6 @@ export class LoggedInLandingScreen extends Component {
     const startSinglePlayerBtn = this.element?.querySelector('#startSinglePlayerBtn') as HTMLButtonElement
     const start2PlayerBtn = this.element?.querySelector('#start2PlayerBtn') as HTMLButtonElement
     const startTournamentBtn = this.element?.querySelector('#startTournamentBtn') as HTMLButtonElement
-    const userProfileLandingBtn = this.element?.querySelector('#userProfileLandingBtn') as HTMLButtonElement
 
     if (startQuickPlayBtn) {
       startQuickPlayBtn.addEventListener('click', () => {
@@ -67,12 +63,7 @@ export class LoggedInLandingScreen extends Component {
         this.router.navigateTo(TournamentLobbyScreen)
       })
     }
-
-    if (userProfileLandingBtn) {
-      userProfileLandingBtn.addEventListener('click', () => {
-        this.router.navigateTo(UserProfileScreen)
-      })
-    }
+    // User Profile button removed, access via online users dropdown
   }
 
   private async loadOnlineUsersCount(): Promise<void> {
