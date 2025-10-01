@@ -82,20 +82,27 @@ export class TournamentLobbyScreen extends Component {
   private async loadTournamentPlayers(): Promise<void> {
     try {
       // TODO: Implement proper tournament lobby management with backend support
-      // For now, only show current user as being in the tournament lobby
-      // A full implementation would need:
-      // - Backend API to join/leave tournament lobbies
-      // - Real-time updates when players join/leave
-      // - Tournament lobby state management
+      // PLACEHOLDER SIMULATION: Simulating 4 players in tournament lobby
+      // This is a temporary simulation for testing tournament bracket functionality
       
-      // Get current user - they are the only one in the tournament lobby initially
+      // Get current user
       const currentUser = await this.apiService.getCurrentUser()
       
       if (currentUser) {
-        // Only shows current user as in the tournament lobby
-        // Other users would need to explicitly join the tournament lobby
-        this.populateTournamentSlots([currentUser])
-        console.log('Tournament lobby populated with current user:', currentUser.username)
+        // Create simulated players including the current user
+        const simulatedPlayers = [
+          currentUser,
+          { id: 2, username: 'Player2', email: 'player2@example.com' },
+          { id: 3, username: 'Player3', email: 'player3@example.com' },
+          { id: 4, username: 'Player4', email: 'player4@example.com' }
+        ]
+        
+        // Populate tournament slots with simulated 4 players
+        this.populateTournamentSlots(simulatedPlayers)
+        console.log('Tournament lobby populated with simulated 4 players:', simulatedPlayers.map(p => p.username))
+        
+        // Add a visual indicator that this is a simulation
+        this.addSimulationIndicator()
       } else {
         console.error('Could not get current user for tournament lobby')
         this.showNoPlayersMessage()
@@ -268,6 +275,27 @@ export class TournamentLobbyScreen extends Component {
         <div class="col-span-2 text-center text-red-500 font-mono p-8">
           Failed to load tournament data. Please try again.
         </div>
+      `
+    }
+  }
+
+  private addSimulationIndicator(): void {
+    // Add a visual indicator that this is a simulation
+    const tournamentHeader = this.element?.querySelector('.text-4xl')
+    if (tournamentHeader) {
+      tournamentHeader.innerHTML = `
+        🏆 Tournament Lobby 
+        <span class="text-lg bg-yellow-500 text-black px-2 py-1 rounded ml-2 font-mono">
+          SIMULATION MODE
+        </span>
+      `
+    }
+
+    // Also update the tournament status to indicate simulation
+    const tournamentStatus = this.element?.querySelector('#tournamentStatus')
+    if (tournamentStatus) {
+      tournamentStatus.innerHTML = `
+        <span class="text-orange-600">Simulation: 4 Players Connected</span>
       `
     }
   }
