@@ -82,27 +82,23 @@ export class TournamentLobbyScreen extends Component {
   private async loadTournamentPlayers(): Promise<void> {
     try {
       // TODO: Implement proper tournament lobby management with backend support
-      // PLACEHOLDER SIMULATION: Simulating 4 players in tournament lobby
+      // PLACEHOLDER SIMULATION: Simulating 4 players joining tournament lobby over time
       // This is a temporary simulation for testing tournament bracket functionality
       
       // Get current user
       const currentUser = await this.apiService.getCurrentUser()
       
       if (currentUser) {
-        // Create simulated players including the current user
-        const simulatedPlayers = [
-          currentUser,
-          { id: 2, username: 'Player2', email: 'player2@example.com' },
-          { id: 3, username: 'Player3', email: 'player3@example.com' },
-          { id: 4, username: 'Player4', email: 'player4@example.com' }
-        ]
-        
-        // Populate tournament slots with simulated 4 players
-        this.populateTournamentSlots(simulatedPlayers)
-        console.log('Tournament lobby populated with simulated 4 players:', simulatedPlayers.map(p => p.username))
-        
-        // Add a visual indicator that this is a simulation
+        // Start with just the current user
+        console.log('Current user joined tournament lobby:', currentUser.username)
+        this.populateTournamentSlots([currentUser])
         this.addSimulationIndicator()
+        
+        // Wait 5 seconds, then simulate other players joining
+        setTimeout(() => {
+          this.simulatePlayersJoining(currentUser)
+        }, 5000)
+        
       } else {
         console.error('Could not get current user for tournament lobby')
         this.showNoPlayersMessage()
@@ -295,9 +291,45 @@ export class TournamentLobbyScreen extends Component {
     const tournamentStatus = this.element?.querySelector('#tournamentStatus')
     if (tournamentStatus) {
       tournamentStatus.innerHTML = `
-        <span class="text-orange-600">Simulation: 4 Players Connected</span>
+        <span class="text-orange-600">Waiting for players to join...</span>
       `
     }
+  }
+
+  private simulatePlayersJoining(currentUser: any): void {
+    console.log('Simulating other players joining...')
+    
+    // Create simulated players
+    const additionalPlayers = [
+      { id: 2, username: 'Player2', email: 'player2@example.com' },
+      { id: 3, username: 'Player3', email: 'player3@example.com' },
+      { id: 4, username: 'Player4', email: 'player4@example.com' }
+    ]
+
+    let currentPlayers = [currentUser]
+    
+    // Add players one by one with a delay between each
+    additionalPlayers.forEach((player, index) => {
+      setTimeout(() => {
+        currentPlayers.push(player)
+        console.log(`Player ${player.username} joined the lobby`)
+        this.populateTournamentSlots([...currentPlayers])
+        
+        // Update status message
+        const tournamentStatus = this.element?.querySelector('#tournamentStatus')
+        if (tournamentStatus) {
+          if (currentPlayers.length === 4) {
+            tournamentStatus.innerHTML = `
+              <span class="text-green-600">Simulation: 4 Players Connected - Ready!</span>
+            `
+          } else {
+            tournamentStatus.innerHTML = `
+              <span class="text-orange-600">Simulation: ${currentPlayers.length}/4 Players Connected</span>
+            `
+          }
+        }
+      }, (index + 1) * 1500) // 1.5 second delay between each player
+    })
   }
 
   private generateTournamentBracket(): void {
