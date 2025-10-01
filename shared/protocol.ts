@@ -6,9 +6,9 @@ export type ServerToClient =
   | { type: "state"; payload: Snapshot }
 
 export type Snapshot = {
-  version: number;           // = GAME_CONFIG.VERSION
-  tick: number;              // server tick number
-  serverTime: number;        // ms (Date.now on server)
+  //version: number;           // = GAME_CONFIG.VERSION
+  //tick: number;              // server tick number
+  //serverTime: number;        // ms (Date.now on server)
   state: GameState;
 };
 

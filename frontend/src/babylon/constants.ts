@@ -10,10 +10,10 @@ export const RENDERING_SETTINGS = {
 } as const;
 
 export const LIGHT_SETTINGS = {
-  DIRECTIONAL_INTENSITY: 0.4,
-  DIRECTIONAL_DIRECTION: new Vector3(-0.5, -1, 0),
-  DIRECTIONAL_POSITION: new Vector3(1, 0, 2),
-  HEMISPHERE_INTENSITY: 0.1,
+  DIRECTIONAL_INTENSITY: 0.5,
+  DIRECTIONAL_DIRECTION: new Vector3(-0.3, -1, -0.3), // More angled for better shadows
+  DIRECTIONAL_POSITION: new Vector3(8, 12, 0), // Higher and further for better coverage
+  HEMISPHERE_INTENSITY: 0.3,
   HEMISPHERE_DIRECTION: new Vector3(0, 1, 0), // Reflection direction
   POOL_LIGHT_INTENSITY: 0.4,
   POOL_LIGHT_RANGE: 5,
@@ -28,5 +28,18 @@ export const CAMERA_SETTINGS = {
   POSITION2: new Vector3(0, 6, 8),
   TARGET_LOCAL: new Vector3(-0.5, 0, 0),
   POSITION_LOCAL: new Vector3(1, 8, 0),
-  WHEEL_PRECISION: 50
+  WHEEL_PRECISION: 50,
+  
+  INTRO_START_POSITION: new Vector3(-3, 1.5, 0),   // Matches orbit start position exactly
+  INTRO_START_TARGET: new Vector3(0, 0, 0),       // Looking at duck
+  INTRO_MID_POSITION: new Vector3(2, 4, 0),       // Higher up, still side view
+  INTRO_MID_TARGET: new Vector3(0, 0, 0),         // Still looking at center
+  INTRO_CLOSE_ORBIT_RADIUS: 3,           // Close orbit around duck
+  INTRO_CLOSE_ORBIT_HEIGHT: 1.5,        // Low for intimate view
+  INTRO_SKYBOX_POSITION: new Vector3(18, 3, 0), // Far out for skybox
+  INTRO_SKYBOX_TARGET: new Vector3(0, 0, 0),      // Still looking at center
+  // Timing (in frames at 60fps)
+  INTRO_CLOSE_ORBIT_DURATION: 240,      // 4 seconds
+  INTRO_SKYBOX_ZOOM_DURATION: 180,      // 3 seconds
+  INTRO_FINAL_ZOOM_DURATION: 240,       // 4 seconds
 } as const;

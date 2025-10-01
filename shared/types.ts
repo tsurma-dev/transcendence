@@ -28,7 +28,7 @@ export type RoomId = string;
 
 // Different types of collisions that can occur in the game
 // Different sounds can be played based on the type of collision
-export type CollisionType = 'wall' | 'paddle';
+export type CollisionType = 'wall' | 'paddle' | null;
 
 export type CollisionEvent = {
   type: 'collision';
