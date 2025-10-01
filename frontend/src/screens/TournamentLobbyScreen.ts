@@ -28,6 +28,7 @@ export class TournamentLobbyScreen extends Component {
     if (leaveTournamentBtn) {
       leaveTournamentBtn.addEventListener('click', () => {
         // Navigate back to logged-in landing page
+        console.log('Leaving tournament, navigating back to LoggedInLandingScreen')
         this.router.navigateTo(LoggedInLandingScreen)
       })
     }

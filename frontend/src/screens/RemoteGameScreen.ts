@@ -23,7 +23,6 @@ export class RemoteGameScreen extends Component {
   setupEvents(): void {
     const createRoomBtn = this.element?.querySelector('#createRoomBtn') as HTMLButtonElement
     const joinRoomBtn = this.element?.querySelector('#joinRoomBtn') as HTMLButtonElement
-    const getMatchedBtn = this.element?.querySelector('#getMatchedBtn') as HTMLButtonElement
     const backToLandingBtn = this.element?.querySelector('#backToLandingBtn') as HTMLButtonElement
 
     if (createRoomBtn) {
