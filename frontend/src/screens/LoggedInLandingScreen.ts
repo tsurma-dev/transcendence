@@ -25,7 +25,7 @@ export class LoggedInLandingScreen extends Component {
   }
 
   setupEvents(): void {
-    // Load online users count
+
     this.loadOnlineUsersCount()
 
     // Load current user and update welcome message
@@ -45,21 +45,23 @@ export class LoggedInLandingScreen extends Component {
       })
     }
 
-    if (startSinglePlayerBtn) {
+    if (start2PlayerBtn) {
+      start2PlayerBtn.addEventListener('click', () => {
+        console.log('Navigating to RemoteGameScreen')
+        this.router.navigateTo(RemoteGameScreen)
+      })
+    }
+
+     if (startSinglePlayerBtn) {
       startSinglePlayerBtn.addEventListener('click', () => {
         // TODO: Implement single player game navigation
         console.log('Single player game - not implemented yet')
       })
     }
 
-    if (start2PlayerBtn) {
-      start2PlayerBtn.addEventListener('click', () => {
-        this.router.navigateTo(RemoteGameScreen)
-      })
-    }
-
     if (startTournamentBtn) {
       startTournamentBtn.addEventListener('click', () => {
+        console.log('Navigating to TournamentLobbyScreen')
         this.router.navigateTo(TournamentLobbyScreen)
       })
     }
