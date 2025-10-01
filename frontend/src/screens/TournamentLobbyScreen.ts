@@ -13,6 +13,8 @@ export class TournamentLobbyScreen extends Component {
   private refreshInterval: number | null = null
   private tournamentPlayers: any[] = []
   private tournamentBracket: any = null
+  private isSimulationMode: boolean = true
+  private simulationRunning: boolean = false
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('tournamentLobbyTemplate')
@@ -81,6 +83,12 @@ export class TournamentLobbyScreen extends Component {
 
   private async loadTournamentPlayers(): Promise<void> {
     try {
+      // Skip if simulation is already running to prevent auto-refresh interference
+      if (this.simulationRunning) {
+        console.log('Simulation already running, skipping reload')
+        return
+      }
+
       // TODO: Implement proper tournament lobby management with backend support
       // PLACEHOLDER SIMULATION: Simulating 4 players joining tournament lobby over time
       // This is a temporary simulation for testing tournament bracket functionality
@@ -89,6 +97,9 @@ export class TournamentLobbyScreen extends Component {
       const currentUser = await this.apiService.getCurrentUser()
       
       if (currentUser) {
+        // Mark simulation as running
+        this.simulationRunning = true
+        
         // Start with just the current user
         console.log('Current user joined tournament lobby:', currentUser.username)
         this.populateTournamentSlots([currentUser])
@@ -322,6 +333,12 @@ export class TournamentLobbyScreen extends Component {
             tournamentStatus.innerHTML = `
               <span class="text-green-600">Simulation: 4 Players Connected - Ready!</span>
             `
+            
+            // Wait 10 seconds after all players joined, then restart simulation
+            setTimeout(() => {
+              this.restartSimulation(currentUser)
+            }, 10000) // 10 second delay before restarting
+            
           } else {
             tournamentStatus.innerHTML = `
               <span class="text-orange-600">Simulation: ${currentPlayers.length}/4 Players Connected</span>
@@ -330,6 +347,26 @@ export class TournamentLobbyScreen extends Component {
         }
       }, (index + 1) * 1500) // 1.5 second delay between each player
     })
+  }
+
+  private restartSimulation(currentUser: any): void {
+    console.log('Restarting tournament lobby simulation...')
+    
+    // Reset to just the current user
+    this.populateTournamentSlots([currentUser])
+    
+    // Update status to show simulation is restarting
+    const tournamentStatus = this.element?.querySelector('#tournamentStatus')
+    if (tournamentStatus) {
+      tournamentStatus.innerHTML = `
+        <span class="text-blue-600">Simulation: Restarting... Waiting for players to join...</span>
+      `
+    }
+    
+    // Wait 3 seconds, then start the joining simulation again
+    setTimeout(() => {
+      this.simulatePlayersJoining(currentUser)
+    }, 3000) // 3 second delay before players start joining again
   }
 
   private generateTournamentBracket(): void {
