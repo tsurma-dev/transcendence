@@ -16,7 +16,7 @@ roomsLoop(rooms);
 //rooms.set("42", { player1: { id: null, socket: null}, player2: { id: null, socket: null}, game: null});
 
 export function handlePongWebSocket(socket, req) {
-	//db = req.server.db;
+	db = app.db;
 	socket.on("message", (msg) => {
 	console.log("received ws msg: " + msg);
 
