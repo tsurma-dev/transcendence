@@ -17,7 +17,8 @@ import {
   Animation,
   CubicEase,
   EasingFunction,
-  AnimationGroup
+  Observer,
+  Nullable
 } from "@babylonjs/core";
 
 import "@babylonjs/loaders/glTF";
@@ -81,12 +82,14 @@ export class PoolScene {
   private player1Name: string; // current user
   private player2Name: string; // opponent
   private roomId: string;
-  private player1Position: 1 | 2;
+  private stateProcessCount = 0; // For debugging
 
   // Event handlers for cleanup
   private keyDownHandler!: (e: KeyboardEvent) => void;
   private keyUpHandler!: (e: KeyboardEvent) => void;
   private resizeHandler!: () => void;
+  private renderCallback?: () => void;
+  private onGameEndCallback?: (finalState: GameState) => void;
 
   // -------------------
   // --- CONSTRUCTOR ---
@@ -97,7 +100,6 @@ export class PoolScene {
     gameMode: 'local' | 'online' = 'online',
     player1Name?: string,
     player2Name?: string,
-    player1Position: 1 | 2 = 1,
     roomId?: string
   ) {
     this.canvas = canvas;
@@ -105,7 +107,6 @@ export class PoolScene {
     this.player1Name = player1Name || "Player 1";
     this.player2Name = player2Name || "Player 2";
     this.roomId = roomId || "42"; // Default room for testing.
-    this.player1Position = player1Position;
 
     try {
       this.engine = new Engine(this.canvas, true, {
@@ -120,7 +121,7 @@ export class PoolScene {
       }
 
       this.scene = this.CreateScene();
-      this.scoreboard = new Scoreboard(this.player1Name, this.player2Name);
+      this.scoreboard = new Scoreboard(this.player1Name, this.player2Name, this.gameMode);
       this.createCountdownUI();
 
       // Load assets in the background
@@ -210,6 +211,7 @@ export class PoolScene {
           console.log('✅ Countdown finished');
           this.countdownElement.style.display = "none";
           this.isCountdownRunning = false;
+          
           resolve();
         } else {
           setTimeout(updateCountdown, 1000);
@@ -222,13 +224,12 @@ export class PoolScene {
 
   private handleGameEnd(finalState: GameState): void {
     console.log(`🏆 Final Result: ${finalState.winner} WINS!`);
-
-    // Update scoreboard one final time
     this.scoreboard.updateFromGameState(finalState);
 
     // TODO: Show game over screen
-    // TODO: Add play again button
-    // TODO: Stop input handling
+    if (this.onGameEndCallback) {
+      this.onGameEndCallback(finalState);
+    }
   }
 
   // --- AUDIO ---
@@ -289,17 +290,13 @@ export class PoolScene {
       // **PHASE 1: Load Scene (already done)**
       console.log('✅ Phase 1: Scene loaded');
 
-      // **PHASE 2: Show Animation**
-      console.log('🎬 Phase 2: Playing animation...');
-      await this.playCameraIntro();
-      console.log('✅ Animation complete');
-
-      // **PHASE 3: Join Room & Wait**
-      console.log('🔗 Phase 3: Joining room and waiting for opponent...');
+      // **PHASE 2: Join Room & Wait for Position Assignment**
+      console.log('🔗 Phase 2: Joining room and waiting for position assignment...');
       await this.initializeOnlineGameAndWait();
 
-      // **PHASE 4: Countdown** (triggered by server)
-      // **PHASE 5: Start Game** (triggered by server)
+      // Animation will be played after room is joined and position is assigned
+      // **PHASE 3: Countdown** (triggered by server)
+      // **PHASE 4: Start Game** (triggered by server)
       // These are handled by the event handlers set up in initializeOnlineGameAndWait
     }
   }
@@ -316,15 +313,50 @@ export class PoolScene {
     return this.isLoaded;
   }
 
+  public setOnGameEndCallback(callback: (finalState: GameState) => void): void {
+    this.onGameEndCallback = callback;
+  }
+
+  public async restartQuick(): Promise<void> {
+    console.log('🔄 Quick restart for local game');
+    
+    // Reset game state flags
+    this.gameStarted = false;
+    this.gameEnded = false;
+    
+    // Dispose and recreate local game engine
+    if (this.localGameEngine) {
+      this.localGameEngine.dispose();
+    }
+    this.initializeLocalGame();
+    
+    // Position duck at center before countdown
+    this.duck.updatePosition({ x: 0, z: 0, dir: Math.PI / 2 });
+    
+    // Reset paddle positions to center
+    this.Paddle1.updatePosition({ x: 0, position: 1 });
+    this.Paddle2.updatePosition({ x: 0, position: 2 });
+    
+    // Skip animation and go straight to countdown
+    await this.enableAudio();
+    await this.runCountdown();
+    this.gameStarted = true;
+  }
+
   // ********************
   // --LOCAL GAME SETUP --
   // ********************
   private initializeLocalGame(): void {
-    console.log('Initializing local game');
+    console.log('🔄 Initializing local game');
     this.localGameEngine = new LocalGameEngine(this.player1Name, this.player2Name);
 
-    // Use the same updateFromState method as online games
-    this.scene.registerBeforeRender(() => {
+    // Clean up any existing render callback
+    if (this.renderCallback) {
+      this.scene.unregisterBeforeRender(this.renderCallback);
+    }
+
+    // Create new render callback
+    this.renderCallback = () => {
       if (!this.gameStarted) return; // prevent updates before Start
       const deltaTime = this.engine.getDeltaTime();
       if (this.localGameEngine) {
@@ -332,9 +364,10 @@ export class PoolScene {
         const gameState = this.localGameEngine.getGameState();
         this.updateFromState(gameState);
       }
-    });
-    // Camera setup...
-    this.camera.detachControl();
+    };
+
+    // Register the callback
+    this.scene.registerBeforeRender(this.renderCallback);
   }
 
   // **************************
@@ -342,34 +375,33 @@ export class PoolScene {
   // **************************
   private async initializeOnlineGameAndWait(): Promise<void> {
     return new Promise((resolve, reject) => {
-      console.log('Initializing online game');
+      console.log('🔄 Initializing online game');
 
       // Create client
       this.client = new GameClient(
         GAME_CONFIG.SERVER_URL,
         this.player1Name,
-        this.player1Position,
         this.player2Name,
         this.roomId
       );
 
       // Set up the flow handlers
-      this.client.setRoomJoinedHandler(() => {
-        console.log('✅ Phase 3a: Successfully joined room, sending ready-to-play...');
-        // Send ready-to-play immediately after joining room
+      this.client.setRoomJoinedHandler(async () => {
+        console.log('✅ Phase 2a: Successfully joined room, playing intro animation...');
+        
+        // Play intro animation now that we know our position
+        if (this.client?.playerPosition) {
+          await this.playOnlineIntro(this.client.playerPosition);
+          console.log('✅ Animation complete');
+        }
+        
+        console.log('💫 Phase 2b: Sending ready-to-play...');
+        // Send ready-to-play after animation
         this.client?.sendReadyToPlay();
       });
 
       this.client.setGameStartHandler(async () => {
-        console.log('🎮 Phase 4: Both players ready! Starting countdown...');
-
-        // **PHASE 4: Countdown**
-        await this.runCountdown();
-        console.log('✅ Countdown finished');
-
-        // **PHASE 5: Start Game**
-        console.log('🚀 Phase 5: Game starting!');
-        this.gameStarted = true;
+        console.log('🎮 Phase 3: Both players ready! Starting countdown...');
 
         // Set up game state handler now that game has started
         this.client?.setSnapshotHandler((snapshot: Snapshot) => {
@@ -377,16 +409,17 @@ export class PoolScene {
           this.updateFromState(snapshot.state);
         });
 
+        // **PHASE 3: Countdown**
+        await this.runCountdown();
+        console.log('✅ Countdown finished');
+
+        // **PHASE 4: Game is now fully active**
+        // Start accepting game state updates
+        this.gameStarted = true;
+        console.log('🚀 Phase 4: Game fully active!');
+
         resolve(); // Resolve the promise to complete the flow
       });
-
-      // Handle connection errors
-      setTimeout(() => {
-        if (!this.gameStarted) {
-          console.error('❌ Timeout waiting for game to start');
-          reject(new Error('Game start timeout'));
-        }
-      }, 30000); // 30 second timeout
 
       // Connect to server (this will trigger the room joining)
       this.client.connect();
@@ -432,7 +465,17 @@ export class PoolScene {
   // --------------------------------
   //  Receives state from the server and updates the scene.
   private async updateFromState(state: GameState): Promise<void> {
-    if (!this.gameStarted) return; // nothing moves before Start
+    if (!this.gameStarted) {
+      console.log("⚠️  Ignoring state update - game not started yet");
+      return; // nothing moves before Start
+    }
+
+    // Debug: Log first few state updates
+    if (!this.stateProcessCount) this.stateProcessCount = 0;
+    this.stateProcessCount++;
+    if (this.stateProcessCount <= 3) {
+      console.log(`🔄 Processing state update #${this.stateProcessCount}:`, state);
+    }
 
     // Stop all updates when game ends
     if (state.status === 'finished' && !this.gameEnded) {
@@ -462,9 +505,6 @@ export class PoolScene {
       }
     });
 
-    // Update scoreboard
-    this.scoreboard.updateFromGameState(state);
-
     // Handle events (score, sounds)
     for (const event of state.events) {
       switch (event.type) {
@@ -484,7 +524,7 @@ export class PoolScene {
           }
           break;
         case 'score':
-          console.log(`${event.player} scored ${event.points} points!`);
+          this.scoreboard.updateFromGameState(state);
           break;
       }
     }
@@ -505,20 +545,20 @@ export class PoolScene {
   // ------------------------------
   // --- ANIMATIONS ---
   // ------------------------------
-  // Camera intro animation**
+
+  //***Camera intro animation for LOCAL GAME***
   public async playCameraIntro(): Promise<void> {
     if (this.isIntroPlaying) return;
 
     this.isIntroPlaying = true;
-    this.camera.detachControl();
+    console.log('🎬 Playing animation...');
 
     // **1. PLAY ORBIT ANIMATION**
     await this.playSkyOrbitIntro();
 
     // **2. ZOOM ANIMATION - Use current camera position as start**
-    const startPosition = this.camera.position.clone(); // Use actual current position
-    const startTarget = this.camera.getTarget().clone(); // Use actual current target
-
+    const startPosition = this.camera.position.clone();
+    const startTarget = this.camera.getTarget().clone();
     // Create easing
     const easingFunction = new CubicEase();
     easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
@@ -567,12 +607,13 @@ export class PoolScene {
 
   private async playSkyOrbitIntro(): Promise<void> {
     const orbitFrames = 480;
-    const radius = 18;
+    const startRadius = 20; // Start far out for skybox view
+    const endRadius = 2; // End very close to the duck
     const startHeight = 1;
-    const endHeight = 12;
+    const endHeight = 3;
     const center = new Vector3(0, 0, 0);
 
-    const zoomStartPosition = new Vector3(15, 12, 15);
+    const zoomStartPosition = new Vector3(15, 8, 15);
     const endAngle = Math.atan2(zoomStartPosition.z, zoomStartPosition.x);
     const startAngle = endAngle - Math.PI; // rotate 180 degrees
 
@@ -583,6 +624,9 @@ export class PoolScene {
 
       // Smoothly interpolate from start angle to end angle
       const angle = startAngle + (progress * Math.PI);
+
+      // Interpolate radius from startRadius to endRadius
+      const radius = startRadius + ((endRadius - startRadius) * progress);
 
       // Interpolate height from startHeight to endHeight
       const height = startHeight + ((endHeight - startHeight) * progress);
@@ -597,10 +641,10 @@ export class PoolScene {
       });
     }
 
-    // **VERIFY: Last position should match zoom start**
+    // Last position should match zoom start
     const lastPos = positionKeys[positionKeys.length - 1].value;
 
-    // Always look at pool center (skybox will be visible)
+    // Always look at pool center
     const targetKeys = [
       { frame: 0, value: center },
       { frame: orbitFrames, value: center }
@@ -642,6 +686,165 @@ export class PoolScene {
     });
   }
 
+  //***Camera intro for ONLINE GAME ***
+  public async playOnlineIntro(playerPosition: 1 | 2): Promise<void> {
+    if (this.isIntroPlaying) return;
+
+    this.isIntroPlaying = true;
+
+    // **SETUP: Position camera at the starting position immediately to avoid visual jump**
+    this.camera.position = CAMERA_SETTINGS.INTRO_START_POSITION.clone();
+    this.camera.setTarget(new Vector3(0, 0, 0)); // Look at duck/center
+
+    // **PHASE 1: Close orbit around the duck**
+    await this.playCloseOrbitAroundDuck();
+
+    // **PHASE 2: Zoom out far to show skybox horizon**
+    await this.animateToPosition(
+      CAMERA_SETTINGS.INTRO_SKYBOX_POSITION,
+      CAMERA_SETTINGS.INTRO_SKYBOX_TARGET,
+      CAMERA_SETTINGS.INTRO_SKYBOX_ZOOM_DURATION,
+    );
+
+    // **PHASE 3: Zoom into final player position**
+    const finalPosition = playerPosition === 1 ?
+      CAMERA_SETTINGS.POSITION1 :
+      CAMERA_SETTINGS.POSITION2;
+
+    const finalTarget = playerPosition === 1 ?
+      CAMERA_SETTINGS.TARGET1 :
+      CAMERA_SETTINGS.TARGET2;
+
+    await this.animateToPosition(
+      finalPosition,
+      finalTarget,
+      240, // 4 seconds for dramatic zoom in
+    );
+
+    this.isIntroPlaying = false;
+  }
+
+  // **Helper method for smooth camera transitions**
+  private async animateToPosition(
+    targetPosition: Vector3,
+    targetLookAt: Vector3,
+    durationFrames: number,
+  ): Promise<void> {
+    return new Promise((resolve) => {
+
+      const startPosition = this.camera.position.clone();
+      const startTarget = this.camera.getTarget().clone();
+
+      // Create easing
+      const easingFunction = new CubicEase();
+      easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
+
+      // Position animation
+      const positionAnimation = new Animation(
+        "cameraPosition",
+        "position",
+        60,
+        Animation.ANIMATIONTYPE_VECTOR3,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+
+      positionAnimation.setKeys([
+        { frame: 0, value: startPosition },
+        { frame: durationFrames, value: targetPosition }
+      ]);
+      positionAnimation.setEasingFunction(easingFunction);
+
+      // Target animation
+      const targetAnimation = new Animation(
+        "cameraTarget",
+        "target",
+        60,
+        Animation.ANIMATIONTYPE_VECTOR3,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+
+      targetAnimation.setKeys([
+        { frame: 0, value: startTarget },
+        { frame: durationFrames, value: targetLookAt }
+      ]);
+      targetAnimation.setEasingFunction(easingFunction);
+
+      // Apply animations
+      this.camera.animations = [positionAnimation, targetAnimation];
+
+      const animatable = this.scene.beginAnimation(this.camera, 0, durationFrames, false);
+      animatable.onAnimationEndObservable.add(() => {
+        resolve();
+      });
+    });
+  }
+
+  // Close orbit around duck
+  private async playCloseOrbitAroundDuck(): Promise<void> {
+    return new Promise((resolve) => {
+      const orbitFrames = CAMERA_SETTINGS.INTRO_CLOSE_ORBIT_DURATION;
+      const radius = CAMERA_SETTINGS.INTRO_CLOSE_ORBIT_RADIUS;
+      const height = CAMERA_SETTINGS.INTRO_CLOSE_ORBIT_HEIGHT;
+      const center = new Vector3(0, 0, 0); // Duck position
+
+      const startPos = CAMERA_SETTINGS.INTRO_START_POSITION;
+      const startAngle = Math.atan2(startPos.z, startPos.x);
+
+      // Generate keyframes for full 360° rotation
+      const positionKeys = [];
+      for (let i = 0; i <= orbitFrames; i++) {
+        const progress = i / orbitFrames;
+        const angle = startAngle - (progress * Math.PI) ; // 180° rotation (reversed direction)
+
+        // Calculate position on the circle
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+
+        positionKeys.push({
+          frame: i,
+          value: new Vector3(x, height, z)
+        });
+      }
+
+      // Always look at duck center
+      const targetKeys = [
+        { frame: 0, value: center },
+        { frame: orbitFrames, value: center }
+      ];
+
+      // Create animations
+      const positionAnimation = new Animation(
+        "closeOrbitPosition",
+        "position",
+        60,
+        Animation.ANIMATIONTYPE_VECTOR3,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+      positionAnimation.setKeys(positionKeys);
+
+      const targetAnimation = new Animation(
+        "closeOrbitTarget",
+        "target",
+        60,
+        Animation.ANIMATIONTYPE_VECTOR3,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+      targetAnimation.setKeys(targetKeys);
+
+      // Smooth easing
+      const easingFunction = new CubicEase();
+      easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
+      positionAnimation.setEasingFunction(easingFunction);
+
+      // Apply and start
+      this.camera.animations = [positionAnimation, targetAnimation];
+
+      const animatable = this.scene.beginAnimation(this.camera, 0, orbitFrames, false);
+      animatable.onAnimationEndObservable.add(() => {
+        resolve();
+      });
+    });
+  }
 
   // -------------------------------
   // --- SCENE CREATION METHODS  ---
@@ -680,9 +883,18 @@ export class PoolScene {
 
   private _createCamera(scene: Scene): void {
     this.camera = new ArcRotateCamera("camera", 0, 0, 1, CAMERA_SETTINGS.TARGET_LOCAL, scene);
-    this.camera.setPosition(CAMERA_SETTINGS.POSITION_LOCAL);
-    this.camera.attachControl(this.canvas, true);
-    this.camera.wheelPrecision = CAMERA_SETTINGS.WHEEL_PRECISION;
+    
+    // Set initial camera position based on game mode to avoid flash
+    if (this.gameMode === 'online') {
+      // For online games, start at intro position to avoid overhead flash
+      this.camera.setPosition(CAMERA_SETTINGS.INTRO_START_POSITION);
+      this.camera.setTarget(new Vector3(0, 0, 0)); // Look at duck/center
+    } else {
+      // For local games, use the standard overhead position
+      this.camera.setPosition(CAMERA_SETTINGS.POSITION_LOCAL);
+    }
+    
+    // Camera is not user-controllable in this pong game
   }
 
 	private _createLights(scene: Scene): void {
@@ -694,10 +906,10 @@ export class PoolScene {
 		this.hemilight.intensity = LIGHT_SETTINGS.HEMISPHERE_INTENSITY;
 		// Shadow
 		this.shadowGenerator = new ShadowGenerator(RENDERING_SETTINGS.SHADOW_MAP_SIZE, this.light);
-		this.shadowGenerator.useBlurExponentialShadowMap = true; // produces soft, realistic shadows with smooth edges (better than hard-edged shadows).
-		this.shadowGenerator.bias = 0.002; // prevent "shadow acne" (self-shadowing artifacts)
-		this.shadowGenerator.normalBias = 0.02; // Sets the normal bias to further reduce shadow artifacts, especially on surfaces at grazing angle
-    this.shadowGenerator.darkness = 0.0; // 0.0 (black) to 1.0 (no shadow)
+		this.shadowGenerator.usePoissonSampling = true;
+		this.shadowGenerator.bias = 0.00001;
+    this.shadowGenerator.darkness = 0.5;
+		this.shadowGenerator.setDarkness(0.5);
   }
 
 	private _createSkybox(scene: Scene): void {
@@ -706,7 +918,7 @@ export class PoolScene {
     scene.environmentTexture = skyboxTexture; // enables correct reflections and lighting for PBR materials.
 	}
 
-  // ---POOL ---
+  // --- POOL ---
 	private _createPool(scene: Scene, materials: Materials): void {
     this._createPoolFloor(scene, materials);
     this._createPoolWalls(scene, materials);
@@ -935,6 +1147,7 @@ export class PoolScene {
     const waterPlane = MeshBuilder.CreateGround("waterPlane", { width: GAME_CONFIG.TABLE_WIDTH, height: GAME_CONFIG.TABLE_DEPTH + 2*GAME_CONFIG.WATER_EXTRA_SPACE}, scene);
     waterPlane.material = materials.waterMaterial;
 		waterPlane.position.y = GAME_CONFIG.WATER_LEVEL;
+		waterPlane.receiveShadows = true;
 	}
 
   // --- CLEANUP METHOD ---

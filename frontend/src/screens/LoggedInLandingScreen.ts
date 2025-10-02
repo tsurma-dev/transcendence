@@ -1,4 +1,5 @@
 import { Component, TemplateManager, AppRouter, ApiService } from '../core'
+import { QuickPlaySetupScreen } from './QuickPlaySetupScreen'
 import { RemoteGameScreen } from './RemoteGameScreen'
 import { TournamentLobbyScreen } from './TournamentLobbyScreen'
 import { UserProfileScreen } from './UserProfileScreen'
@@ -6,7 +7,7 @@ import { UserProfileScreen } from './UserProfileScreen'
 /**
  * Logged-in Landing Page Screen
  * This screen is shown when logged-in users successfully log in
- * It provides options for single player game, tournament, and profile access
+ * It provides options for quick play, remote game, single player game, tournament
  */
 export class LoggedInLandingScreen extends Component {
   private templateManager = TemplateManager.getInstance()
@@ -19,15 +20,12 @@ export class LoggedInLandingScreen extends Component {
     const div = document.createElement('div')
     if (fragment) {
       div.appendChild(fragment)
-
-      // Show user menu for authenticated users
-      // App.getInstance().setUserLoggedIn(true)
     }
     return div
   }
 
   setupEvents(): void {
-    // Load online users count
+
     this.loadOnlineUsersCount()
 
     // Load current user and update welcome message
@@ -35,35 +33,39 @@ export class LoggedInLandingScreen extends Component {
 
     this.setupOnlineUsersDropdown()
 
+    // Setup button event listeners
+    const startQuickPlayBtn = this.element?.querySelector('#startQuickPlayBtn') as HTMLButtonElement
     const startSinglePlayerBtn = this.element?.querySelector('#startSinglePlayerBtn') as HTMLButtonElement
     const start2PlayerBtn = this.element?.querySelector('#start2PlayerBtn') as HTMLButtonElement
     const startTournamentBtn = this.element?.querySelector('#startTournamentBtn') as HTMLButtonElement
-    const userProfileLandingBtn = this.element?.querySelector('#userProfileLandingBtn') as HTMLButtonElement
 
-    if (startSinglePlayerBtn) {
+    if (startQuickPlayBtn) {
+      startQuickPlayBtn.addEventListener('click', () => {
+        this.router.navigateTo(QuickPlaySetupScreen, true) // true = quick play mode
+      })
+    }
+
+    if (start2PlayerBtn) {
+      start2PlayerBtn.addEventListener('click', () => {
+        console.log('Navigating to RemoteGameScreen')
+        this.router.navigateTo(RemoteGameScreen)
+      })
+    }
+
+     if (startSinglePlayerBtn) {
       startSinglePlayerBtn.addEventListener('click', () => {
         // TODO: Implement single player game navigation
         console.log('Single player game - not implemented yet')
       })
     }
 
-    if (start2PlayerBtn) {
-      start2PlayerBtn.addEventListener('click', () => {
-        this.router.navigateTo(RemoteGameScreen)
-      })
-    }
-
     if (startTournamentBtn) {
       startTournamentBtn.addEventListener('click', () => {
+        console.log('Navigating to TournamentLobbyScreen')
         this.router.navigateTo(TournamentLobbyScreen)
       })
     }
-
-    if (userProfileLandingBtn) {
-      userProfileLandingBtn.addEventListener('click', () => {
-        this.router.navigateTo(UserProfileScreen)
-      })
-    }
+    // User Profile button removed, access via online users dropdown
   }
 
   private async loadOnlineUsersCount(): Promise<void> {

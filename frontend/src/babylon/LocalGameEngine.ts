@@ -22,7 +22,7 @@ constructor(player1Name?: string, player2Name?: string) {
   if (player2Name) this.player2Name = player2Name;
 
   this.gameState = this.createInitialGameState();
-  console.log('Local game engine created');
+  console.log('🎮 Local game engine created');
 }
 
 private createInitialGameState(): GameState {
@@ -77,6 +77,9 @@ private createInitialGameState(): GameState {
       this.checkPaddleCollisions();
     }
     this.checkScoring();
+
+    // Debug: Log duck position and direction
+    console.log(`Duck pos: (${this.gameState.duck.x}, ${this.gameState.duck.z}) dir: ${this.gameState.duck.dir} rad`);
   }
 
   private updatePaddles(deltaTime: number): void {
@@ -240,6 +243,7 @@ private createInitialGameState(): GameState {
     // Player 1 scores when duck hits the positive Z end of the pool
     if (duck.z + duckRadius > scoreZone2) {
       this.gameState.scores[this.player1Name]++;
+      console.log(`🎉 ${this.player1Name} scored ${this.gameState.scores[this.player1Name]} points!`);
       this.gameState.events.push({
         type: 'score',
         player: this.player1Name,
@@ -250,6 +254,7 @@ private createInitialGameState(): GameState {
     // Player 2 scores when duck hits the negative Z end of the pool
     else if (duck.z - duckRadius < scoreZone1) {
       this.gameState.scores[this.player2Name]++;
+      console.log(`🎉 ${this.player2Name} scored ${this.gameState.scores[this.player2Name]} points!`);
       this.gameState.events.push({
         type: 'score',
         player: this.player2Name,
@@ -293,7 +298,7 @@ private createInitialGameState(): GameState {
   // Input handlers
   handleKeyDown(key: string): void {
     if (this.gameState.status === 'finished') {
-      console.log('Game is finished, ignoring input');
+      console.log('⛔ Game is finished, ignoring input');
       return;
     }
 
@@ -340,6 +345,6 @@ private createInitialGameState(): GameState {
   }
 
   dispose(): void {
-    console.log('Local game engine disposed');
+    console.log('⛔ Local game engine disposed');
   }
 }

@@ -19,22 +19,25 @@ export class Materials {
   }
 
 	createScaledFloorMaterial(name: string, width: number, height: number, tileScale: number) {
-	const floorMaterial: PBRMaterial = this.poolMaterial.clone(name);
+	// Use StandardMaterial which works reliably with shadows
+	const floorMaterial = new StandardMaterial(name, this.scene);
+	
+	// Apply the tile texture
+	floorMaterial.diffuseTexture = new Texture("/textures/tiles_diff.jpg", this.scene);
 	const uScale: number = width / tileScale;
 	const vScale: number = height / tileScale;
-	if (floorMaterial.albedoTexture instanceof Texture) {
-		floorMaterial.albedoTexture.uScale = uScale;
-		floorMaterial.albedoTexture.vScale = vScale;
+	
+	if (floorMaterial.diffuseTexture instanceof Texture) {
+		floorMaterial.diffuseTexture.uScale = uScale;
+		floorMaterial.diffuseTexture.vScale = vScale;
 	}
-	if (floorMaterial.bumpTexture instanceof Texture) {
-		floorMaterial.bumpTexture.uScale = uScale;
-		floorMaterial.bumpTexture.vScale = vScale;
-	}
-	if (floorMaterial.ambientTexture instanceof Texture) {
-		floorMaterial.ambientTexture.uScale = uScale;
-		floorMaterial.ambientTexture.vScale = vScale;
-	}
-  floorMaterial.freeze();
+	
+	// Standard material settings optimized for shadows
+	floorMaterial.diffuseColor = new Color3(1, 1, 1);
+	floorMaterial.specularColor = new Color3(0.1, 0.1, 0.1); // Low specular for matte look
+	floorMaterial.ambientColor = new Color3(0.3, 0.3, 0.3); // Some ambient for better shadow contrast
+	
+	// Don't freeze to allow shadow reception to work properly
 	return floorMaterial;
 	}
 
@@ -54,12 +57,12 @@ export class Materials {
 
   private _createWaterMaterial(): PBRMaterial {
     const waterMaterial = new PBRMaterial("waterMaterial", this.scene);
-    waterMaterial.albedoColor = new Color3(0.2, 0.5, 0.9); // Base color
+    waterMaterial.albedoColor = new Color3(0.1, 0.7, 0.8); // Turquoise base color
     waterMaterial.metallic = 0.0;
     waterMaterial.roughness = 0.05; // Low roughness for sharp reflections
     waterMaterial.alpha = 0.5; // transparency
     waterMaterial.reflectionTexture = this.scene.environmentTexture;
-    waterMaterial.reflectivityColor = new Color3(0.2, 0.4, 0.7); // Controls reflection tint
+    waterMaterial.reflectivityColor = new Color3(0.1, 0.6, 0.7); // Turquoise reflection tint
     return waterMaterial;
   }
 

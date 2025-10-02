@@ -93,7 +93,7 @@ export class Duck {
 
     // Use Euler rotations
     mesh.rotationQuaternion = null;
-    mesh.rotation.y = 0;
+    mesh.rotation.y = Math.PI; // Initial rotation to face +Z
 
     // Add entire model as shadow caster (true -> recursive)
     shadowGenerator.addShadowCaster(mesh, true);

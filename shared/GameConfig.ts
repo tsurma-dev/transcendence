@@ -13,7 +13,7 @@ export const GAME_CONFIG = {
   PADDLE_WIDTH: 0.8,
   PADDLE_HEIGHT: 0.6,
   PADDLE_DEPTH: 0.1,
-  PADDLE_SPEED: 3,
+  PADDLE_SPEED: 2.5,
   BALL_RADIUS: 0.2,
-  BALL_SPEED: 2.5,
+  BALL_SPEED: 2,
 } as const;

@@ -222,8 +222,6 @@ _|          _|_|    _|      _|    _|_|_|</pre>
           Register
         </button>
       </div>
-      
-
     </div>
   </template>
 
@@ -670,7 +668,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       <div class="container-white p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="text-center">
-            <div class="text-black text-2xl font-bold font-mono" id="tournamentPlayers">2</div>
+            <div class="text-black text-2xl font-bold font-mono" id="tournamentPlayers">-</div>
             <div class="text-black text-sm font-mono uppercase">Players Joined</div>
           </div>
           <div class="text-center">
@@ -678,7 +676,7 @@ _|          _|_|    _|      _|    _|_|_|</pre>
             <div class="text-black text-sm font-mono uppercase">Max Players</div>
           </div>
           <div class="text-center">
-            <div class="text-black text-2xl font-bold font-mono" id="tournamentStatus">Waiting</div>
+            <div class="text-black text-2xl font-bold font-mono" id="tournamentStatus">Loading...</div>
             <div class="text-black text-sm font-mono uppercase">Status</div>
           </div>
         </div>
@@ -688,41 +686,9 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       <div class="container-white p-6 mb-6">
         <h2 class="text-2xl font-bold text-black mb-4 font-mono uppercase text-center">Players</h2>
         <div id="tournamentPlayersList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Player slots will be populated here -->
-          <div class="player-slot flex items-center p-4 container-shadowed bg-gradient-to-r from-green-100 to-green-200">
-            <div class="indicator-online"></div>
-            <div class="flex-1">
-              <div class="text-black font-bold font-mono">Player 1</div>
-              <div class="text-content">Ready</div>
-            </div>
-            <div class="text-green-600 font-bold text-2xl">✓</div>
-          </div>
-          
-          <div class="player-slot flex items-center p-4 container-shadowed bg-gradient-to-r from-green-100 to-green-200">
-            <div class="indicator-online"></div>
-            <div class="flex-1">
-              <div class="text-black font-bold font-mono">Player 2</div>
-              <div class="text-content">Ready</div>
-            </div>
-            <div class="text-green-600 font-bold text-2xl">✓</div>
-          </div>
-          
-          <div class="player-slot flex items-center p-4 container-shadowed bg-gradient-to-r from-gray-100 to-gray-200">
-            <div class="indicator-offline"></div>
-            <div class="flex-1">
-              <div class="text-gray-500 font-bold font-mono">Waiting for player...</div>
-              <div class="text-content">Empty slot</div>
-            </div>
-            <div class="text-gray-400 font-bold text-2xl">⏳</div>
-          </div>
-          
-          <div class="player-slot flex items-center p-4 container-shadowed bg-gradient-to-r from-gray-100 to-gray-200">
-            <div class="indicator-offline"></div>
-            <div class="flex-1">
-              <div class="text-gray-500 font-bold font-mono">Waiting for player...</div>
-              <div class="text-content">Empty slot</div>
-            </div>
-            <div class="text-gray-400 font-bold text-2xl">⏳</div>
+          <!-- Player slots will be populated dynamically -->
+          <div class="col-span-2 text-center text-gray-500 font-mono p-8">
+            Loading tournament players...
           </div>
         </div>
       </div>
@@ -730,10 +696,89 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       <!-- Tournament Matches -->
       <div class="container-white p-6 mb-6">
         <h2 class="text-2xl font-bold text-black mb-4 font-mono uppercase text-center">Tournament Matches</h2>
-        <div class="text-center">
+        
+        <!-- Placeholder (shown when waiting for players) -->
+        <div id="tournamentPlaceholder" class="text-center">
           <div class="inline-block border-2 border-dashed border-gray-400 p-8 rounded-none">
-            <div class="text-gray-500 font-mono text-lg mb-2">🏆</div>
             <div class="text-content">Matches will be generated when all players join</div>
+          </div>
+        </div>
+
+        <!-- Tournament Bracket (hidden by default) -->
+        <div id="tournamentBracketContainer" class="tournament-bracket space-y-6 hidden">
+          <!-- Semifinals -->
+          <div class="semifinals">
+            <h3 class="text-lg font-bold text-black mb-4 text-center font-mono uppercase">Semifinals</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <!-- Semi-Final 1 -->
+              <div class="match-card container-shadowed bg-gradient-to-r from-blue-100 to-blue-200 p-4">
+                <div class="text-center mb-2">
+                  <div class="text-black font-mono font-bold text-sm">SEMIFINAL 1</div>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between p-2 bg-white border-2 border-black">
+                    <span id="semi1Player1" class="font-mono font-bold text-black">Player 1</span>
+                    <span class="text-black">VS</span>
+                    <span id="semi1Player2" class="font-mono font-bold text-black">Player 2</span>
+                  </div>
+                  <div class="text-center">
+                    <span id="semi1Status" class="text-xs font-mono uppercase text-black bg-yellow-200 px-2 py-1 border border-black">
+                      PENDING
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Semi-Final 2 -->
+              <div class="match-card container-shadowed bg-gradient-to-r from-green-100 to-green-200 p-4">
+                <div class="text-center mb-2">
+                  <div class="text-black font-mono font-bold text-sm">SEMIFINAL 2</div>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between p-2 bg-white border-2 border-black">
+                    <span id="semi2Player1" class="font-mono font-bold text-black">Player 3</span>
+                    <span class="text-black">VS</span>
+                    <span id="semi2Player2" class="font-mono font-bold text-black">Player 4</span>
+                  </div>
+                  <div class="text-center">
+                    <span id="semi2Status" class="text-xs font-mono uppercase text-black bg-yellow-200 px-2 py-1 border border-black">
+                      PENDING
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Finals -->
+          <div class="finals">
+            <h3 class="text-lg font-bold text-black mb-4 text-center font-mono uppercase">Final</h3>
+            <div class="flex justify-center">
+              <div class="match-card container-shadowed bg-gradient-to-r from-yellow-100 to-yellow-200 p-6 w-full max-w-md">
+                <div class="text-center mb-4">
+                  <div class="text-black font-mono font-bold text-lg">🏆 FINAL MATCH</div>
+                </div>
+                <div class="space-y-4">
+                  <div class="flex items-center justify-center p-3 bg-white border-2 border-black">
+                    <span id="finalPlayer1" class="text-gray-500 font-mono italic">Winner of SF1</span>
+                    <span class="mx-4 text-black font-bold">VS</span>
+                    <span id="finalPlayer2" class="text-gray-500 font-mono italic">Winner of SF2</span>
+                  </div>
+                  <div class="text-center">
+                    <span id="finalStatus" class="text-xs font-mono uppercase text-black bg-gray-200 px-2 py-1 border border-black">
+                      WAITING
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tournament Start Button -->
+          <div class="flex justify-center mt-6">
+            <button id="startTournamentBtn" class="btn-green px-8 py-3 text-lg font-bold">
+              START TOURNAMENT
+            </button>
           </div>
         </div>
       </div>
@@ -754,6 +799,13 @@ _|          _|_|    _|      _|    _|_|_|</pre>
   <!-- Logged-in Landing Page template -->
   <template id="loggedInLandingTemplate">
     <div class="container-main-pink max-w-lg">
+      <div class="text-center mb-8">
+        <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">_|_|_|      _|_|    _|      _|    _|_|_|
+_|    _|  _|    _|  _|_|    _|  _|      
+_|_|_|    _|    _|  _|  _|  _|  _|  _|_|
+_|        _|    _|  _|    _|_|  _|    _|
+_|          _|_|    _|      _|    _|_|_|</pre>
+      </div>
       
       <!-- Online Users Counter -->
       <div class="text-center mb-4 relative">
@@ -783,25 +835,25 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         Welcome Back, <span id="welcomeUsername">User</span>!
       </h1>
       <div class="space-y-4">
-        <button 
-          id="startSinglePlayerBtn"
+        <button
+          id="startQuickPlayBtn"
           class="btn-green">
-          Single Player Game
+          Quick Play 👥⌨️
         </button>
         <button 
           id="start2PlayerBtn"
           class="btn-green">
-          Remote 2-player Game
+          Remote Game 👥
+        </button>
+        <button 
+          id="startSinglePlayerBtn"
+          class="btn-green">
+          Single Player 👤✨
         </button>
         <button 
           id="startTournamentBtn"
           class="btn-purple">
-          Tournament
-        </button>
-        <button 
-          id="userProfileLandingBtn"
-          class="btn-blue">
-          User Profile
+          🏆 Tournament 👥👥
         </button>
       </div>
     </div>
@@ -821,8 +873,10 @@ _|          _|_|    _|      _|    _|_|_|</pre>
       <h1 class="text-4xl font-bold text-white mb-6 drop-shadow-lg text-center">
         Remote Game Options
       </h1>
-      
+
+      <!-- Navigation Buttons -->
       <div class="space-y-6">
+
         <!-- Create Room Button -->
         <div class="text-center">
           <button 
@@ -839,23 +893,11 @@ _|          _|_|    _|      _|    _|_|_|</pre>
         <div class="text-center">
           <button 
             id="joinRoomBtn"
-            class="btn-blue w-full">
+            class="btn-purple w-full">
             Join Room
           </button>
           <p class="text-black font-mono text-sm mt-2">
             Join an existing room using the room id
-          </p>
-        </div>
-        
-        <!-- Get Matched Button -->
-        <div class="text-center">
-          <button 
-            id="getMatchedBtn"
-            class="btn-purple w-full">
-            Get Matched
-          </button>
-          <p class="text-black font-mono text-sm mt-2">
-            Get matched with a random player
           </p>
         </div>
         
@@ -867,200 +909,6 @@ _|          _|_|    _|      _|    _|_|_|</pre>
             ← Back to Main Menu
           </button>
         </div>
-      </div>
-    </div>
-  </template>
-
-  <!-- Create Room template -->
-  <template id="createRoomTemplate">
-    <div class="container-main-pink max-w-lg">
-      <div class="text-center mb-8">
-        <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">_|_|_|      _|_|    _|      _|    _|_|_|
-_|    _|  _|    _|  _|_|    _|  _|      
-_|_|_|    _|    _|  _|  _|  _|  _|  _|_|
-_|        _|    _|  _|    _|_|  _|    _|
-_|          _|_|    _|      _|    _|_|_|</pre>
-      </div>
-      
-      <h1 class="text-4xl font-bold text-white mb-6 drop-shadow-lg text-center">
-        Room Created!
-      </h1>
-      
-      <!-- Room ID Display -->
-      <div class="container-white p-6 mb-6 text-center">
-        <h2 class="text-2xl font-semibold text-black mb-4 font-mono uppercase tracking-wider">
-          Room ID
-        </h2>
-        <div class="bg-gradient-to-r from-gray-100 to-gray-200 border-4 border-black p-4 mb-4">
-          <div id="roomIdDisplay" class="text-black text-3xl font-bold font-mono tracking-widest">
-            ABC123
-          </div>
-        </div>
-        <p class="text-black font-mono text-sm">
-          Another player can join the room using the room ID
-        </p>
-      </div>
-      
-      <!-- Waiting for Player -->
-      <div id="waitingForPlayerSection" class="container-white p-6 mb-6 text-center">
-        <div class="text-gray-500 font-mono text-lg mb-2">⏳</div>
-        <div class="text-black font-mono text-lg font-bold">
-          Waiting for player to join...
-        </div>
-      </div>
-      
-      <!-- Controls -->
-      <div class="space-y-4">
-        <button 
-          id="copyRoomIdBtn"
-          class="btn-blue w-full">
-          Copy Room ID
-        </button>
-        
-        <button 
-          id="startGameBtn"
-          class="btn-green w-full hidden">
-          Start Game
-        </button>
-        
-        <button 
-          id="cancelRoomBtn"
-          class="btn-red w-full">
-          Leave Room
-        </button>
-      </div>
-    </div>
-  </template>
-
-  <!-- Join Room template -->
-  <template id="joinRoomTemplate">
-    <div class="container-main-pink max-w-lg">
-      <div class="text-center mb-8">
-        <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">_|_|_|      _|_|    _|      _|    _|_|_|
-_|    _|  _|    _|  _|_|    _|  _|      
-_|_|_|    _|    _|  _|  _|  _|  _|  _|_|
-_|        _|    _|  _|    _|_|  _|    _|
-_|          _|_|    _|      _|    _|_|_|</pre>
-      </div>
-      
-      <h1 class="text-4xl font-bold text-white mb-6 drop-shadow-lg text-center">
-        Join Room
-      </h1>
-      
-      <!-- Join Room Form -->
-      <form id="joinRoomForm" class="space-y-6">
-        <div class="container-white p-6">
-          <h2 class="text-2xl font-semibold text-black mb-4 text-center font-mono uppercase tracking-wider">
-            Enter Room ID
-          </h2>
-          
-          <input 
-            type="text" 
-            id="roomIdInput" 
-            name="roomId"
-            placeholder="ABC123" 
-            required 
-            maxlength="10"
-            class="input-white text-center text-2xl font-mono tracking-widest uppercase"
-            autocomplete="off"
-          >
-          
-          <p class="text-black font-mono text-sm mt-4 text-center">
-            Enter the room ID provided by the room creator
-          </p>
-        </div>
-        
-        <!-- Form Controls -->
-        <div class="space-y-4">
-          <button 
-            type="submit"
-            id="joinRoomSubmitBtn"
-            class="btn-green w-full">
-            🚪 Join Room
-          </button>
-          
-          <button 
-            type="button"
-            id="backToRemoteOptionsBtn"
-            class="btn-blue w-full">
-            ← Back to Options
-          </button>
-        </div>
-      </form>
-      
-      <!-- Error/Status Messages -->
-      <div id="joinRoomError" class="text-red-500 text-center mt-4 font-mono hidden"></div>
-      <div id="joinRoomStatus" class="text-black text-center mt-4 font-mono hidden"></div>
-    </div>
-  </template>
-
-  <!-- Random Match Lobby template -->
-  <template id="randomMatchTemplate">
-    <div class="container-main-pink max-w-lg">
-      <div class="text-center mb-8">
-        <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">_|_|_|      _|_|    _|      _|    _|_|_|
-_|    _|  _|    _|  _|_|    _|  _|      
-_|_|_|    _|    _|  _|  _|  _|  _|  _|_|
-_|        _|    _|  _|    _|_|  _|    _|
-_|          _|_|    _|      _|    _|_|_|</pre>
-      </div>
-      
-      <h1 class="text-4xl font-bold text-white mb-6 drop-shadow-lg text-center">
-        Matchmaking
-      </h1>
-      
-      <!-- Matchmaking Status -->
-      <div class="container-white p-6 mb-6 text-center">
-        <div id="matchmakingStatusIcon" class="text-4xl mb-4">🔍</div>
-        <div id="matchmakingStatusText" class="text-black font-mono text-lg font-bold mb-2">
-          Searching for opponent...
-        </div>
-        <div id="matchmakingSubtext" class="text-black font-mono text-sm">
-          You will be matched with another player looking for a game
-        </div>
-      </div>
-      
-      <!-- Queue Info -->
-      <div class="container-white p-6 mb-6">
-        <div class="text-center">
-          <div id="playersInQueue" class="text-black text-2xl font-bold font-mono">1</div>
-          <div class="text-black text-sm font-mono uppercase">Players in Queue</div>
-        </div>
-      </div>
-      
-      <!-- Loading Animation -->
-      <div class="container-white p-6 mb-6 text-center">
-        <div class="flex justify-center items-center space-x-2">
-          <div class="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
-          <div class="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
-          <div class="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-        </div>
-        <div class="text-black font-mono text-sm mt-3">
-          <span id="searchTime">0:15</span> elapsed
-        </div>
-      </div>
-      
-      <!-- Match Found State (hidden by default) -->
-      <div id="matchFoundSection" class="container-white p-6 mb-6 text-center hidden">
-        <div class="text-4xl mb-4">🎉</div>
-        <div class="text-black font-mono text-lg font-bold mb-2">
-          Match Found!
-        </div>
-        <div class="text-black font-mono text-sm mb-4">
-          Opponent: <span id="opponentName" class="font-bold">Player123</span>
-        </div>
-        <div class="text-black font-mono text-sm">
-          Starting game in <span id="gameStartCountdown" class="font-bold">3</span> seconds...
-        </div>
-      </div>
-      
-      <!-- Controls -->
-      <div class="space-y-4">
-        <button 
-          id="backToRemoteOptionsFromMatchBtn"
-          class="btn-blue w-full">
-          ← Back to Options
-        </button>
       </div>
     </div>
   </template>
