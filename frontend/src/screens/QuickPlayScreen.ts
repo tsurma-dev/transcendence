@@ -11,13 +11,13 @@ export class  QuickPlayScreen extends Component {
   private game3D: Game3DComponent | null = null
   private player1Name: string
   private player2Name: string
-  private isQuickPlay: boolean
+  private gameMode: GameMode = 'local'
 
-  constructor(player1Name: string, player2Name: string, isQuickPlay: boolean = false) {
+  constructor(player1Name: string, player2Name: string, gameMode: GameMode = 'local') {
     super()
     this.player1Name = player1Name
     this.player2Name = player2Name
-    this.isQuickPlay = isQuickPlay
+    this.gameMode = gameMode
   }
 
   render(): HTMLElement {
@@ -44,9 +44,9 @@ export class  QuickPlayScreen extends Component {
 
     this.game3D = new Game3DComponent(
       game3DContainer,
-      this.isQuickPlay ? 'local' : 'online',
       this.player1Name,
-      this.player2Name,
+      this.gameMode,
+      this.player2Name
     );
     this.game3D.initialize();
   }
