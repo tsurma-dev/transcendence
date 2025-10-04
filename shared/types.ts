@@ -1,35 +1,24 @@
-// Coordinate in the XZ plane
-export type Vec2 = { x: number; z: number };
-
-// Unique identifier for a player (their unique name)
-export type PlayerName = string;
 
 // Duck position and direction
+export type Vec2 = { x: number; z: number };
 export type DuckState = Vec2 & { dir: number }; // radians
 
-// Player information including position and paddle location
-export type PlayerState = {
-  x: number;           // Paddle position
-  position: 1 | 2;     // Which paddle they control (bottom or top)
-  connected?: boolean;
-  ready?: boolean;
-};
+// Player position and identity
+export type Paddle1 = { x: number};
+export type Paddle2 = { x: number};
 
 // Overall game status
 export type GameStatus = 'waiting' | 'playing' | 'finished';
 
-// Gametype (Local or Online)
-export type GameType = 'local' | 'online';
-
-// Roommanagement
-export type RoomId = string;
 
 // --- EVENTS ---
 
 // Different types of collisions that can occur in the game
 // Different sounds can be played based on the type of collision
-export type CollisionType = 'wall' | 'paddle' | null;
 
+export type GameEvent = CollisionEvent | ScoreEvent;
+
+export type CollisionType = 'wall' | 'paddle' | null;
 export type CollisionEvent = {
   type: 'collision';
   collisionType: CollisionType;
@@ -37,31 +26,31 @@ export type CollisionEvent = {
 
 export type ScoreEvent = {
   type: 'score';
-  player: PlayerName;
+  playerID: 'first' | 'second';
   points: number;
 };
-
-export type GameEvent = CollisionEvent | ScoreEvent;
 
 
 // --- GAME STATE ---
 
 export type GameState = {
-  // Player data - maps player name to their state
-  players: Record<PlayerName, PlayerState>;
-
-  // Room information
-  roomId?: RoomId;
-
-  // Score data - maps player name to their score
-  scores: Record<PlayerName, number>;
 
   // Duck state
   duck: DuckState;
 
+  // Player states
+  player1: Paddle1;
+  player2: Paddle2;
+
+  // Scores (optional for local games)
+  scores?: {
+    player1: number;
+    player2: number;
+  };
+
   // Overall game status
   status: GameStatus;
-  winner?: PlayerName; // present if status === 'finished'
+  winner?: string | null; // present if status === 'finished' (name is needed for the Game Over pop-up)
 
   // A list of events that occurred in the last tick
   events: GameEvent[];

@@ -1,4 +1,6 @@
 import { Component, AppRouter, ApiService } from '../core'
+import { StartPageScreen } from './StartPageScreen'
+import { LoggedInLandingScreen } from './LoggedInLandingScreen'
 // ApiService imported from core
 import { Game3DComponent, GameMode } from '../components/Game3D'
 
@@ -46,7 +48,12 @@ export class  QuickPlayScreen extends Component {
       game3DContainer,
       this.player1Name,
       this.gameMode,
-      this.player2Name
+      this.player2Name,
+      undefined, // roomId not needed for quick play
+      () => {
+        // Return to menu callback
+        this.returnToAppropriateScreen()
+      }
     );
     this.game3D.initialize();
   }
@@ -59,6 +66,36 @@ export class  QuickPlayScreen extends Component {
     const game3DContainer = document.getElementById('game3DContainer')
     if (game3DContainer && game3DContainer.parentElement === document.body) {
       document.body.removeChild(game3DContainer)
+    }
+  }
+
+  private async returnToAppropriateScreen(): Promise<void> {
+    // Clean up game
+    if (this.game3D) {
+      this.game3D.dispose()
+      this.game3D = null
+    }
+
+    // Remove fullscreen container
+    const game3DContainer = document.getElementById('game3DContainer')
+    if (game3DContainer && game3DContainer.parentElement === document.body) {
+      document.body.removeChild(game3DContainer)
+    }
+
+    // Navigate to appropriate screen based on authentication state
+    try {
+      const user = await this.apiService.getCurrentUser()
+      if (user) {
+        // User is logged in - go to LoggedInLandingScreen
+        this.router.navigateTo(LoggedInLandingScreen)
+      } else {
+        // User is not logged in - go to StartPageScreen
+        this.router.navigateTo(StartPageScreen)
+      }
+    } catch (error) {
+      console.error('Error checking auth state, falling back to StartPageScreen:', error)
+      // Fallback to start page if we can't determine auth state
+      this.router.navigateTo(StartPageScreen)
     }
   }
 }
