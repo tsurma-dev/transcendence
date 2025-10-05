@@ -117,9 +117,9 @@ export class Game {
 			paddle2X: this.paddle2.x,
 			player1Score: this.score.player1,
 			player2Score: this.score.player2,
-			collision: this.ball.collision,
 			gameState: this.gameState,
 			winner: this.winner,
+			collision: this.ball.collision, // events: "paddleCollision", "wallCollision", "score", null
 		};
 	}
 }
