@@ -129,8 +129,8 @@ function endGame(roomId) {
 		payload: {
 			player1Score: room.game.score.player1,
 			player2Score: room.game.score.player2,
-			winner: room.game.score.player1 > room.game.score.player2 ? "first" : "second",
-			// winner: room.game.score.player1 > room.game.score.player2 ? room.player1.name : room.player2.name,
+			// winner: room.game.score.player1 > room.game.score.player2 ? "first" : "second",
+			winner: room.game.score.player1 > room.game.score.player2 ? room.player1.name : room.player2.name,
 		},
 	};
 	if (room.player1.socket) {

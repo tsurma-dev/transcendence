@@ -1,9 +1,9 @@
 import { Component, TemplateManager, AppRouter, ApiService } from '../core'
 import { QuickPlaySetupScreen } from './QuickPlaySetupScreen'
+import { QuickPlayScreen } from './QuickPlayScreen'
 import { RemoteGameScreen } from './RemoteGameScreen'
 import { TournamentLobbyScreen } from './TournamentLobbyScreen'
 import { UserProfileScreen } from './UserProfileScreen'
-import { Game3DComponent } from '../components/Game3D'
 
 /**
  * Logged-in Landing Page Screen
@@ -62,27 +62,8 @@ export class LoggedInLandingScreen extends Component {
           const currentUser = await this.apiService.getCurrentUser()
           const playerName = currentUser?.username || 'Player'
           
-          // Clear the current view
-          const appContainer = document.querySelector('#app')
-          if (appContainer) {
-            appContainer.innerHTML = ''
-            
-            // Create Game3D component with AI mode
-            const game3D = new Game3DComponent(
-              appContainer as HTMLElement,
-              playerName,  // player1Name (current user)
-              'AI',        // gameMode
-              'AI',        // player2Name (AI opponent)
-              undefined,   // roomId (not needed for AI)
-              () => {      // onReturnToMenuCallback
-                console.log('Returning to main menu from AI game')
-                this.router.navigateTo(LoggedInLandingScreen)
-              }
-            )
-            
-            // Initialize the game
-            game3D.initialize()
-          }
+          // Navigate directly to QuickPlayScreen with AI mode
+          this.router.navigateTo(QuickPlayScreen, playerName, 'AI', 'AI')
           
         } catch (error) {
           console.error('Error starting AI game:', error)
