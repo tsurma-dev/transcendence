@@ -317,13 +317,18 @@ export class PoolScene {
       // LOCAL GAME
       this.initializeLocalGame();
       this.setupInputListeners();
+      
+      // Start background music for local games
       this.startBackgroundMusic();
+      
       await this.playCameraIntro();
       await this.runCountdown();
       this.gameStarted = true;
     } else {
-      this.setupInputListeners();
+      // ONLINE GAME (including AI)
+      this.setupInputListeners();;
       await this.initializeOnlineGameAndWait();
+
     }
   }
 
@@ -422,7 +427,8 @@ export class PoolScene {
             this.client = new GameClient(
         GAME_CONFIG.SERVER_URL,
         this.player1Name,
-        this.roomId
+        this.roomId,
+        this.gameMode
       );
 
       // Set up the flow handlers
@@ -436,8 +442,12 @@ export class PoolScene {
         
         // Check if this is player 1 or player 2
         if (this.client?.getMyPosition() === 1) {
-          console.log('⏳ Waiting for second player to join...');
-          // Player 1 waits for player 2
+          if (this.gameMode === 'AI') {
+            console.log('🤖 AI opponent will join automatically...');
+          } else {
+            console.log('⏳ Waiting for second player to join...');
+          }
+          // Player 1 waits for player 2/AI
         } else if (this.client?.getMyPosition() === 2) {
           console.log('✅ Both players in room! Second player joined.');
           // Player 2 joining triggers server to send room-ready to both

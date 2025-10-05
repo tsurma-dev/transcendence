@@ -7,6 +7,7 @@ export class GameClient {
   
   public playerName: string; // current player's name
   public roomId: string;
+  private gameMode?: string;
   
   // Player data received from server
   private player1Name?: string; // PlayerID "first"
@@ -20,10 +21,11 @@ export class GameClient {
   private onGameState?: (state: GameState) => void;
   private onGameOver?: (result: { player1Score: number; player2Score: number; winner: "first" | "second" }) => void;
 
-  constructor(serverUrl: string, playerName: string, roomId?: string) {
+  constructor(serverUrl: string, playerName: string, roomId?: string, gameMode?: string) {
     this.serverUrl = serverUrl;
     this.playerName = playerName;
-    this.roomId = roomId || "";
+    this.roomId = roomId || '';
+    this.gameMode = gameMode;
   }
 
   public connect(): void {
@@ -33,6 +35,8 @@ export class GameClient {
       console.log(`✅ Connected to server ${this.serverUrl}`);
       if (this.roomId) {
         this.joinRoom(this.roomId);
+      } else if (this.gameMode === 'AI') {
+        this.createAiRoom();
       } else {
         this.createRoom();
       }
@@ -56,6 +60,13 @@ export class GameClient {
   public createRoom(): void {
     this.sendMessage({
       type: "create",
+      payload: { playerName: this.playerName }
+    });
+  }
+
+  public createAiRoom(): void {
+    this.sendMessage({
+      type: "create-ai",
       payload: { playerName: this.playerName }
     });
   }
