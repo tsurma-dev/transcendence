@@ -224,6 +224,17 @@ export class Game3DComponent {
     });
   }
 
+  private async waitForAssetsToLoadLocal(): Promise<void> {
+    if (!this.poolScene) throw new Error('PoolScene not initialized');
+    
+    return new Promise<void>((resolve) => {
+      this.poolScene!.onLoaded(() => {
+        // Don't hide loading screen yet for local games - wait for animation to start
+        resolve();
+      });
+    });
+  }
+
   private async startLocalGame(): Promise<void> {
     console.log('🎮 Setting up local game');
     
@@ -234,8 +245,11 @@ export class Game3DComponent {
       // Set up callbacks
       this.setupPoolSceneCallbacks();
       
-      // Wait for assets to load
-      await this.waitForAssetsToLoad();
+      // Wait for assets to load (but keep loading screen visible)
+      await this.waitForAssetsToLoadLocal();
+      
+      // Hide loading screen just before animation starts
+      this.hideLoadingScreen();
       
       // Start the game immediately for local mode
       await this.poolScene.startAnimation();

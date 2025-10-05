@@ -18,7 +18,7 @@ export type GameStatus = 'waiting' | 'playing' | 'finished';
 
 export type GameEvent = CollisionEvent | ScoreEvent;
 
-export type CollisionType = 'wall' | 'paddle' | null;
+export type CollisionType = 'wall' | 'paddle' | 'paddle-face' | 'paddle-end' | null;
 export type CollisionEvent = {
   type: 'collision';
   collisionType: CollisionType;
