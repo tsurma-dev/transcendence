@@ -178,8 +178,14 @@ export class Game3DComponent {
       this.showGameEndOverlay(finalState);
     });
     
-    // Only set up multiplayer callbacks for online modes
-    if (this.gameMode === 'createRoom' || this.gameMode === 'joinRoom') {
+    // Set up mode-specific callbacks
+    if (this.gameMode === 'AI') {
+      // For AI games, hide loading screen when game starts
+      this.poolScene.setOnGameStartCallback(() => {
+        this.hideLoadingScreen();
+      });
+    } else if (this.gameMode === 'createRoom' || this.gameMode === 'joinRoom') {
+      // Only set up multiplayer callbacks for online modes
       this.setupOnlineCallbacks();
     }
   }
@@ -323,16 +329,19 @@ export class Game3DComponent {
     console.log('🤖 Setting up AI game');
     
     try {
-      // Create PoolScene for AI game (treat as local for now)
-      this.poolScene = new PoolScene(this.canvas, 'local', this.player1Name, 'AI');
+      // Create PoolScene for AI game using online mode
+      this.poolScene = new PoolScene(this.canvas, 'AI', this.player1Name, 'AI');
       
-      // Set up callbacks
+      // Set up callbacks (same as online games)
       this.setupPoolSceneCallbacks();
       
-      // Wait for assets to load
-      await this.waitForAssetsToLoad();
+      // Wait for assets to load (but keep loading screen visible for AI)
+      await this.waitForAssetsToLoadLocal();
       
-      // Start the game immediately for AI mode
+      // For AI games, we keep showing loading until the game starts
+      // No waiting screen needed since AI is immediate
+      
+      // Start the AI game flow (PoolScene will handle server communication)
       await this.poolScene.startAnimation();
       
     } catch (error) {

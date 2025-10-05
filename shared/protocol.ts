@@ -17,6 +17,7 @@ export type Snapshot = {
 
 export type ClientToServer =
   | { type: "create"; payload: { playerName: string } }
+  | { type: "create-ai"; payload: { playerName: string } }
   | { type: "join"; payload: { playerName: string; roomId: string } }
   | { type: "ready-to-play"; payload: { roomId: string; playerId: "first" | "second" } }
   | { type: "input"; payload: { roomId: string; playerId: "first" | "second"; direction: number } }
