@@ -31,17 +31,18 @@ export function handlePongWebSocket(socket, req) {
 
 	switch (data.type) {
 		case "create":
-			createRoom(socket);
+			const roomId = createRoom('private');
+			joinRoom(socket, roomId, data.payload?.playerName);
 			break;
 		case "join":
-			joinRoom(socket, data.roomId); // data.playerName
+			joinRoom(socket, data.payload?.roomId, data.payload?.playerName);
 			break;
-		case "play":
-			setReady(data.roomId, data.playerId, socket);
+		case "ready-to-play":
+			setReady(data.payload?.roomId, data.payload?.playerId, socket);
 			break;
 		case "input":
-			//console.log("Updating player " + data.playerId + " room " + data.roomId + " with direction " + data.direction);
-			updatePlayer(socket, data.roomId, data.playerId, data.direction);
+			//console.log("Updating player " + data.payload.playerId + " room " + data.payload.roomId + " with direction " + data.payload.direction);
+			updatePlayer(socket, data.payload?.roomId, data.payload?.playerId, data.payload?.direction);
 			break;
 		default:
 			socket.send(JSON.stringify({ message: "Unknown action" }));
@@ -74,8 +75,20 @@ function setReady(roomId, playerId, socket) {
 		if (room.player2.socket !== socket) return;
 		room.player2.ready = true;
 	}
+	
+	// When both players are ready, send start-countdown message
 	if (room.player1.ready && room.player2.ready) {
-		startGame(roomId);
+		console.log("Both players ready in room " + roomId + " - sending start-countdown");
+		const startCountdownMessage = {
+			type: "start-countdown",
+		};
+		room.player1.socket.send(JSON.stringify(startCountdownMessage));
+		room.player2.socket.send(JSON.stringify(startCountdownMessage));
+		
+		// Start the actual game after a delay (3 seconds for countdown + small buffer)
+		setTimeout(() => {
+			startGame(roomId);
+		}, 4000);
 	}
 }
 
@@ -86,13 +99,7 @@ function startGame(roomId) {
 	if (!room.player1.socket || !room.player2.socket) return;
 	console.log("Starting game in room " + roomId);
 	room.game = new Game("playing");
-	const startState = {
-		type: "game-start",
-		payload: {
-			player1Name: room.player1.name,
-			player2Name: room.player2.name,
-		}
-	};
+	const startState = {type: "game-start"};
 	room.player1.socket.send(JSON.stringify(startState));
 	room.player2.socket.send(JSON.stringify(startState));
 	console.log("rooms count: " + rooms.size);
@@ -126,6 +133,25 @@ function endGame(roomId) {
 	console.log("Game ended in room " + roomId + ", rooms count: " + rooms.size);
 }
 
+// Send room-ready message to both players when room is full
+function sendRoomReady(roomId) {
+	const room = rooms.get(roomId);
+	if (!room || !room.player1.socket || !room.player2.socket) return;
+	
+	console.log("Room " + roomId + " is ready! Sending room-ready to both players");
+	
+	const roomReadyMessage = {
+		type: "room-ready",
+		payload: {
+			player1: { name: room.player1.name, id: "first" },
+			player2: { name: room.player2.name, id: "second" }
+		}
+	};
+	
+	room.player1.socket.send(JSON.stringify(roomReadyMessage));
+	room.player2.socket.send(JSON.stringify(roomReadyMessage));
+}
+
 //loop through rooms and call room.game.update() and send game state to both players
 function roomsLoop(rooms) {
 	setInterval(() => {
@@ -135,7 +161,7 @@ function roomsLoop(rooms) {
 				room.game.update();
 				const body = room.game.getState();
 				const gameState = {
-					type: "state",
+					type: "game-state",
 					payload: body,
 				};
 				if (room.player1.socket) {
@@ -168,7 +194,7 @@ function createRoom(access) {
 }
 
 // add names received from client
-function joinRoom(socket, roomId) {
+function joinRoom(socket, roomId, playerName) {
   if (!roomId) {
 	if (waitingRoom && rooms.has(waitingRoom)) {
 		roomId = waitingRoom;
@@ -185,8 +211,11 @@ function joinRoom(socket, roomId) {
   if (!room.player1.socket) {
 	room.player1.id = "first";
 	room.player1.socket = socket;
-	room.player1.name = "undefined1";
-	let message = { type: "room-joined", payload: { room: roomId, playerId: "first" } };
+	room.player1.name = playerName || "Player 1";
+	let message = { 
+		type: "room-joined",
+		payload: { roomId: roomId }
+	};
 	socket.send(JSON.stringify(message));
 	setupCloseHandler(roomId, socket);
 	return;
@@ -197,10 +226,15 @@ function joinRoom(socket, roomId) {
 	}
 	room.player2.id = "second";
 	room.player2.socket = socket;
-	room.player2.name = "undefined2";
-	let message = { type: "room-joined", payload: { room: roomId, playerId: "second" } };
+	room.player2.name = playerName || "Player 2";
+	let message = { 
+		type: "room-joined",
+		payload: { roomId: roomId }
+	};
 	socket.send(JSON.stringify(message));
-	//startGame(roomId);
+	
+	// Send room-ready message to both players with names and positions
+	sendRoomReady(roomId);
 	setupCloseHandler(roomId, socket);
 	return;
   }

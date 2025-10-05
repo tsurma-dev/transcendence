@@ -9,7 +9,10 @@ import {
 } from "@babylonjs/core";
 
 import { GAME_CONFIG } from "@shared/GameConfig";
-import type { PlayerState } from "@shared/types";
+import type { Paddle1, Paddle2 } from "@shared/types";
+
+// Generic paddle state type for both paddle1 and paddle2
+type PaddleState = Paddle1 | Paddle2;
 
 export class Paddle {
   public mesh: AbstractMesh;
@@ -42,7 +45,7 @@ export class Paddle {
   }
 
   // Update the paddle's position based on the game state.
-  public updatePosition(state: PlayerState): void {
+  public updatePosition(state: PaddleState): void {
     this.mesh.position.x = state.x;
   }
 }

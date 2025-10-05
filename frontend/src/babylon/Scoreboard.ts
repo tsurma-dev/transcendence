@@ -9,15 +9,10 @@ export class Scoreboard {
   private player2NameText!: TextBlock;
   private player2ScoreText!: TextBlock;
   private gameStatusText!: TextBlock;
-  private initialPlayer1Name: string;
-  private initialPlayer2Name: string;
-  private gameMode: 'local' | 'online' = 'local';
 
-  constructor(player1Name: string, player2Name: string, gameMode: 'local' | 'online' = 'local') {
-    this.initialPlayer1Name = player1Name || "Player 1";
-    this.initialPlayer2Name = player2Name || "Player 2";
-    this.gameMode = gameMode;
-
+  constructor(player1Name: string, player2Name: string, gameMode: 'local' | 'online' | 'AI' = 'local') {
+    this.player1NameText = new TextBlock("player1Name", player1Name || "Player 1");
+    this.player2NameText = new TextBlock("player2Name", player2Name || "Player 2");
     // Create GUI texture
     this.guiTexture = AdvancedDynamicTexture.CreateFullscreenUI("ScoreboardUI");
 
@@ -59,7 +54,7 @@ export class Scoreboard {
     this.scoreboardContainer.addControl(this.gameStatusText);
 
     // Player 1 (LEFT SIDE - Orange  paddle)
-    this.player1NameText = new TextBlock("player1Name", this.initialPlayer1Name);
+    this.player1NameText = new TextBlock("player1Name", this.player1NameText.text);
     this.player1NameText.color = "#ff6b35"; // **Orange**
     this.player1NameText.fontSize = 18;
     this.player1NameText.fontWeight = "bold";
@@ -87,7 +82,7 @@ export class Scoreboard {
     this.scoreboardContainer.addControl(vsText);
 
     // Player 2 (RIGHT SIDE - Pink paddle)
-    this.player2NameText = new TextBlock("player2Name", this.initialPlayer2Name);
+    this.player2NameText = new TextBlock("player2Name", this.player2NameText.text);
     this.player2NameText.color = "#ff69b4"; // **Pink**
     this.player2NameText.fontSize = 18;
     this.player2NameText.fontWeight = "bold";
@@ -119,28 +114,41 @@ export class Scoreboard {
         this.gameStatusText.color = "lime";
         break;
       case 'finished':
-        this.gameStatusText.text = `GAME OVER - ${state.winner} WINS!`;
+        const winnerText = state.winner === 'first' ? this.player1NameText.text : this.player2NameText.text;
+        this.gameStatusText.text = `GAME OVER - ${winnerText} WINS!`;
         this.gameStatusText.color = "gold";
         break;
     }
 
+    // Update scores using the new simplified structure
+    if (state.scores) {
+      this.player1ScoreText.text = state.scores.player1.toString();
+      this.player2ScoreText.text = state.scores.player2.toString();
+    } else {
+      // Fallback if no scores are provided
+      this.player1ScoreText.text = "0";
+      this.player2ScoreText.text = "0";
+    }
+  }
 
-    let player1Score = 0;
-    let player2Score = 0;
+  reset(): void {
+    // Reset scores to 0
+    this.player1ScoreText.text = "0";
+    this.player2ScoreText.text = "0";
+    
+    // Reset game status
+    this.gameStatusText.text = "Game starting...";
+    this.gameStatusText.color = "yellow";
+  }
 
-    Object.entries(state.players).forEach(([playerName, playerState]) => {
-      const score = state.scores[playerName] || 0;
+  setGameInProgress(): void {
+    this.gameStatusText.text = "GAME IN PROGRESS";
+    this.gameStatusText.color = "lime";
+  }
 
-      if (playerState.position === 1) {
-        player1Score = score;
-      } else if (playerState.position === 2) {
-        player2Score = score;
-      }
-    });
-
-    // Update display
-    this.player1ScoreText.text = player1Score.toString();
-    this.player2ScoreText.text = player2Score.toString();
+  updatePlayerNames(player1Name: string, player2Name: string): void {
+    this.player1NameText.text = player1Name;
+    this.player2NameText.text = player2Name;
   }
 
   dispose(): void {

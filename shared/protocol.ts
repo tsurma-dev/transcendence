@@ -1,9 +1,12 @@
 import { GameState } from "./types";
 
 export type ServerToClient =
-  | { type: "room-joined"; payload: { playerName: string } }
-  | { type: "ready-to-start"; payload: { playerName: string } }
-  | { type: "state"; payload: Snapshot }
+  | { type: "room-joined"; payload: { roomId: string } }
+  | { type: "room-ready"; payload: { player1: { name: string; id: "first" }; player2: { name: string; id: "second" } } }
+  | { type: "start-countdown" }
+  | { type: "game-start" }
+  | { type: "game-state"; payload: GameState }
+  | { type: "game-over"; payload: { player1Score: number; player2Score: number; winner: "first" | "second" } }
 
 export type Snapshot = {
   //version: number;           // = GAME_CONFIG.VERSION
@@ -13,18 +16,10 @@ export type Snapshot = {
 };
 
 export type ClientToServer =
-  | { type: "input"; payload: InputMessage }
-  | { type: "join-room"; payload: JoinRoomPayload }
-  | { type: "start-game"; payload: { playerName: string } };
+  | { type: "create"; payload: { playerName: string } }
+  | { type: "create-ai"; payload: { playerName: string } }
+  | { type: "join"; payload: { playerName: string; roomId: string } }
+  | { type: "ready-to-play"; payload: { roomId: string; playerId: "first" | "second" } }
+  | { type: "input"; payload: { roomId: string; playerId: "first" | "second"; direction: number } }
 
-export type InputMessage = {
-  at: number;                // client send time (ms)
-  key: string;               // e.g. "ArrowLeft"
-  pressed: boolean;          // true for keydown, false for keyup
-};
 
-export type JoinRoomPayload = {
-  playerName: string;
-  roomId: string;
-  playerPosition: 1 | 2;
-};
