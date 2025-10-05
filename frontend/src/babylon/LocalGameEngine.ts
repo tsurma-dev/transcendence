@@ -8,32 +8,29 @@ export class LocalGameEngine {
   private paddleCollisionCooldown = 0;
   private readonly COLLISION_COOLDOWN_TIME = 100; // 100ms cooldown
 
-  private player1Name: string = "Player 1";
-  private player2Name: string = "Player 2";
-
   private player1Input = { left: false, right: false };
   private player2Input = { left: false, right: false };
+
+  private Player1Name: string;
+  private Player2Name: string;
 
   private readonly PADDLE_SPEED = GAME_CONFIG.PADDLE_SPEED;
   private readonly DUCK_SPEED = GAME_CONFIG.BALL_SPEED;
 
-constructor(player1Name?: string, player2Name?: string) {
-  if (player1Name) this.player1Name = player1Name;
-  if (player2Name) this.player2Name = player2Name;
-
+constructor(player1Name: string, player2Name: string) {
   this.gameState = this.createInitialGameState();
+  this.Player1Name = player1Name;
+  this.Player2Name = player2Name;
   console.log('🎮 Local game engine created');
 }
 
 private createInitialGameState(): GameState {
     return {
-      players: {
-        [this.player1Name]: { x: 0, position: 1 },
-        [this.player2Name]: { x: 0, position: 2 }
-      },
+      player1: { x: 0 },
+      player2: { x: 0 },
       scores: {
-        [this.player1Name]: 0,
-        [this.player2Name]: 0
+        player1: 0,
+        player2: 0
       },
       duck: {
         x: 0,
@@ -78,27 +75,22 @@ private createInitialGameState(): GameState {
     }
     this.checkScoring();
 
-    // Debug: Log duck position and direction
-    console.log(`Duck pos: (${this.gameState.duck.x}, ${this.gameState.duck.z}) dir: ${this.gameState.duck.dir} rad`);
   }
 
   private updatePaddles(deltaTime: number): void {
-    const player1 = this.gameState.players[this.player1Name];
-    const player2 = this.gameState.players[this.player2Name];
-
     const step = this.PADDLE_SPEED * (deltaTime / 1000); // <-- frame-independent
 
     // Player 1 movement (W/S)
-    if (this.player1Input.left) player1.x -= step;
-    if (this.player1Input.right) player1.x += step;
+    if (this.player1Input.left) this.gameState.player1.x -= step;
+    if (this.player1Input.right) this.gameState.player1.x += step;
 
     // Player 2 movement (ArrowUp/ArrowDown)
-    if (this.player2Input.left) player2.x -= step;
-    if (this.player2Input.right) player2.x += step;
+    if (this.player2Input.left) this.gameState.player2.x -= step;
+    if (this.player2Input.right) this.gameState.player2.x += step;
 
     const maxX = GAME_CONFIG.TABLE_WIDTH / 2 - GAME_CONFIG.PADDLE_WIDTH / 2;
-    player1.x = Math.max(-maxX, Math.min(maxX, player1.x));
-    player2.x = Math.max(-maxX, Math.min(maxX, player2.x));
+    this.gameState.player1.x = Math.max(-maxX, Math.min(maxX, this.gameState.player1.x));
+    this.gameState.player2.x = Math.max(-maxX, Math.min(maxX, this.gameState.player2.x));
   }
 
   private updateDuck(deltaTime: number): void {
@@ -128,8 +120,8 @@ private createInitialGameState(): GameState {
 
   private checkPaddleCollisions(): void {
     const duck = this.gameState.duck;
-    const player1 = this.gameState.players[this.player1Name];
-    const player2 = this.gameState.players[this.player2Name];
+    const player1 = this.gameState.player1;
+    const player2 = this.gameState.player2;
 
     const paddleHalfWidth = GAME_CONFIG.PADDLE_WIDTH / 2;
     const duckRadius = GAME_CONFIG.BALL_RADIUS;
@@ -163,12 +155,10 @@ private createInitialGameState(): GameState {
 
         if (hitLeftEnd) {
           // Hit left end - bounce toward left bottom corner
-          console.log("HIT LEFT PADDLE END");
           duck.dir = 5 * Math.PI / 4; // 225° (down-left)
           // **Push duck out of paddle**
           duck.x = player1.x - paddleHalfWidth - duckRadius;
         } else {
-          console.log("HIT RIGHT PADDLE END");
           // Hit right end - bounce toward right bottom corner
           duck.dir = 7 * Math.PI / 4; // 315° (down-right)
           // **Push duck out of paddle**
@@ -209,13 +199,11 @@ private createInitialGameState(): GameState {
         const hitLeftEnd = duck.x < player2.x;
 
         if (hitLeftEnd) {
-          console.log("HIT LEFT PADDLE END");
           // Hit left end - bounce toward left upper corner
           duck.dir = 3 * Math.PI / 4; // 135 ° (up-left)
           // **Push duck out of paddle**
           duck.x = player2.x - paddleHalfWidth - duckRadius;
         } else {
-          console.log("HIT RIGHT PADDLE END");
           // Hit right end - bounce toward right upper corner
           duck.dir = Math.PI / 4; // 45° (up-right)
           // **Push duck out of paddle**
@@ -242,23 +230,23 @@ private createInitialGameState(): GameState {
 
     // Player 1 scores when duck hits the positive Z end of the pool
     if (duck.z + duckRadius > scoreZone2) {
-      this.gameState.scores[this.player1Name]++;
-      console.log(`🎉 ${this.player1Name} scored ${this.gameState.scores[this.player1Name]} points!`);
+      this.gameState.scores!.player1++;
+      console.log(`🎉 ${this.Player1Name} scores! ${this.gameState.scores!.player1} - ${this.gameState.scores!.player2} `);
       this.gameState.events.push({
         type: 'score',
-        player: this.player1Name,
-        points: this.gameState.scores[this.player1Name]
+        playerID: 'first',
+        points: this.gameState.scores!.player1
       });
       scored = true;
     }
     // Player 2 scores when duck hits the negative Z end of the pool
     else if (duck.z - duckRadius < scoreZone1) {
-      this.gameState.scores[this.player2Name]++;
-      console.log(`🎉 ${this.player2Name} scored ${this.gameState.scores[this.player2Name]} points!`);
+      this.gameState.scores!.player2++;
+      console.log(`🎉 ${this.Player2Name} scores! ${this.gameState.scores!.player2} - ${this.gameState.scores!.player1} `);
       this.gameState.events.push({
         type: 'score',
-        player: this.player2Name,
-        points: this.gameState.scores[this.player2Name]
+        playerID: 'second',
+        points: this.gameState.scores!.player2
       });
       scored = true;
     }
@@ -268,12 +256,12 @@ private createInitialGameState(): GameState {
 
     // Check win condition
     const winningScore = 3;
-    if (this.gameState.scores[this.player1Name] >= winningScore) {
+    if (this.gameState.scores!.player1 >= winningScore) {
       this.gameState.status = 'finished';
-      this.gameState.winner = this.player1Name;
-    } else if (this.gameState.scores[this.player2Name] >= winningScore) {
+      this.gameState.winner = this.Player1Name;
+    } else if (this.gameState.scores!.player2 >= winningScore) {
       this.gameState.status = 'finished';
-      this.gameState.winner = this.player2Name;
+      this.gameState.winner = this.Player2Name;
     }
   }
 }

@@ -38,7 +38,7 @@ export class QuickPlaySetupScreen extends Component {
       const player2Name = player2Input.value.trim()
 
       if (player1Name && player2Name) {
-        this.router.navigateTo(QuickPlayScreen, player1Name, player2Name, true)
+        this.router.navigateTo(QuickPlayScreen, player1Name, player2Name, 'local')
       }
     }
 
