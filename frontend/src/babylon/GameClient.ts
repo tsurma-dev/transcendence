@@ -19,7 +19,7 @@ export class GameClient {
   private onStartCountdown?: () => void;
   private onGameStart?: () => void;
   private onGameState?: (state: GameState) => void;
-  private onGameOver?: (result: { player1Score: number; player2Score: number; winner: "first" | "second" }) => void;
+  private onGameOver?: (result: { player1Score: number; player2Score: number; winner: string}) => void;
 
   constructor(serverUrl: string, playerName: string, roomId?: string, gameMode?: string) {
     this.serverUrl = serverUrl;
@@ -196,7 +196,7 @@ export class GameClient {
     this.onGameState = handler;
   }
 
-  public setOnGameOver(handler: (result: { player1Score: number; player2Score: number; winner: "first" | "second" }) => void): void {
+  public setOnGameOver(handler: (result: { player1Score: number; player2Score: number; winner: string }) => void): void {
     this.onGameOver = handler;
   }
 

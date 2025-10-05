@@ -114,8 +114,7 @@ export class Scoreboard {
         this.gameStatusText.color = "lime";
         break;
       case 'finished':
-        const winnerText = state.winner === 'first' ? this.player1NameText.text : this.player2NameText.text;
-        this.gameStatusText.text = `GAME OVER - ${winnerText} WINS!`;
+        this.gameStatusText.text = `GAME OVER`;
         this.gameStatusText.color = "gold";
         break;
     }

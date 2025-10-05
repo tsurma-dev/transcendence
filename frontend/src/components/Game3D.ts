@@ -193,18 +193,6 @@ export class Game3DComponent {
   private setupOnlineCallbacks(): void {
     if (!this.poolScene) return;
     
-    // Error handling for online games
-    this.poolScene.setOnErrorCallback((error) => {
-      console.log('🚫 Game error received:', error);
-      if (error.includes('Room not found')) {
-        if (this.waitingOverlay) this.waitingOverlay.style.display = "none";
-        this.showRoomInputScreen();
-      } else {
-        alert(`Game error: ${error}`);
-        this.returnToMainMenu();
-      }
-    });
-    
     // Game start callback to hide waiting screens
     this.poolScene.setOnGameStartCallback(() => {
       if (this.waitingOverlay) this.waitingOverlay.style.display = "none";
@@ -413,25 +401,18 @@ export class Game3DComponent {
           maxlength="6"
         />
       </div>
-      <div class="flex gap-4">
+      <div class="flex">
         <button 
           id="joinRoomBtn" 
-          class="flex-1 text-white font-mono text-lg font-bold bg-green-600 px-6 py-3 rounded border-4 border-black cursor-pointer hover:bg-green-700"
+          class="w-full text-black font-mono text-lg font-bold bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 px-6 py-3 rounded border-4 border-black cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 uppercase tracking-wider"
         >
           Join Room
-        </button>
-        <button 
-          id="cancelBtn" 
-          class="flex-1 text-white font-mono text-lg font-bold bg-red-600 px-6 py-3 rounded border-4 border-black cursor-pointer hover:bg-red-700"
-        >
-          Cancel
         </button>
       </div>
     `);
     
     // Add event listeners
     const joinBtn = this.roomInputOverlay.querySelector('#joinRoomBtn');
-    const cancelBtn = this.roomInputOverlay.querySelector('#cancelBtn');
     const roomInput = this.roomInputOverlay.querySelector('#roomIdInput') as HTMLInputElement;
     
     joinBtn?.addEventListener('click', () => {
@@ -444,10 +425,6 @@ export class Game3DComponent {
       } else {
         alert('Please enter a valid room ID (at least 3 characters)');
       }
-    });
-    
-    cancelBtn?.addEventListener('click', () => {
-      this.returnToMainMenu();
     });
     
     // Handle Enter key

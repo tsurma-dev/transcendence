@@ -6,7 +6,7 @@ export type ServerToClient =
   | { type: "start-countdown" }
   | { type: "game-start" }
   | { type: "game-state"; payload: GameState }
-  | { type: "game-over"; payload: { player1Score: number; player2Score: number; winner: "first" | "second" } }
+  | { type: "game-over"; payload: { player1Score: number; player2Score: number; winner: string } }
 
 export type Snapshot = {
   //version: number;           // = GAME_CONFIG.VERSION
