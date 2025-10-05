@@ -15,7 +15,9 @@ export class LocalGameEngine {
   private Player2Name: string;
 
   private readonly PADDLE_SPEED = GAME_CONFIG.PADDLE_SPEED;
-  private readonly DUCK_SPEED = GAME_CONFIG.BALL_SPEED;
+  private readonly BASE_DUCK_SPEED = GAME_CONFIG.BALL_SPEED;
+  private currentDuckSpeed = GAME_CONFIG.BALL_SPEED;
+  private readonly SPEED_INCREASE_FACTOR = 1.1; // 10% speed increase per collision
 
 constructor(player1Name: string, player2Name: string) {
   this.gameState = this.createInitialGameState();
@@ -95,7 +97,7 @@ private createInitialGameState(): GameState {
 
   private updateDuck(deltaTime: number): void {
     const duck = this.gameState.duck;
-    const step = this.DUCK_SPEED * (deltaTime / 1000); // <-- frame-independent
+    const step = this.currentDuckSpeed * (deltaTime / 1000); // <-- frame-independent with dynamic speed
     duck.x += Math.cos(duck.dir) * step;
     duck.z += Math.sin(duck.dir) * step;
   }
@@ -143,7 +145,8 @@ private createInitialGameState(): GameState {
         duck.dir = 2 * Math.PI - duck.dir; // Reflect across Z-axis
         this.normalizeDirection(duck);
         duck.z = paddle1FaceZ + duckRadius; // **Move duck out of paddle**
-        this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        this.currentDuckSpeed *= this.SPEED_INCREASE_FACTOR; // **Increase speed on paddle hit**
+        this.gameState.events.push({type: 'collision', collisionType: 'paddle-face'});
         this.paddleCollisionCooldown = this.COLLISION_COOLDOWN_TIME;
       }
       // **END COLLISION: Duck hits paddle sides**
@@ -166,7 +169,8 @@ private createInitialGameState(): GameState {
         }
 
         this.normalizeDirection(duck);
-        this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        this.currentDuckSpeed *= this.SPEED_INCREASE_FACTOR; // **Increase speed on paddle hit**
+        this.gameState.events.push({type: 'collision', collisionType: 'paddle-end'});
         this.paddleCollisionCooldown = this.COLLISION_COOLDOWN_TIME;
       }
     }
@@ -188,7 +192,8 @@ private createInitialGameState(): GameState {
         duck.dir = 2 * Math.PI - duck.dir; // Reflect across Z-axis
         this.normalizeDirection(duck);
         duck.z = paddle2FaceZ - duckRadius; // **Move duck out of paddle**
-        this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        this.currentDuckSpeed *= this.SPEED_INCREASE_FACTOR; // **Increase speed on paddle hit**
+        this.gameState.events.push({type: 'collision', collisionType: 'paddle-face'});
         this.paddleCollisionCooldown = this.COLLISION_COOLDOWN_TIME;
       }
       // **END COLLISION: Duck hits paddle sides**
@@ -211,7 +216,8 @@ private createInitialGameState(): GameState {
         }
 
         this.normalizeDirection(duck);
-        this.gameState.events.push({type: 'collision', collisionType: 'paddle'});
+        this.currentDuckSpeed *= this.SPEED_INCREASE_FACTOR; // **Increase speed on paddle hit**
+        this.gameState.events.push({type: 'collision', collisionType: 'paddle-end'});
         this.paddleCollisionCooldown = this.COLLISION_COOLDOWN_TIME;
       }
     }
@@ -268,6 +274,9 @@ private createInitialGameState(): GameState {
 
   private resetDuck(): void {
     this.paddleCollisionCooldown = 0;
+    // Reset duck speed to base speed after scoring
+    this.currentDuckSpeed = this.BASE_DUCK_SPEED;
+    
     // Start with one of four diagonal directions
     const directions = [
       Math.PI / 4,     // 45° (up-right)

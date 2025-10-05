@@ -10,7 +10,6 @@ import {
   ShadowGenerator,
   Vector4,
   SceneLoader,
-  Sound,
   HDRCubeTexture,
   ImageProcessingConfiguration,
   GlowLayer,
@@ -27,7 +26,6 @@ import { Materials } from "./Materials";
 import { Duck } from "./Duck";
 import { Paddle } from "./Paddle";
 import { GameClient } from "./GameClient";
-import type { Snapshot } from "@shared/protocol";
 import type {GameState} from "@shared/types";
 import { Scoreboard } from "./Scoreboard";
 import { LocalGameEngine } from "./LocalGameEngine";
@@ -44,6 +42,7 @@ export class PoolScene {
   private isLoaded = false;
   private loadingPromises: Promise<any>[] = [];
   private onLoadedCallback?: () => void;
+  private onErrorCallback?: (error: string) => void;
   private gameStarted = false;
   private gameEnded = false;
 
@@ -65,9 +64,11 @@ export class PoolScene {
   private localGameEngine?: LocalGameEngine;
   private client?: GameClient;
 
-  // Sounds
-  private wallHitSound!: Sound;
-  private paddleHitSound!: Sound;
+  // Sounds - HTML5 Audio only
+  private wallHitAudio!: HTMLAudioElement;
+  private paddleHitAudio!: HTMLAudioElement;
+  private scoreAudio!: HTMLAudioElement;
+  private bgMusicAudio!: HTMLAudioElement;
   public audioEnabled = false;
 
   // Animations
@@ -87,7 +88,6 @@ export class PoolScene {
   private renderCallback?: () => void;
   private onGameEndCallback?: (finalState: GameState) => void;
   private onRoomIdCallback?: (roomId: string) => void;
-  private onErrorCallback?: (error: string) => void;
   private onGameStartCallback?: () => void;
 
   // -------------------
@@ -214,6 +214,17 @@ export class PoolScene {
 
   private handleGameEnd(finalState: GameState): void {
     console.log(`🏆 Final Result: ${finalState.winner} WINS!`);
+    
+    // Play final score sound if audio is enabled
+    if (this.audioEnabled && this.scoreAudio) {
+      try {
+        this.scoreAudio.currentTime = 0;
+        this.scoreAudio.play().catch(() => {});
+      } catch (error) {
+        // Silent error handling
+      }
+    }
+    
     this.scoreboard.updateFromGameState(finalState);
 
     // TODO: Show game winning / losing animation
@@ -225,13 +236,50 @@ export class PoolScene {
   // --- AUDIO ---
   public async enableAudio(): Promise<void> {
     if (this.audioEnabled) return;
-    const audioCtx = Engine.audioEngine?.audioContext;
-    if (audioCtx && audioCtx.state === 'suspended') {
-      await audioCtx.resume();
+    
+    try {
+      // Create HTML5 audio objects
+      this.wallHitAudio = new Audio('/sounds/squeeze.mp3');
+      this.wallHitAudio.volume = 0.6;
+      
+      this.paddleHitAudio = new Audio('/sounds/squeak.mp3');
+      this.paddleHitAudio.volume = 0.4;
+      
+      this.scoreAudio = new Audio('/sounds/score.mp3');
+      this.scoreAudio.volume = 0.7;
+      
+      this.bgMusicAudio = new Audio('/sounds/bg_music.mp3');
+      this.bgMusicAudio.volume = 0.2;
+      this.bgMusicAudio.loop = true;
+      
+      this.audioEnabled = true;
+    } catch (error) {
+      console.error('Failed to enable audio:', error);
     }
-    this.wallHitSound = new Sound("wallHit", "/sounds/quack.mp3", this.scene, undefined, { autoplay: false, volume: 1.0 });
-    this.paddleHitSound = new Sound("paddleHit", "/sounds/quack.mp3", this.scene, undefined, { autoplay: false, volume: 1.0 });
-    this.audioEnabled = true;
+  }
+
+  private startBackgroundMusic(): void {
+    if (!this.audioEnabled || !this.bgMusicAudio) return;
+    
+    try {
+      this.bgMusicAudio.currentTime = 0;
+      this.bgMusicAudio.play().catch(() => {
+        // Silent error handling for autoplay restrictions
+      });
+    } catch (error) {
+      // Silent error handling
+    }
+  }
+
+  public stopBackgroundMusic(): void {
+    try {
+      if (this.bgMusicAudio && !this.bgMusicAudio.paused) {
+        this.bgMusicAudio.pause();
+        this.bgMusicAudio.currentTime = 0;
+      }
+    } catch (error) {
+      // Silent error handling
+    }
   }
 
   // --- LOAD 3D MODELS ---
@@ -269,14 +317,13 @@ export class PoolScene {
       // LOCAL GAME
       this.initializeLocalGame();
       this.setupInputListeners();
+      this.startBackgroundMusic();
       await this.playCameraIntro();
       await this.runCountdown();
       this.gameStarted = true;
     } else {
-      // ONLINE GAME
-      this.setupInputListeners();;
+      this.setupInputListeners();
       await this.initializeOnlineGameAndWait();
-
     }
   }
 
@@ -521,20 +568,46 @@ export class PoolScene {
       switch (event.type) {
         case 'collision':
           if (event.collisionType === 'wall') {
-            console.log('Wall sound!');
-            if (this.audioEnabled && this.wallHitSound) {
-              this.wallHitSound.setVolume(1.0);
-              this.wallHitSound.play();
+            if (this.audioEnabled && this.wallHitAudio) {
+              try {
+                this.wallHitAudio.currentTime = 0;
+                this.wallHitAudio.play().catch(() => {});
+              } catch (error) {
+                // Silent error handling
+              }
             }
-          } else if (event.collisionType === 'paddle') {
-            console.log('Paddle sound!');
-            if (this.audioEnabled && this.paddleHitSound) {
-              this.paddleHitSound.setVolume(1.0);
-              this.paddleHitSound.play();
+          } else if (event.collisionType === 'paddle-face') {
+            // Only play paddle sound for front face hits, not end hits
+            if (this.audioEnabled && this.paddleHitAudio) {
+              try {
+                this.paddleHitAudio.currentTime = 0;
+                this.paddleHitAudio.play().catch(() => {});
+              } catch (error) {
+                // Silent error handling
+              }
+            }
+          } else if (event.collisionType === 'paddle-end') {
+            // Play wall hit sound for paddle end collisions
+            if (this.audioEnabled && this.wallHitAudio) {
+              try {
+                this.wallHitAudio.currentTime = 0;
+                this.wallHitAudio.play().catch(() => {});
+              } catch (error) {
+                // Silent error handling
+              }
             }
           }
           break;
         case 'score':
+          if (this.audioEnabled && this.scoreAudio) {
+            try {
+              this.scoreAudio.currentTime = 0;
+              this.scoreAudio.play().catch(() => {});
+            } catch (error) {
+              // Silent error handling
+            }
+          }
+          // Update scoreboard immediately on score event
           this.scoreboard.updateFromGameState(state);
           break;
       }
@@ -704,6 +777,8 @@ export class PoolScene {
 
     this.isIntroPlaying = true;
     console.log('🎬 Playing animation...');
+    // Start background music when online game animation begins
+    this.startBackgroundMusic();
 
     // **SETUP: Position camera at the starting position immediately to avoid visual jump**
     this.camera.position = CAMERA_SETTINGS.INTRO_START_POSITION.clone();
@@ -1167,6 +1242,9 @@ export class PoolScene {
   // Cleans up all resources to prevent memory leaks.
   // This should be called when the game component is unmounted.
   public dispose(): void {
+    // Stop background music
+    this.stopBackgroundMusic();
+    
     // Remove input listeners
     window.removeEventListener("keydown", this.keyDownHandler);
     window.removeEventListener("keyup", this.keyUpHandler);
