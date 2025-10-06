@@ -1,6 +1,6 @@
-import { gameProperties } from "./gameProperties.js";
+import { gameProperties, PAD_MAX_POS_X } from "./gameProperties.js";
 
-const PAD_MAX_POS_X = (gameProperties.GAME_HEIGHT - gameProperties.PADDLE_HEIGHT) / 2;
+//const PAD_MAX_POS_X = gameProperties.PAD_MAX_POS_X;
 
 export class Game {
 	constructor(gameState) {
@@ -42,15 +42,15 @@ export class Game {
 		}
 		this.ball.z = 0;
 		this.ball.x = 0;
-		this.ball.speedZ = (Math.random() > 0.5 ? 1 : -1) * gameProperties.BALL_SPEED_Z / 10;
-		this.ball.speedX = (Math.random() > 0.5 ? 1 : -1) * gameProperties.BALL_SPEED_X / 10;
+		this.ball.speedZ = (Math.random() > 0.5 ? 1 : -1) * gameProperties.BALL_SPEED_Z;
+		this.ball.speedX = (Math.random() > 0.5 ? 1 : -1) * gameProperties.BALL_SPEED_X;
 	}
 
 	movePaddle(paddle) {
 		if (paddle.direction === -1) {
-			paddle.x = Math.max(-PAD_MAX_POS_X, paddle.x - paddle.speed / 10);
+			paddle.x = Math.max(-PAD_MAX_POS_X, paddle.x - paddle.speed);
 		} else if (paddle.direction === 1) {
-			paddle.x = Math.min(PAD_MAX_POS_X, paddle.x + paddle.speed / 10);
+			paddle.x = Math.min(PAD_MAX_POS_X, paddle.x + paddle.speed);
 		}
 		return paddle.x;
 	}
@@ -120,6 +120,16 @@ export class Game {
 			gameState: this.gameState,
 			winner: this.winner,
 			collision: this.ball.collision, // events: "paddleCollision", "wallCollision", "score", null
+		};
+	}
+
+	getBallState() {
+		return {
+			x: this.ball.x,
+			z: this.ball.z,
+			speedX: this.ball.speedX,
+			speedZ: this.ball.speedZ,
+			//collision: this.ball.collision,
 		};
 	}
 }
