@@ -109,7 +109,7 @@ function startGame(roomId) {
 		if (aiPlay === 0) {
 			aiPlay = setInterval(() => {
 				aiPlayers.forEach((ai, id) => {
-					ai.updatePaddle();
+					ai.updateGameState(room.game.getBallState(), room.game.paddle2.x);
 				});
 			}, 1000);
 		}
@@ -185,6 +185,11 @@ function roomsLoop(rooms) {
 		if (!rooms || rooms.size === 0) return;
 		rooms.forEach((room, roomId) => {
 			if (room.game && room.game.gameState === "playing") {
+				if (room.player2.name === "AIplayer" && aiPlayers.has(roomId)) {
+					const ai = aiPlayers.get(roomId);
+					const aiDirection = ai.updatePaddle();
+					room.game.paddle2.direction = aiDirection;
+				}
 				room.game.update();
 				const body = room.game.getState();
 				const gameState = {
