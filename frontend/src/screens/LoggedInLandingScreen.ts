@@ -1,6 +1,5 @@
 import { Component, TemplateManager, AppRouter, ApiService } from '../core'
 import { QuickPlaySetupScreen } from './QuickPlaySetupScreen'
-import { QuickPlayScreen } from './QuickPlayScreen'
 import { RemoteGameLobbyScreen } from './RemoteGameLobbyScreen'
 import { ServerGameScreen } from './ServerGameScreen'
 import { TournamentLobbyScreen } from './TournamentLobbyScreen'
@@ -43,7 +42,7 @@ export class LoggedInLandingScreen extends Component {
 
     if (startQuickPlayBtn) {
       startQuickPlayBtn.addEventListener('click', () => {
-        this.router.navigateTo(QuickPlaySetupScreen, true) // true = quick play mode
+        this.router.navigateTo(QuickPlaySetupScreen)
       })
     }
 
