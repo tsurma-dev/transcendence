@@ -15,6 +15,8 @@ import {
   GlowLayer,
   Animation,
   CubicEase,
+  QuinticEase,
+  SineEase,
   EasingFunction,
   StandardMaterial,
   Color3,
@@ -163,6 +165,12 @@ export class PoolScene {
     // Wait for any other async operations
     await Promise.all(this.loadingPromises);
 
+    // Additional wait to ensure all textures and materials are fully applied
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Ensure all meshes are ready to render
+    await this.scene.whenReadyAsync();
+
     this.isLoaded = true;
     console.log('✅ Scene loaded');
   }
@@ -213,6 +221,11 @@ export class PoolScene {
 
       // Start background music for local games
       this.startBackgroundMusic();
+
+      // Notify Game3D to hide loading screen before camera intro
+      if (this.onGameStartCallback) {
+        this.onGameStartCallback();
+      }
 
       await this.playCameraIntro();
       await this.runCountdown();
@@ -286,8 +299,8 @@ export class PoolScene {
     // Animate the duck bouncing
     await this.animateDuckCelebration();
     
-    // Wait for animation to finish
-    await this.wait(2000);
+    // Wait for animation to finish (reduced from 2000ms)
+    await this.wait(500);
   }
 
   private async playLoserAnimation(): Promise<void> {
@@ -309,8 +322,6 @@ export class PoolScene {
     // Animate the duck sinking/tilting
     await this.animateDuckDrowning();
     
-    // Wait to see the final pose
-    await this.wait(1500);
   }
 
   // --- CALLBACKS ---
@@ -373,6 +384,9 @@ export class PoolScene {
     // Reset game state flags
     this.gameStarted = false;
     this.gameEnded = false;
+
+    // Reset camera position smoothly
+    await this.resetCameraPosition();
 
     // Dispose and recreate local game engine
     if (this.localGameEngine) {
@@ -1130,15 +1144,16 @@ export class PoolScene {
       const sinkKeys = [];
       const originalY = duckMesh.position.y;
       sinkKeys.push({ frame: 0, value: originalY });
-      sinkKeys.push({ frame: 40, value: originalY - 0.3 }); // Start sinking slowly
-      sinkKeys.push({ frame: 80, value: originalY - 0.8 }); // Continue sinking
-      sinkKeys.push({ frame: 120, value: originalY - 1.5 }); // Sink down more
-      sinkKeys.push({ frame: 180, value: originalY - 2.2 }); // Almost fully sunk
-      sinkKeys.push({ frame: 240, value: originalY - 2.5 }); // Final position
+      sinkKeys.push({ frame: 30, value: originalY - 0.5 }); // Start sinking
+      sinkKeys.push({ frame: 60, value: originalY - 1.2 }); // Continue sinking
+      sinkKeys.push({ frame: 90, value: originalY - 2.0 }); // Getting deeper
+      sinkKeys.push({ frame: 120, value: originalY - 3.0 }); // Much deeper
+      sinkKeys.push({ frame: 150, value: originalY - 4.0 }); // Very deep
+      sinkKeys.push({ frame: 180, value: originalY - 5.0 }); // All the way to bottom
       
       sinkAnimation.setKeys(sinkKeys);
       
-      // Create tilting animation (rotation)
+      // Create smooth tilting animation (rotation)
       const tiltAnimation = new Animation(
         "duckTilting",
         "rotation.z",
@@ -1149,21 +1164,21 @@ export class PoolScene {
       
       const tiltKeys = [];
       tiltKeys.push({ frame: 0, value: 0 });
-      tiltKeys.push({ frame: 60, value: Math.PI / 8 }); // Slight tilt
-      tiltKeys.push({ frame: 120, value: Math.PI / 6 }); // Tilt 30 degrees
-      tiltKeys.push({ frame: 180, value: Math.PI / 4.5 }); // More tilt
-      tiltKeys.push({ frame: 240, value: Math.PI / 4 }); // Final tilt 45 degrees
+      tiltKeys.push({ frame: 45, value: Math.PI / 8 }); // Slight tilt
+      tiltKeys.push({ frame: 90, value: Math.PI / 6 }); // Tilt 30 degrees
+      tiltKeys.push({ frame: 135, value: Math.PI / 4.5 }); // More tilt
+      tiltKeys.push({ frame: 180, value: Math.PI / 4 }); // Final tilt 45 degrees
       
       tiltAnimation.setKeys(tiltKeys);
       
-      // Add easing for dramatic effect
+      // Add smooth easing for elegant movement
       const easingFunction = new CubicEase();
       easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEIN);
       sinkAnimation.setEasingFunction(easingFunction);
       tiltAnimation.setEasingFunction(easingFunction);
       
-      // Start both animations with callback - 8 seconds long
-      const animatable = this.scene.beginDirectAnimation(duckMesh, [sinkAnimation, tiltAnimation], 0, 240, false);
+      // Start both animations - 6 seconds long
+      const animatable = this.scene.beginDirectAnimation(duckMesh, [sinkAnimation, tiltAnimation], 0, 180, false);
       
       animatable.onAnimationEnd = () => {
         resolve();
@@ -1243,6 +1258,56 @@ export class PoolScene {
       this.camera.animations = [positionAnimation, targetAnimation];
 
       // Start animation with callback
+      const animatable = this.scene.beginAnimation(this.camera, 0, 120, false);
+      animatable.onAnimationEnd = () => {
+        resolve();
+      };
+    });
+  }
+
+  // Reset camera to local game position with smooth animation
+  private async resetCameraPosition(): Promise<void> {
+    return new Promise((resolve) => {
+      // Create position animation to smoothly move camera back to local game position
+      const positionAnimation = new Animation(
+        "cameraResetPosition",
+        "position",
+        60, // 60 FPS for smooth animation
+        Animation.ANIMATIONTYPE_VECTOR3,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+
+      const positionKeys = [];
+      positionKeys.push({ frame: 0, value: this.camera.position.clone() });
+      positionKeys.push({ frame: 120, value: CAMERA_SETTINGS.POSITION_LOCAL }); // 2 seconds
+
+      positionAnimation.setKeys(positionKeys);
+
+      // Create target animation to reset camera target
+      const targetAnimation = new Animation(
+        "cameraResetTarget",
+        "target",
+        60,
+        Animation.ANIMATIONTYPE_VECTOR3,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+
+      const targetKeys = [];
+      targetKeys.push({ frame: 0, value: this.camera.getTarget().clone() });
+      targetKeys.push({ frame: 120, value: CAMERA_SETTINGS.TARGET_LOCAL });
+
+      targetAnimation.setKeys(targetKeys);
+
+      // Add smooth easing for natural movement
+      const easingFunction = new CubicEase();
+      easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
+      positionAnimation.setEasingFunction(easingFunction);
+      targetAnimation.setEasingFunction(easingFunction);
+
+      // Apply animations to camera
+      this.camera.animations = [positionAnimation, targetAnimation];
+
+      // Start animation with callback - 2 seconds duration
       const animatable = this.scene.beginAnimation(this.camera, 0, 120, false);
       animatable.onAnimationEnd = () => {
         resolve();

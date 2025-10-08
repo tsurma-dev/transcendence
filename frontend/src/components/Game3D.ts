@@ -140,7 +140,7 @@ export class Game3DComponent {
   }
 
   private createQuitButton(): void {
-    // Create quit button
+  
     const quitButton = document.createElement('button');
     quitButton.id = 'quit-button';
     quitButton.innerHTML = 'Quit';
@@ -215,7 +215,7 @@ export class Game3DComponent {
       margin-bottom: 24px;
       line-height: 1.5;
     `;
-    confirmMessage.textContent = 'Are you sure you want to quit the game and return to main menu?';
+    confirmMessage.textContent = 'Are you sure you want to quit the game and return to menu?';
     
     const confirmButtons = document.createElement('div');
     confirmButtons.style.cssText = `
@@ -262,9 +262,9 @@ export class Game3DComponent {
     confirmQuitButton.addEventListener('mouseleave', () => {
       confirmQuitButton.style.backgroundColor = '#ec4899';
     });
-    confirmQuitButton.addEventListener('click', () => {
+    confirmQuitButton.addEventListener('click', async () => {
       this.hideQuitConfirmation();
-      this.returnToMainMenu();
+      await this.returnToMainMenu();
     });
     
     confirmButtons.appendChild(cancelButton);
@@ -309,6 +309,11 @@ export class Game3DComponent {
 
   private hideLoadingScreen(): void {
     if (this.loadingOverlay) this.loadingOverlay.style.display = "none";
+    
+    // Show quit button for local games when loading screen is hidden
+    if (this.gameMode === 'local') {
+      this.showQuitButton();
+    }
   }
 
   private setupPoolSceneCallbacks(): void {
@@ -321,7 +326,13 @@ export class Game3DComponent {
     });
     
     // Set up mode-specific callbacks
-    if (this.gameMode === 'AI') {
+    if (this.gameMode === 'local') {
+      // For local games, hide loading screen when camera intro starts
+      this.poolScene.setOnGameStartCallback(() => {
+        this.hideLoadingScreen();
+        this.showQuitButton();
+      });
+    } else if (this.gameMode === 'AI') {
       // For AI games, hide loading screen when game starts
       this.poolScene.setOnGameStartCallback(() => {
         this.hideLoadingScreen();
@@ -383,13 +394,10 @@ export class Game3DComponent {
       // Set up callbacks
       this.setupPoolSceneCallbacks();
       
-      // Wait for assets to load (but keep loading screen visible)
+      // Wait for assets to load completely (keep loading screen visible)
       await this.waitForAssetsToLoadLocal();
       
-      // Hide loading screen just before animation starts
-      this.hideLoadingScreen();
-      
-      // Start the game immediately for local mode
+      // Start the game - loading screen will be hidden when camera intro begins
       await this.poolScene.startAnimation();
       
     } catch (error) {
@@ -424,7 +432,10 @@ export class Game3DComponent {
   }
 
   private async startJoinRoomGame(): Promise<void> {
-    console.log('🔗 Setting up joinRoom game');
+    // Prevent multiple initializations
+    if (this.poolScene) {
+      return;
+    }
     
     try {
       if (!this.roomId) {
@@ -548,8 +559,8 @@ export class Game3DComponent {
       }
     });
     
-    backBtn?.addEventListener('click', () => {
-      this.returnToMainMenu();
+    backBtn?.addEventListener('click', async () => {
+      await this.returnToMainMenu();
     });
   }
 
@@ -593,23 +604,30 @@ export class Game3DComponent {
         <input 
           id="roomIdInput" 
           type="text" 
-          class="bg-white text-black font-mono text-2xl font-bold px-4 py-2 rounded border-4 border-black text-center"
+          class="w-full bg-white text-black font-mono text-2xl font-bold px-6 py-3 rounded border-4 border-black text-center"
           placeholder="ABC123"
           maxlength="6"
         />
       </div>
-      <div class="flex">
+      <div class="space-y-4">
         <button 
           id="joinRoomBtn" 
           class="w-full text-black font-mono text-lg font-bold bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 px-6 py-3 rounded border-4 border-black cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 uppercase tracking-wider"
         >
           Join Room
         </button>
+        <button 
+          id="backFromJoinRoomBtn" 
+          class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider"
+        >
+          ← Back
+        </button>
       </div>
     `);
     
     // Add event listeners
     const joinBtn = this.roomInputOverlay.querySelector('#joinRoomBtn');
+    const backBtn = this.roomInputOverlay.querySelector('#backFromJoinRoomBtn');
     const roomInput = this.roomInputOverlay.querySelector('#roomIdInput') as HTMLInputElement;
     
     joinBtn?.addEventListener('click', () => {
@@ -622,6 +640,10 @@ export class Game3DComponent {
       } else {
         alert('Please enter a valid room ID (at least 3 characters)');
       }
+    });
+    
+    backBtn?.addEventListener('click', async () => {
+      await this.returnToMainMenu();
     });
     
     // Handle Enter key
@@ -683,11 +705,12 @@ export class Game3DComponent {
         border: 4px solid black !important;
       ">
         <div style="margin-bottom: 24px !important;">
-          <h2 style="font-family: monospace !important; color: white !important; font-size: 30px !important; font-weight: bold !important; margin-bottom: 8px !important;">🏆 Game Over!</h2>
+          <h2 style="font-family: monospace !important; color: white !important; font-size: 30px !important; font-weight: bold !important; margin-bottom: 8px !important;">🏆 Game Over</h2>
           <p style="font-family: monospace !important; color: white !important; font-size: 20px !important; font-weight: bold !important;">${winner} Wins!</p>
         </div>
         
         <div style="display: flex !important; flex-direction: column !important; gap: 12px !important;">
+          ${isLocalGame ? `
           <button id="playAgainBtn" style="
             width: 100% !important;
             color: white !important;
@@ -703,6 +726,7 @@ export class Game3DComponent {
           " onmouseover="this.style.background='rgb(234, 88, 12)'" onmouseout="this.style.background='rgb(249, 115, 22)'">
             🎮 Play Again
           </button>
+          ` : ''}
           
           <button id="returnToMenuBtn" style="
             width: 100% !important;
@@ -727,12 +751,15 @@ export class Game3DComponent {
     const playAgainBtn = this.gameEndOverlay.querySelector('#playAgainBtn');
     const returnToMenuBtn = this.gameEndOverlay.querySelector('#returnToMenuBtn');
 
-    playAgainBtn?.addEventListener('click', () => {
-      this.restartGameQuick();
-    });
+    // Only add Play Again listener for local games
+    if (isLocalGame && playAgainBtn) {
+      playAgainBtn.addEventListener('click', () => {
+        this.restartGameQuick();
+      });
+    }
 
-    returnToMenuBtn?.addEventListener('click', () => {
-      this.returnToMainMenu();
+    returnToMenuBtn?.addEventListener('click', async () => {
+      await this.returnToMainMenu();
     });
 
     // Show the overlay
@@ -749,6 +776,8 @@ export class Game3DComponent {
     if (this.poolScene && this.gameMode === 'local') {
       // For local games, restart without animation
       this.poolScene.restartQuick();
+      // Show quit button again after restart
+      this.showQuitButton();
     } else {
       // For online games, fall back to full restart
       this.restartGame();
@@ -776,8 +805,8 @@ export class Game3DComponent {
     this.startGameFlow();
   }
 
-  private returnToMainMenu(): void {
-    // Hide quit button when returning to main menu
+  private async returnToMainMenu(): Promise<void> {
+    // Hide quit button when returning to menu
     this.hideQuitButton();
     
     // Use the callback if provided
