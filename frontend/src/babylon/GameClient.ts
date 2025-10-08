@@ -138,7 +138,17 @@ export class GameClient {
         break;
 
       default:
-        console.warn("Unknown message:", message);
+        // Handle error messages from server
+        if (message && typeof message === 'object' && 'message' in message) {
+          const errorMessage = (message as any).message;
+          if (errorMessage === "Room full") {
+            alert("This room is already full. Please try creating a new room or joining a different one.");
+          } else {
+            console.error("Server error:", errorMessage);
+          }
+        } else {
+          console.warn("Unknown message:", message);
+        }
     }
   }
 
