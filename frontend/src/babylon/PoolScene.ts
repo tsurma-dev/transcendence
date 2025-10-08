@@ -16,6 +16,8 @@ import {
   Animation,
   CubicEase,
   EasingFunction,
+  StandardMaterial,
+  Color3,
 } from "@babylonjs/core";
 
 import "@babylonjs/loaders/glTF";
@@ -69,6 +71,8 @@ export class PoolScene {
   private paddleHitAudio!: HTMLAudioElement;
   private scoreAudio!: HTMLAudioElement;
   private bgMusicAudio!: HTMLAudioElement;
+  private winningAudio!: HTMLAudioElement;
+  private losingAudio!: HTMLAudioElement;
   public audioEnabled = false;
 
   // Animations
@@ -189,6 +193,11 @@ export class PoolScene {
     await this.Paddle2.waitForLoad();
   }
 
+  // Simple wait helper
+  private async wait(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   // ---- GAME LOOP AND STATE HANDLING ----
 
   // --- MAIN GAME START FUNCTION ---
@@ -216,8 +225,12 @@ export class PoolScene {
     }
   }
 
+  public isGameReady(): boolean {
+    return this.isLoaded;
+  }
+
   // Handles the end of the game, displaying the winner and playing sounds.
-  private handleGameEnd(finalState: GameState): void {
+  private async handleGameEnd(finalState: GameState): Promise<void> {
     console.log(`🏆 Final Result: ${finalState.winner} WINS!`);
 
     // Play final score sound if audio is enabled
@@ -232,14 +245,72 @@ export class PoolScene {
 
     this.scoreboard.updateFromGameState(finalState);
 
-    // TODO: Show game winning / losing animation
+    // Show game winning / losing animation for online/AI games and winning animation for local games
+    if (this.gameMode === 'online' || this.gameMode === 'AI') {
+      const currentPlayerWon = finalState.winner === this.player1Name;
+      
+      // Play animation first, then show game over screen
+      if (currentPlayerWon) {
+        await this.playWinnerAnimation();
+      } else {
+        await this.playLoserAnimation();
+      }
+    } else if (this.gameMode === 'local') {
+      // Always play winning animation for local games (both players can enjoy it)
+      await this.playWinnerAnimation();
+    }
+
+    // Only show game over screen after animation completes (or immediately for non-online games)
     if (this.onGameEndCallback) {
       this.onGameEndCallback(finalState);
     }
   }
 
-  public isGameReady(): boolean {
-    return this.isLoaded;
+  // --- END ANIMATIONS ---
+  private async playWinnerAnimation(): Promise<void> {
+    console.log('🎉 Playing winner animation!');
+    
+    // Zoom camera to duck for close-up view
+    await this.zoomCameraToDuck();
+    
+    // Play winning sound after zoom completes
+    if (this.audioEnabled && this.winningAudio) {
+      try {
+        this.winningAudio.currentTime = 0;
+        this.winningAudio.play().catch(() => { });
+      } catch (error) {
+        // Silent error handling
+      }
+    }
+    
+    // Animate the duck bouncing
+    await this.animateDuckCelebration();
+    
+    // Wait for animation to finish
+    await this.wait(2000);
+  }
+
+  private async playLoserAnimation(): Promise<void> {
+    console.log('😢 Playing loser animation...');
+    
+    // Zoom camera to duck for close-up view
+    await this.zoomCameraToDuck();
+    
+    // Play losing sound after zoom completes
+    if (this.audioEnabled && this.losingAudio) {
+      try {
+        this.losingAudio.currentTime = 0;
+        this.losingAudio.play().catch(() => { });
+      } catch (error) {
+        // Silent error handling
+      }
+    }
+    
+    // Animate the duck sinking/tilting
+    await this.animateDuckDrowning();
+    
+    // Wait to see the final pose
+    await this.wait(1500);
   }
 
   // --- CALLBACKS ---
@@ -564,6 +635,7 @@ export class PoolScene {
 
     try {
       // Create HTML5 audio objects
+      // All sounds and music from https://mixkit.co/
       this.wallHitAudio = new Audio('/sounds/squeeze.mp3');
       this.wallHitAudio.volume = 0.6;
 
@@ -576,6 +648,12 @@ export class PoolScene {
       this.bgMusicAudio = new Audio('/sounds/bg_music.mp3');
       this.bgMusicAudio.volume = 0.2;
       this.bgMusicAudio.loop = true;
+
+      this.winningAudio = new Audio('/sounds/winning.mp3');
+      this.winningAudio.volume = 0.8;
+
+      this.losingAudio = new Audio('/sounds/losing.mp3');
+      this.losingAudio.volume = 0.8;
 
       this.audioEnabled = true;
     } catch (error) {
@@ -962,6 +1040,213 @@ export class PoolScene {
       animatable.onAnimationEndObservable.add(() => {
         resolve();
       });
+    });
+  }
+
+  // -- END ANIMATIONS ---
+
+  // Winning animation
+    private async animateDuckCelebration(): Promise<void> {
+    return new Promise((resolve) => {
+      const duckMesh = this.duck.getMesh();
+      if (!duckMesh) {
+        resolve();
+        return;
+      }
+      
+      const originalY = duckMesh.position.y;
+      
+      // Create rotation animation 
+      const rotationAnimation = new Animation(
+        "duckRotation",
+        "rotation.y",
+        30,
+        Animation.ANIMATIONTYPE_FLOAT,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+      
+      const rotationKeys = [];
+      rotationKeys.push({ frame: 0, value: duckMesh.rotation.y });
+      rotationKeys.push({ frame: 60, value: duckMesh.rotation.y + Math.PI * 4 }); // 2 full rotations in 2 seconds
+      
+      rotationAnimation.setKeys(rotationKeys);
+      
+      // Create bouncing animation
+      const bounceAnimation = new Animation(
+        "duckBounce",
+        "position.y",
+        30,
+        Animation.ANIMATIONTYPE_FLOAT,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+      
+      const bounceKeys = [];
+      // Start bouncing after rotation
+      bounceKeys.push({ frame: 0, value: originalY });
+      bounceKeys.push({ frame: 60, value: originalY }); // Stay still during rotation
+      bounceKeys.push({ frame: 80, value: originalY + 0.3 }); // First small jump
+      bounceKeys.push({ frame: 100, value: originalY }); // Back down
+      bounceKeys.push({ frame: 120, value: originalY + 0.25 }); // Second jump
+      bounceKeys.push({ frame: 140, value: originalY }); // Back down
+      bounceKeys.push({ frame: 160, value: originalY + 0.2 }); // Third jump
+      bounceKeys.push({ frame: 180, value: originalY }); // Final position
+      
+      bounceAnimation.setKeys(bounceKeys);
+      rotationAnimation.setKeys(rotationKeys);
+      
+      // Add easing
+      const easingFunction = new CubicEase();
+      easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
+      bounceAnimation.setEasingFunction(easingFunction);
+      rotationAnimation.setEasingFunction(easingFunction);
+      
+      // Start both animations
+      const animatable = this.scene.beginDirectAnimation(duckMesh, [rotationAnimation, bounceAnimation], 0, 180, false);
+      
+      animatable.onAnimationEnd = () => {
+        resolve();
+      };
+    });
+  }
+
+  // Losing animation
+  private async animateDuckDrowning(): Promise<void> {
+    return new Promise((resolve) => {
+      const duckMesh = this.duck.getMesh();
+      if (!duckMesh) {
+        resolve();
+        return;
+      }
+      
+      // Create sinking animation (downward movement)
+      const sinkAnimation = new Animation(
+        "duckSinking",
+        "position.y",
+        30,
+        Animation.ANIMATIONTYPE_FLOAT,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+      
+      const sinkKeys = [];
+      const originalY = duckMesh.position.y;
+      sinkKeys.push({ frame: 0, value: originalY });
+      sinkKeys.push({ frame: 40, value: originalY - 0.3 }); // Start sinking slowly
+      sinkKeys.push({ frame: 80, value: originalY - 0.8 }); // Continue sinking
+      sinkKeys.push({ frame: 120, value: originalY - 1.5 }); // Sink down more
+      sinkKeys.push({ frame: 180, value: originalY - 2.2 }); // Almost fully sunk
+      sinkKeys.push({ frame: 240, value: originalY - 2.5 }); // Final position
+      
+      sinkAnimation.setKeys(sinkKeys);
+      
+      // Create tilting animation (rotation)
+      const tiltAnimation = new Animation(
+        "duckTilting",
+        "rotation.z",
+        30,
+        Animation.ANIMATIONTYPE_FLOAT,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+      
+      const tiltKeys = [];
+      tiltKeys.push({ frame: 0, value: 0 });
+      tiltKeys.push({ frame: 60, value: Math.PI / 8 }); // Slight tilt
+      tiltKeys.push({ frame: 120, value: Math.PI / 6 }); // Tilt 30 degrees
+      tiltKeys.push({ frame: 180, value: Math.PI / 4.5 }); // More tilt
+      tiltKeys.push({ frame: 240, value: Math.PI / 4 }); // Final tilt 45 degrees
+      
+      tiltAnimation.setKeys(tiltKeys);
+      
+      // Add easing for dramatic effect
+      const easingFunction = new CubicEase();
+      easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEIN);
+      sinkAnimation.setEasingFunction(easingFunction);
+      tiltAnimation.setEasingFunction(easingFunction);
+      
+      // Start both animations with callback - 8 seconds long
+      const animatable = this.scene.beginDirectAnimation(duckMesh, [sinkAnimation, tiltAnimation], 0, 240, false);
+      
+      animatable.onAnimationEnd = () => {
+        resolve();
+      };
+    });
+  }
+
+  // Zoom camera to duck for close-up view
+  private async zoomCameraToDuck(): Promise<void> {
+    return new Promise((resolve) => {
+      const duckMesh = this.duck.getMesh();
+      if (!duckMesh) {
+        resolve();
+        return;
+      }
+
+      // Move duck to center of the pool for cinematic effect
+      const centerPosition = new Vector3(0, GAME_CONFIG.WATER_LEVEL - 0.15, 0);
+      duckMesh.position = centerPosition.clone();
+      
+      // Get duck's current rotation to position camera facing it
+      const duckRotation = duckMesh.rotation.y;
+      
+      // Calculate camera position based on duck's facing direction
+      // Position camera opposite to where duck is facing for a front view
+      const cameraDistance = 2.5; 
+      const cameraHeight = 1.2;
+      const cameraX = centerPosition.x + Math.sin(duckRotation + Math.PI) * cameraDistance;
+      const cameraZ = centerPosition.z + Math.cos(duckRotation + Math.PI) * cameraDistance;
+      
+      const zoomPosition = new Vector3(
+        cameraX,
+        GAME_CONFIG.WATER_LEVEL + cameraHeight,
+        cameraZ
+      );
+      
+      // Target the duck at center, slightly above for better framing
+      const zoomTarget = centerPosition.add(new Vector3(0, 0.3, 0));
+
+      // Create position animation
+      const positionAnimation = new Animation(
+        "cameraZoomPosition",
+        "position",
+        30,
+        Animation.ANIMATIONTYPE_VECTOR3,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+
+      const positionKeys = [];
+      positionKeys.push({ frame: 0, value: this.camera.position.clone() });
+      positionKeys.push({ frame: 120, value: zoomPosition }); // 4 seconds
+
+      positionAnimation.setKeys(positionKeys);
+
+      // Create target animation
+      const targetAnimation = new Animation(
+        "cameraZoomTarget",
+        "target",
+        30,
+        Animation.ANIMATIONTYPE_VECTOR3,
+        Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+
+      const targetKeys = [];
+      targetKeys.push({ frame: 0, value: this.camera.getTarget().clone() });
+      targetKeys.push({ frame: 120, value: zoomTarget });
+
+      targetAnimation.setKeys(targetKeys);
+
+      // Add smooth easing
+      const easingFunction = new CubicEase();
+      easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
+      positionAnimation.setEasingFunction(easingFunction);
+      targetAnimation.setEasingFunction(easingFunction);
+
+      // Apply animations to camera
+      this.camera.animations = [positionAnimation, targetAnimation];
+
+      // Start animation with callback
+      const animatable = this.scene.beginAnimation(this.camera, 0, 120, false);
+      animatable.onAnimationEnd = () => {
+        resolve();
+      };
     });
   }
 

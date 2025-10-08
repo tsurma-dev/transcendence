@@ -67,6 +67,7 @@ export class Game3DComponent {
     this.createWaitingOverlay();
     this.createRoomInputOverlay();
     this.createGameEndOverlay();
+    this.createQuitButton();
   }
 
   private createLoadingOverlay(): void {
@@ -138,6 +139,145 @@ export class Game3DComponent {
     this.container.appendChild(this.gameEndOverlay);
   }
 
+  private createQuitButton(): void {
+    // Create quit button
+    const quitButton = document.createElement('button');
+    quitButton.id = 'quit-button';
+    quitButton.innerHTML = 'Quit';
+    quitButton.style.cssText = `
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 1000;
+      background-color: #000000;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      display: none;
+    `;
+    
+    quitButton.addEventListener('mouseenter', () => {
+      quitButton.style.backgroundColor = '#374151';
+    });
+    
+    quitButton.addEventListener('mouseleave', () => {
+      quitButton.style.backgroundColor = '#000000';
+    });
+    
+    quitButton.addEventListener('click', () => {
+      this.showQuitConfirmation();
+    });
+    
+    document.body.appendChild(quitButton);
+
+    // Create confirmation overlay
+    const confirmOverlay = document.createElement('div');
+    confirmOverlay.id = 'quit-confirmation-overlay';
+    confirmOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1001;
+    `;
+    
+    const confirmContent = document.createElement('div');
+    confirmContent.style.cssText = `
+      background-color: white;
+      padding: 32px;
+      border-radius: 8px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      text-align: center;
+      max-width: 400px;
+    `;
+    
+    const confirmTitle = document.createElement('h3');
+    confirmTitle.style.cssText = `
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 16px;
+      color: #374151;
+    `;
+    confirmTitle.textContent = 'Quit Game?';
+    
+    const confirmMessage = document.createElement('p');
+    confirmMessage.style.cssText = `
+      color: #6b7280;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    `;
+    confirmMessage.textContent = 'Are you sure you want to quit the game and return to main menu?';
+    
+    const confirmButtons = document.createElement('div');
+    confirmButtons.style.cssText = `
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+    `;
+    
+    const cancelButton = document.createElement('button');
+    cancelButton.style.cssText = `
+      padding: 8px 24px;
+      background-color: #d1d5db;
+      color: #374151;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    `;
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('mouseenter', () => {
+      cancelButton.style.backgroundColor = '#9ca3af';
+    });
+    cancelButton.addEventListener('mouseleave', () => {
+      cancelButton.style.backgroundColor = '#d1d5db';
+    });
+    cancelButton.addEventListener('click', () => {
+      this.hideQuitConfirmation();
+    });
+    
+    const confirmQuitButton = document.createElement('button');
+    confirmQuitButton.style.cssText = `
+      padding: 8px 24px;
+      background-color: #ec4899;
+      color: white;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    `;
+    confirmQuitButton.textContent = 'Quit';
+    confirmQuitButton.addEventListener('mouseenter', () => {
+      confirmQuitButton.style.backgroundColor = '#db2777';
+    });
+    confirmQuitButton.addEventListener('mouseleave', () => {
+      confirmQuitButton.style.backgroundColor = '#ec4899';
+    });
+    confirmQuitButton.addEventListener('click', () => {
+      this.hideQuitConfirmation();
+      this.returnToMainMenu();
+    });
+    
+    confirmButtons.appendChild(cancelButton);
+    confirmButtons.appendChild(confirmQuitButton);
+    
+    confirmContent.appendChild(confirmTitle);
+    confirmContent.appendChild(confirmMessage);
+    confirmContent.appendChild(confirmButtons);
+    confirmOverlay.appendChild(confirmContent);
+    
+    document.body.appendChild(confirmOverlay);
+  }
+
   private async startGameFlow(): Promise<void> {
     console.log('🚀 Starting game flow for mode:', this.gameMode);
     
@@ -161,6 +301,7 @@ export class Game3DComponent {
   }
 
   private showLoadingScreen(): void {
+    this.hideQuitButton();
     if (this.loadingOverlay) this.loadingOverlay.style.display = "flex";
     if (this.waitingOverlay) this.waitingOverlay.style.display = "none";
     if (this.roomInputOverlay) this.roomInputOverlay.style.display = "none";
@@ -175,6 +316,7 @@ export class Game3DComponent {
     
     // Always set up game end callback
     this.poolScene.setOnGameEndCallback((finalState) => {
+      this.hideQuitButton();
       this.showGameEndOverlay(finalState);
     });
     
@@ -183,6 +325,7 @@ export class Game3DComponent {
       // For AI games, hide loading screen when game starts
       this.poolScene.setOnGameStartCallback(() => {
         this.hideLoadingScreen();
+        this.showQuitButton();
       });
     } else if (this.gameMode === 'createRoom' || this.gameMode === 'joinRoom') {
       // Only set up multiplayer callbacks for online modes
@@ -197,6 +340,7 @@ export class Game3DComponent {
     this.poolScene.setOnGameStartCallback(() => {
       if (this.waitingOverlay) this.waitingOverlay.style.display = "none";
       if (this.roomInputOverlay) this.roomInputOverlay.style.display = "none";
+      this.showQuitButton();
     });
     
     // Room ID callback for createRoom mode
@@ -341,6 +485,8 @@ export class Game3DComponent {
   private showWaitingForPlayerScreen(roomId?: string): void {
     if (!this.waitingOverlay) return;
     
+    this.hideQuitButton();
+    
     // Show empty room ID initially, will be updated when received from server
     const displayRoomId = roomId || '------';
     
@@ -348,16 +494,63 @@ export class Game3DComponent {
       <p class="font-mono text-black text-2xl font-bold drop-shadow-lg mb-6">Room Created!</p>
       <div class="mb-6">
         <p class="font-mono text-black text-lg font-bold mb-2">Room ID:</p>
-        <div class="bg-black text-white font-mono text-2xl font-bold px-4 py-2 rounded border-4 border-black">
-          <span id="roomIdDisplay">${displayRoomId}</span>
+        <div class="relative">
+          <div class="w-full bg-black text-white font-mono text-2xl font-bold px-8 py-3 rounded border-4 border-black text-center">
+            <span id="roomIdDisplay">${displayRoomId}</span>
+          </div>
+          <button 
+            id="copyRoomIdBtn" 
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 bg-gray-700 hover:bg-gray-600 rounded border border-gray-500 text-sm transition-colors duration-150" 
+            title="Copy Room ID"
+          >
+            🔗
+          </button>
         </div>
       </div>
-      <div class="animate-pulse">
+      <div class="animate-pulse mb-6">
         <p class="font-mono text-black text-lg font-bold">Waiting for Player 2...</p>
+      </div>
+      <div class="space-y-4">
+        <button 
+          id="backToMenuFromWaitingBtn" 
+          class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider"
+        >
+          ← Back
+        </button>
       </div>
     `);
     
     this.waitingOverlay.style.display = "flex";
+    
+    // Add event listeners
+    const copyBtn = this.waitingOverlay.querySelector('#copyRoomIdBtn');
+    const backBtn = this.waitingOverlay.querySelector('#backToMenuFromWaitingBtn');
+    
+    copyBtn?.addEventListener('click', () => {
+      const roomIdElement = document.getElementById('roomIdDisplay');
+      if (roomIdElement) {
+        const roomId = roomIdElement.textContent || '';
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(roomId).then(() => {
+            // Visual feedback
+            copyBtn.textContent = '✅';
+            setTimeout(() => {
+              copyBtn.textContent = '🔗';
+            }, 1000);
+          }).catch(() => {
+            // Fallback for older browsers
+            alert(`Room ID: ${roomId}\nCopy this manually!`);
+          });
+        } else {
+          // Fallback for older browsers
+          alert(`Room ID: ${roomId}\nCopy this manually!`);
+        }
+      }
+    });
+    
+    backBtn?.addEventListener('click', () => {
+      this.returnToMainMenu();
+    });
   }
 
   public updateRoomId(roomId: string): void {
@@ -369,6 +562,8 @@ export class Game3DComponent {
 
   private showWaitingForConnectionScreen(): void {
     if (!this.waitingOverlay) return;
+    
+    this.hideQuitButton();
     
     this.waitingOverlay.innerHTML = this.createPongContentWrapper(`
       <p class="font-mono text-black text-2xl font-bold drop-shadow-lg mb-6">Joining Room</p>
@@ -388,6 +583,8 @@ export class Game3DComponent {
 
   private showRoomInputScreen(): void {
     if (!this.roomInputOverlay) return;
+    
+    this.hideQuitButton();
     
     this.roomInputOverlay.innerHTML = this.createPongContentWrapper(`
       <p class="font-mono text-black text-2xl font-bold drop-shadow-lg mb-6">Join Room</p>
@@ -580,6 +777,9 @@ export class Game3DComponent {
   }
 
   private returnToMainMenu(): void {
+    // Hide quit button when returning to main menu
+    this.hideQuitButton();
+    
     // Use the callback if provided
     if (this.onReturnToMenuCallback) {
       this.onReturnToMenuCallback();
@@ -589,6 +789,34 @@ export class Game3DComponent {
     // If no callback is provided, show an error
     console.error('No return to menu callback provided! This should be handled by the parent screen.');
     alert('Unable to return to menu. Please refresh the page.');
+  }
+
+  private showQuitConfirmation(): void {
+    const overlay = document.getElementById('quit-confirmation-overlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+    }
+  }
+
+  private hideQuitConfirmation(): void {
+    const overlay = document.getElementById('quit-confirmation-overlay');
+    if (overlay) {
+      overlay.style.display = 'none';
+    }
+  }
+
+  private showQuitButton(): void {
+    const quitButton = document.getElementById('quit-button');
+    if (quitButton) {
+      quitButton.style.display = 'block';
+    }
+  }
+
+  private hideQuitButton(): void {
+    const quitButton = document.getElementById('quit-button');
+    if (quitButton) {
+      quitButton.style.display = 'none';
+    }
   }
 
   dispose(): void {
@@ -608,6 +836,17 @@ export class Game3DComponent {
     }
     if (this.gameEndOverlay && this.gameEndOverlay.parentElement) {
       this.gameEndOverlay.parentElement.removeChild(this.gameEndOverlay);
+    }
+    
+    // Clean up quit button and confirmation overlay
+    const quitButton = document.getElementById('quit-button');
+    if (quitButton && quitButton.parentElement) {
+      quitButton.parentElement.removeChild(quitButton);
+    }
+    
+    const quitConfirmOverlay = document.getElementById('quit-confirmation-overlay');
+    if (quitConfirmOverlay && quitConfirmOverlay.parentElement) {
+      quitConfirmOverlay.parentElement.removeChild(quitConfirmOverlay);
     }
   }
 }
