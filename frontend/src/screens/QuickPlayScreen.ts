@@ -61,28 +61,23 @@ export class  QuickPlayScreen extends Component {
   cleanup(): void {
     if (this.game3D) {
       this.game3D.dispose()
+      this.game3D = null
     }
-    // **REMOVE FULLSCREEN CONTAINER:**
+    // Remove fullscreen container (attached to component host)
     const game3DContainer = document.getElementById('game3DContainer')
-    if (game3DContainer && game3DContainer.parentElement === document.body) {
-      document.body.removeChild(game3DContainer)
+    if (game3DContainer && game3DContainer.parentElement) {
+      game3DContainer.parentElement.removeChild(game3DContainer)
     }
   }
 
   private async returnToAppropriateScreen(): Promise<void> {
-    // Clean up game
+    // Clean up game immediately when exiting
     if (this.game3D) {
       this.game3D.dispose()
       this.game3D = null
     }
 
-    // Remove fullscreen container
-    const game3DContainer = document.getElementById('game3DContainer')
-    if (game3DContainer && game3DContainer.parentElement === document.body) {
-      document.body.removeChild(game3DContainer)
-    }
-
-    // Navigate back to appropriate screen (QuickPlayScreen is only for local games)
+    // Navigate back to appropriate screen
     try {
       const user = await this.apiService.getCurrentUser()
       if (user) {
