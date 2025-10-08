@@ -1,5 +1,6 @@
 import { Component } from './Component';
 import { ApiService } from './ApiService';
+import { GameMode } from '../components/Game3D';
 import { 
   StartPageScreen, 
   QuickPlaySetupScreen, 
@@ -8,7 +9,8 @@ import {
   LoggedOutScreen, 
   AuthErrorScreen, 
   LoggedInLandingScreen, 
-  RemoteGameScreen,
+  RemoteGameLobbyScreen,
+  ServerGameScreen,
   TournamentLobbyScreen, 
   QuickPlayScreen, 
   UserProfileScreen, 
@@ -55,13 +57,16 @@ export class AppRouter {
     this.routes.set('/login', { component: LoginScreen })
     this.routes.set('/register', { component: RegisterScreen })
     this.routes.set('/landing', { component: LoggedInLandingScreen })
-    this.routes.set('/remote-game', { component: RemoteGameScreen })
+    this.routes.set('/remote-game', { component: RemoteGameLobbyScreen })
     this.routes.set('/profile', { component: UserProfileScreen })
     this.routes.set('/settings', { component: UserSettingsScreen })
     this.routes.set('/match-history', { component: MatchHistoryScreen })
     this.routes.set('/quick-play', { component: QuickPlaySetupScreen })
     this.routes.set('/tournament-lobby', { component: TournamentLobbyScreen })
-    this.routes.set('/game', { component: QuickPlayScreen })
+    this.routes.set('/game/local', { component: QuickPlayScreen })
+    this.routes.set('/game/ai', { component: ServerGameScreen })
+    this.routes.set('/game/create-room', { component: ServerGameScreen })
+    this.routes.set('/game/join-room', { component: ServerGameScreen })
     this.routes.set('/logged-out', { component: LoggedOutScreen })
     this.routes.set('/auth-error', { component: AuthErrorScreen })
   }
@@ -113,11 +118,23 @@ export class AppRouter {
         const historyUsername = urlParams.get('user') ? decodeURIComponent(urlParams.get('user')!) : undefined
         return historyUsername ? [historyUsername] : []
 
-      case '/game':
-        const player1 = urlParams.get('p1') ? decodeURIComponent(urlParams.get('p1')!) : 'Player 1'
-        const player2 = urlParams.get('p2') ? decodeURIComponent(urlParams.get('p2')!) : 'Player 2'
-        const isQuickPlay = urlParams.get('mode') === 'quick'
-        return [player1, player2, isQuickPlay]
+      case '/game/local':
+        const localPlayer1 = urlParams.get('p1') ? decodeURIComponent(urlParams.get('p1')!) : 'Player 1'
+        const localPlayer2 = urlParams.get('p2') ? decodeURIComponent(urlParams.get('p2')!) : 'Player 2'
+        return [localPlayer1, localPlayer2, 'local']
+
+      case '/game/ai':
+        const aiPlayer1 = urlParams.get('p1') ? decodeURIComponent(urlParams.get('p1')!) : 'Player 1'
+        return [aiPlayer1, 'AI', 'AI']
+
+      case '/game/create-room':
+        const createRoomPlayer = urlParams.get('p1') ? decodeURIComponent(urlParams.get('p1')!) : 'Player 1'
+        return [createRoomPlayer, '', 'createRoom']
+
+      case '/game/join-room':
+        const joinRoomPlayer = urlParams.get('p1') ? decodeURIComponent(urlParams.get('p1')!) : 'Player 1'
+        const roomId = urlParams.get('roomId') ? decodeURIComponent(urlParams.get('roomId')!) : ''
+        return [joinRoomPlayer, roomId, 'joinRoom']
 
       case '/logged-out':
         const username = urlParams.get('user') ? decodeURIComponent(urlParams.get('user')!) : 'User'
@@ -193,7 +210,7 @@ export class AppRouter {
         return '/register'
       case 'LoggedInLandingScreen':
         return '/landing'
-      case 'RemoteGameScreen':
+      case 'RemoteGameLobbyScreen':
         return '/remote-game'
       case 'UserProfileScreen':
         // Handle username parameter for viewing other users' profiles
@@ -209,12 +226,30 @@ export class AppRouter {
         return '/quick-play'
       case 'TournamentLobbyScreen':
         return '/tournament-lobby'
-      case ' QuickPlayScreen':
-        // Handle game parameters: player1Name, player2Name, isQuickPlay
+      case 'QuickPlayScreen':
+        // Handle local game parameters: player1Name, player2Name
         const player1 = args[0] ? encodeURIComponent(args[0]) : 'Player1'
         const player2 = args[1] ? encodeURIComponent(args[1]) : 'Player2'
-        const isQuickPlay = args[2] ? 'quick' : 'regular'
-        return `/game?p1=${player1}&p2=${player2}&mode=${isQuickPlay}`
+        // QuickPlayScreen is only for local games
+        return `/game/local?p1=${player1}&p2=${player2}`
+      case 'ServerGameScreen':
+        // Handle server game parameters: player1Name, player2Name, gameMode, roomId?
+        const serverPlayer1 = args[0] ? encodeURIComponent(args[0]) : 'Player1'
+        const serverPlayer2 = args[1] ? encodeURIComponent(args[1]) : 'Player2'
+        const serverGameMode: GameMode = args[2] || 'AI'
+        const serverRoomId = args[3] ? encodeURIComponent(args[3]) : ''
+        
+        // Generate URL based on server game mode
+        switch (serverGameMode) {
+          case 'AI':
+            return `/game/ai?p1=${serverPlayer1}`
+          case 'createRoom':
+            return `/game/create-room?p1=${serverPlayer1}`
+          case 'joinRoom':
+            return `/game/join-room?p1=${serverPlayer1}${serverRoomId ? `&roomId=${serverRoomId}` : ''}`
+          default:
+            return `/game/ai?p1=${serverPlayer1}`
+        }
       case 'LoggedOutScreen':
         // Handle username parameter
         const username = args[0] ? encodeURIComponent(args[0]) : 'User'
@@ -259,11 +294,13 @@ export class AppRouter {
   private requiresAuthentication(componentClass: new(...args: any[]) => Component): boolean {
     const protectedRoutes = [
       'LoggedInLandingScreen',
-      'RemoteGameScreen',
+      'RemoteGameLobbyScreen',
       'UserProfileScreen',
       'UserSettingsScreen',
       'MatchHistoryScreen',
-      'TournamentLobbyScreen'
+      'TournamentLobbyScreen',
+      'QuickPlayScreen',
+      'ServerGameScreen'
     ]
 
     return protectedRoutes.includes(componentClass.name)

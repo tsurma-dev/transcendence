@@ -15,11 +15,11 @@ export class  QuickPlayScreen extends Component {
   private player2Name: string
   private gameMode: GameMode = 'local'
 
-  constructor(player1Name: string, player2Name: string, gameMode: GameMode = 'local') {
+  constructor(player1Name: string, player2Name: string) {
     super()
     this.player1Name = player1Name
     this.player2Name = player2Name
-    this.gameMode = gameMode
+    this.gameMode = 'local' // QuickPlayScreen is only for local games
   }
 
   render(): HTMLElement {
@@ -61,32 +61,27 @@ export class  QuickPlayScreen extends Component {
   cleanup(): void {
     if (this.game3D) {
       this.game3D.dispose()
+      this.game3D = null
     }
-    // **REMOVE FULLSCREEN CONTAINER:**
+    // Remove fullscreen container (attached to component host)
     const game3DContainer = document.getElementById('game3DContainer')
-    if (game3DContainer && game3DContainer.parentElement === document.body) {
-      document.body.removeChild(game3DContainer)
+    if (game3DContainer && game3DContainer.parentElement) {
+      game3DContainer.parentElement.removeChild(game3DContainer)
     }
   }
 
   private async returnToAppropriateScreen(): Promise<void> {
-    // Clean up game
+    // Clean up game immediately when exiting
     if (this.game3D) {
       this.game3D.dispose()
       this.game3D = null
     }
 
-    // Remove fullscreen container
-    const game3DContainer = document.getElementById('game3DContainer')
-    if (game3DContainer && game3DContainer.parentElement === document.body) {
-      document.body.removeChild(game3DContainer)
-    }
-
-    // Navigate to appropriate screen based on authentication state
+    // Navigate back to appropriate screen
     try {
       const user = await this.apiService.getCurrentUser()
       if (user) {
-        // User is logged in - go to LoggedInLandingScreen
+        // User is logged in - return to landing screen for local games
         this.router.navigateTo(LoggedInLandingScreen)
       } else {
         // User is not logged in - go to StartPageScreen
