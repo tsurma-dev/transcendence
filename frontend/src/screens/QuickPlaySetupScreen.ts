@@ -7,6 +7,7 @@ import {  QuickPlayScreen } from './QuickPlayScreen'
 export class QuickPlaySetupScreen extends Component {
   private templateManager = TemplateManager.getInstance()
   private router = AppRouter.getInstance()
+  private apiService = new ApiService()
 
   render(): HTMLElement {
     const fragment = this.templateManager.cloneTemplate('playerSetupTemplate')
@@ -26,6 +27,9 @@ export class QuickPlaySetupScreen extends Component {
     const form = this.element?.querySelector('#playerSetupForm') as HTMLFormElement
 
     if (!player1Input || !player2Input || !startBtn || !player1Error || !player2Error || !form) return
+
+    // Try to prefill player 1 with current user's username
+    this.prefillCurrentUser(player1Input)
 
     const updateStartButton = () => {
       const hasPlayer1 = player1Input.value.trim().length > 0
@@ -97,6 +101,20 @@ export class QuickPlaySetupScreen extends Component {
 
     player1Input.addEventListener('keypress', handleEnter)
     player2Input.addEventListener('keypress', handleEnter)
+  }
+
+  private async prefillCurrentUser(player1Input: HTMLInputElement): Promise<void> {
+    try {
+      const currentUser = await this.apiService.getCurrentUser()
+      if (currentUser && currentUser.username) {
+        player1Input.value = currentUser.username
+        // Trigger input event to update button state
+        player1Input.dispatchEvent(new Event('input'))
+      }
+    } catch (error) {
+      // Silently fail - user can still enter name manually
+      console.log('Could not prefill current user (not logged in or error):', error)
+    }
   }
 
   cleanup(): void {
