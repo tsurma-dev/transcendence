@@ -1,7 +1,8 @@
 import { Component, TemplateManager, AppRouter, ApiService } from '../core'
 import { QuickPlaySetupScreen } from './QuickPlaySetupScreen'
 import { QuickPlayScreen } from './QuickPlayScreen'
-import { RemoteGameScreen } from './RemoteGameScreen'
+import { RemoteGameLobbyScreen } from './RemoteGameLobbyScreen'
+import { ServerGameScreen } from './ServerGameScreen'
 import { TournamentLobbyScreen } from './TournamentLobbyScreen'
 import { UserProfileScreen } from './UserProfileScreen'
 
@@ -48,8 +49,8 @@ export class LoggedInLandingScreen extends Component {
 
     if (start2PlayerBtn) {
       start2PlayerBtn.addEventListener('click', () => {
-        console.log('Navigating to RemoteGameScreen')
-        this.router.navigateTo(RemoteGameScreen)
+        console.log('Navigating to RemoteGameLobbyScreen')
+        this.router.navigateTo(RemoteGameLobbyScreen)
       })
     }
 
@@ -62,8 +63,8 @@ export class LoggedInLandingScreen extends Component {
           const currentUser = await this.apiService.getCurrentUser()
           const playerName = currentUser?.username || 'Player'
           
-          // Navigate directly to QuickPlayScreen with AI mode
-          this.router.navigateTo(QuickPlayScreen, playerName, 'AI', 'AI')
+          // Navigate to ServerGameScreen for AI game (server-side logic)
+          this.router.navigateTo(ServerGameScreen, playerName, 'AI', 'AI')
           
         } catch (error) {
           console.error('Error starting AI game:', error)

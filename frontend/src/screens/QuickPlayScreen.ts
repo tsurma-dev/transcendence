@@ -15,11 +15,11 @@ export class  QuickPlayScreen extends Component {
   private player2Name: string
   private gameMode: GameMode = 'local'
 
-  constructor(player1Name: string, player2Name: string, gameMode: GameMode = 'local') {
+  constructor(player1Name: string, player2Name: string) {
     super()
     this.player1Name = player1Name
     this.player2Name = player2Name
-    this.gameMode = gameMode
+    this.gameMode = 'local' // QuickPlayScreen is only for local games
   }
 
   render(): HTMLElement {
@@ -82,11 +82,11 @@ export class  QuickPlayScreen extends Component {
       document.body.removeChild(game3DContainer)
     }
 
-    // Navigate to appropriate screen based on authentication state
+    // Navigate back to appropriate screen (QuickPlayScreen is only for local games)
     try {
       const user = await this.apiService.getCurrentUser()
       if (user) {
-        // User is logged in - go to LoggedInLandingScreen
+        // User is logged in - return to landing screen for local games
         this.router.navigateTo(LoggedInLandingScreen)
       } else {
         // User is not logged in - go to StartPageScreen
