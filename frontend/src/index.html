@@ -618,8 +618,12 @@ _|          _|_|    _|      _|    _|_|_|</pre>
             id="player1Name" 
             placeholder="Enter your name" 
             maxlength="15"
+            required
             class="input-white text-center font-semibold text-lg"
           >
+          <div id="player1Error" class="text-red-600 text-center mt-2 text-sm font-mono font-bold hidden">
+            ⚠️ Player 1 name is required!
+          </div>
           <div class="text-black text-center mt-3 text-sm font-mono uppercase tracking-wider">
             Controls: <span class="font-semibold">W</span> / <span class="font-semibold">S</span>
           </div>
@@ -633,22 +637,26 @@ _|          _|_|    _|      _|    _|_|_|</pre>
             id="player2Name" 
             placeholder="Enter your name" 
             maxlength="15"
+            required
             class="input-white text-center font-semibold text-lg"
           >
+          <div id="player2Error" class="text-red-600 text-center mt-2 text-sm font-mono font-bold hidden">
+            ⚠️ Player 2 name is required!
+          </div>
           <div class="text-black text-center mt-3 text-sm font-mono uppercase tracking-wider">
             Controls: <span class="font-semibold">↑</span> / <span class="font-semibold">↓</span>
           </div>
         </div>
       </div>
       
-      <div class="text-center">
+      <form id="playerSetupForm" class="text-center">
         <button 
           id="startGameBtn" 
-          disabled
+          type="button"
           class="btn-green">
           START GAME
         </button>
-      </div>
+      </form>
     </div>
   </template>
 
