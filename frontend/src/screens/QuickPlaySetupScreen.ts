@@ -1,6 +1,5 @@
 import { Component, TemplateManager, AppRouter, ApiService } from '../core'
 import {  QuickPlayScreen } from './QuickPlayScreen'
-import { StartPageScreen } from './StartPageScreen'
 
 /**
  * Quick Play Setup Screen (no authentication required)
@@ -23,7 +22,6 @@ export class QuickPlaySetupScreen extends Component {
     const player1Input = this.element?.querySelector('#player1Name') as HTMLInputElement
     const player2Input = this.element?.querySelector('#player2Name') as HTMLInputElement
     const startBtn = this.element?.querySelector('#startGameBtn') as HTMLButtonElement
-    const backBtn = this.element?.querySelector('#backToStartBtn') as HTMLButtonElement
     const player1Error = this.element?.querySelector('#player1Error') as HTMLElement
     const player2Error = this.element?.querySelector('#player2Error') as HTMLElement
     const form = this.element?.querySelector('#playerSetupForm') as HTMLFormElement
@@ -92,13 +90,6 @@ export class QuickPlaySetupScreen extends Component {
       e.preventDefault()
       handleSubmit()
     })
-
-    // Back button handler
-    if (backBtn) {
-      backBtn.addEventListener('click', () => {
-        this.router.navigateTo(StartPageScreen)
-      })
-    }
 
     // Enter key support
     const handleEnter = (e: KeyboardEvent) => {
