@@ -174,10 +174,11 @@ export class GameClient {
       },
       status: serverState.gameState || 'playing',
       winner: serverState.winner || null,
-      events: serverState.collision ? [{
-        type: 'collision',
-        collisionType: serverState.collision
-      }] : []
+      events: serverState.events || []
+      // events: serverState.collision ? [{
+      //   type: 'collision',
+      //   collisionType: serverState.collision
+      // }] : []
     };
   }
 

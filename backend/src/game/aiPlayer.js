@@ -9,7 +9,7 @@ export class AIplayer {
             z: gameProperties.GAME_WIDTH / 2, // + gameProperties.PADDLE_WIDTH,
             x: 0,
             speed: gameProperties.PADDLE_SPEED,
-
+            delta: 0.5, // adjust the precision of the AI movement prediction
         }
         this.ballPos = {
             z: 0,
@@ -18,6 +18,7 @@ export class AIplayer {
         this.ballSpeed = {
             z: 0,
             x: 0,
+            delta: gameProperties.DELTA_SPEED,
         };
     }
 
@@ -26,12 +27,13 @@ export class AIplayer {
         this.ballPos.x = ball.x;
         this.ballSpeed.z = ball.speedZ;
         this.ballSpeed.x = ball.speedX;
+        //this.ballSpeed.delta = ball.deltaSpeed;
         this.paddle.x = paddleX;
     }
 
     updatePaddle() { // ball = {z, x}, paddle = {z, x}
         let direction = 0;
-        if (this.ballPos.z < 0 || this.ballSpeed.z < 0) { // if ball is moving towards AI paddle
+        if (this.ballPos.z < 0 || this.ballSpeed.z < 0 || this.ballPos.z > this.paddle.z) { // if ball is moving towards AI paddle
             return direction; // do not move
         }
         if (this.ballPos.x < this.paddle.x - PAD_HALF_SIZE && this.paddle.x > -PAD_MAX_POS_X) {
@@ -40,7 +42,7 @@ export class AIplayer {
             direction = 1; //move down
         }
 
-        this.paddle.x = this.paddle.x + direction * this.paddle.speed * 0.5;
+        this.paddle.x = this.paddle.x + direction * this.paddle.speed * this.paddle.delta;
         if (this.paddle.x < -PAD_MAX_POS_X) {
             this.paddle.x = -PAD_MAX_POS_X;
         } else if (this.paddle.x > PAD_MAX_POS_X) {
@@ -53,8 +55,8 @@ export class AIplayer {
 
     predictedBallPos() {
         const predictedPos = {
-            z: this.ballPos.z + this.ballSpeed.z / 10,
-            x: this.ballPos.x + this.ballSpeed.x / 10,
+            z: this.ballPos.z + this.ballSpeed.z / this.ballSpeed.delta,
+            x: this.ballPos.x + this.ballSpeed.x / this.ballSpeed.delta,
         };
         if (predictedPos.x < -gameProperties.GAME_HEIGHT / 2 + gameProperties.BALL_SIZE / 2) {
             predictedPos.x = -gameProperties.GAME_HEIGHT / 2 + gameProperties.BALL_SIZE / 2;

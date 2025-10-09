@@ -141,9 +141,35 @@ function endGame(roomId) {
 		room.player2.socket.send(JSON.stringify(endState));
 		room.player2.socket.close();
 	}
+	
+	//store match result in DB
+
+	console.log("Game ended in room " + roomId + ", rooms count: " + rooms.size);
+	clearRoom(roomId);
+
+	// if (aiPlayers.has(roomId)) {
+	// 	aiPlayers.delete(roomId);
+	// 	if (aiPlayers.size === 0 && aiPlay !== 0) {
+	// 		clearInterval(aiPlay);
+	// 		aiPlay = 0;
+	// 	}
+	// }
+
+	// room.game = null;
+	// rooms.delete(roomId);
+}
+
+function clearRoom(roomId) {
+	const room = rooms.get(roomId);
+	if (!room) return;
+
+	// Clear player data
+	room.player1 = { id: null, socket: null, name: null, ready: false };
+	room.player2 = { id: null, socket: null, name: null, ready: false };
+	room.game = null;
+
+	// Remove AI player if exists
 	if (aiPlayers.has(roomId)) {
-		//const ai = aiPlayers.get(roomId);
-		//ai.stop();
 		aiPlayers.delete(roomId);
 		if (aiPlayers.size === 0 && aiPlay !== 0) {
 			clearInterval(aiPlay);
@@ -151,11 +177,8 @@ function endGame(roomId) {
 		}
 	}
 
-	//store match result in DB
-
-	room.game = null;
 	rooms.delete(roomId);
-	console.log("Game ended in room " + roomId + ", rooms count: " + rooms.size);
+	console.log("Room " + roomId + " cleared");
 }
 
 // Send room-ready message to both players when room is full
@@ -190,22 +213,30 @@ function roomsLoop(rooms) {
 					const aiDirection = ai.updatePaddle();
 					room.game.paddle2.direction = aiDirection;
 				}
-				room.game.update();
-				const body = room.game.getState();
-				const gameState = {
-					type: "game-state",
-					payload: body,
-				};
+				let gameState = null;
+				//end game if one of players disconnected
+				if (!room.player1.socket || 
+					(!room.player2.socket && room.player2.name !== "AIplayer")) {
+					gameState = {
+						type: "game-failed",
+						payload: { message: "Opponent disconnected" },
+					};
+					clearRoom(roomId);
+				} else {
+					room.game.update();
+					const body = room.game.getState();
+					gameState = {
+						type: "game-state",
+						payload: body,
+					};
+				}
 				if (room.player1.socket) {
 					room.player1.socket.send(JSON.stringify(gameState));
 				}
 				if (room.player2.socket) {
 					room.player2.socket.send(JSON.stringify(gameState));
 				}
-				//end game if one of players disconnected
-				if (!room.player1.socket || 
-					(!room.player2.socket && room.player2.name !== "AIplayer") || 
-					room.game.gameState === "finished") {
+				if (room.game.gameState === "finished") {
 						endGame(roomId);
 				}
 			}
