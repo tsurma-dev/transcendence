@@ -1,12 +1,9 @@
-// import {
-//   createMatch,
-//   addPlayerToMatch,
-//   completeMatch,
-// } from "../models/matchModel";
+import { createMatch } from "../models/matchModel.js";
 
 import { Game } from "../game/pongGame.js";
 import { AIplayer } from "../game/aiPlayer.js";
 
+let db = null;
 const rooms = new Map();
 const aiPlayers = new Map();
 var waitingRoom = null;
@@ -14,7 +11,7 @@ let aiPlay = 0;
 roomsLoop(rooms);
 
 export function handlePongWebSocket(socket, req) {
-	//db = app.db;
+	db = req.server.db;
 	socket.on("message", (msg) => {
 	console.log("received ws msg: " + msg);
 
@@ -143,6 +140,7 @@ function endGame(roomId) {
 	}
 	
 	//store match result in DB
+	//storeMatchResult(roomId);
 
 	console.log("Game ended in room " + roomId + ", rooms count: " + rooms.size);
 	clearRoom(roomId);
@@ -157,6 +155,25 @@ function endGame(roomId) {
 
 	// room.game = null;
 	// rooms.delete(roomId);
+}
+
+function storeMatchResult(roomId) {
+	if (!db) {
+		console.error("Database connection not available");
+		return;
+	}
+	const room = rooms.get(roomId);
+	if (!room) return;
+	createMatch(
+		db,
+		1, // tournament_id - not implemented
+		room.player1.id, // get actual user IDs from auth system
+		room.player2.id,
+		room.game.score.player1,
+		room.game.score.player2,
+		room.game.score.player1 > room.game.score.player2 ? room.player1.id : room.player2.id
+	);
+	console.log("Match result stored in DB for room " + roomId);
 }
 
 function clearRoom(roomId) {
