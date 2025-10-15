@@ -601,7 +601,7 @@ export class PoolScene {
                 // Silent error handling
               }
             }
-          } else if (event.collisionType === 'paddle-face') {
+          } else if (event.collisionType === 'paddle' || event.collisionType === 'paddle-face') {
             // Only play paddle sound for front face hits, not end hits
             if (this.audioEnabled && this.paddleHitAudio) {
               try {
