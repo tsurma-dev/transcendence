@@ -20,6 +20,7 @@ export class GameClient {
   private onGameStart?: () => void;
   private onGameState?: (state: GameState) => void;
   private onGameOver?: (result: { player1Score: number; player2Score: number; winner: string}) => void;
+  private onGameFailed?: (message: string) => void;
 
   constructor(serverUrl: string, playerName: string, roomId?: string, gameMode?: string) {
     this.serverUrl = serverUrl;
@@ -137,6 +138,11 @@ export class GameClient {
         this.onGameOver?.(message.payload);
         break;
 
+      case "game-failed":
+        console.log("💥 Game failed!", message.payload);
+        this.onGameFailed?.(message.payload.message || "Game failed");
+        break;
+
       default:
         // Handle error messages from server
         if (message && typeof message === 'object' && 'message' in message) {
@@ -209,6 +215,10 @@ export class GameClient {
 
   public setOnGameOver(handler: (result: { player1Score: number; player2Score: number; winner: string }) => void): void {
     this.onGameOver = handler;
+  }
+
+  public setOnGameFailed(handler: (message: string) => void): void {
+    this.onGameFailed = handler;
   }
 
   public dispose(): void {

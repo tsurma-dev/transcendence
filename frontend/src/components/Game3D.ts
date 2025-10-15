@@ -75,11 +75,23 @@ export class Game3DComponent {
     this.loadingOverlay.style.display = 'flex'; // Loading overlay starts visible
     this.loadingOverlay.innerHTML = this.createPongContentWrapper(`
       <div>
-        <div class="text-black font-mono text-2xl font-bold drop-shadow-lg animate-pulse text-center">
+        <div class="text-black font-mono text-2xl font-bold drop-shadow-lg animate-pulse text-center mb-6">
           Loading game assets...
         </div>
+        <button id="loading-back-to-menu-btn" class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+          ← Back
+        </button>
       </div>
     `);
+    
+    // Add click handler for back button
+    const backButton = this.loadingOverlay.querySelector('#loading-back-to-menu-btn') as HTMLElement;
+    if (backButton) {
+      backButton.addEventListener('click', () => {
+        this.returnToMainMenu();
+      });
+    }
+    
     this.container.appendChild(this.loadingOverlay);
   }
 
@@ -323,6 +335,12 @@ export class Game3DComponent {
     this.poolScene.setOnGameEndCallback((finalState) => {
       this.hideQuitButton();
       this.showGameEndOverlay(finalState);
+    });
+    
+    // Always set up game failed callback for online games
+    this.poolScene.setOnGameFailedCallback((message) => {
+      this.hideQuitButton();
+      this.handleGameFailure(message);
     });
     
     // Set up mode-specific callbacks
@@ -571,6 +589,24 @@ export class Game3DComponent {
     }
   }
 
+  public handleGameFailure(message: string): void {
+    console.log('🚨 Game failure received:', message);
+    
+    // Stop all animations and dispose of the PoolScene immediately
+    if (this.poolScene) {
+      this.poolScene.dispose();
+      this.poolScene = undefined;
+    }
+    
+    // Hide all other overlays
+    if (this.waitingOverlay) this.waitingOverlay.style.display = "none";
+    if (this.roomInputOverlay) this.roomInputOverlay.style.display = "none";
+    if (this.loadingOverlay) this.loadingOverlay.style.display = "none";
+    
+    // Show the disconnect overlay with the message
+    this.showDisconnectOverlay(message);
+  }
+
   private showWaitingForConnectionScreen(): void {
     if (!this.waitingOverlay) return;
     
@@ -584,10 +620,21 @@ export class Game3DComponent {
           ${this.roomId}
         </div>
       </div>
-      <div class="animate-pulse">
+      <div class="animate-pulse mb-6">
         <p class="font-mono text-black text-lg font-bold">Connecting...</p>
       </div>
+      <button id="back-to-menu-btn" class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
+        ← Back
+      </button>
     `);
+    
+    // Add click handler for back button
+    const backButton = this.waitingOverlay.querySelector('#back-to-menu-btn') as HTMLElement;
+    if (backButton) {
+      backButton.addEventListener('click', () => {
+        this.returnToMainMenu();
+      });
+    }
     
     this.waitingOverlay.style.display = "flex";
   }
@@ -758,6 +805,61 @@ export class Game3DComponent {
       });
     }
 
+    returnToMenuBtn?.addEventListener('click', async () => {
+      await this.returnToMainMenu();
+    });
+
+    // Show the overlay
+    this.gameEndOverlay.style.display = "flex";
+  }
+
+  private showDisconnectOverlay(message: string): void {
+    if (!this.gameEndOverlay) return;
+
+    // Hide quit button when showing disconnect overlay
+    this.hideQuitButton();
+
+    // Increase z-index to ensure it's above animations and other content
+    this.gameEndOverlay.style.zIndex = '9999';
+    
+    this.gameEndOverlay.innerHTML = `
+      <div style="
+        background: rgba(0, 0, 0, 0.4) !important;
+        backdrop-filter: blur(10px) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        padding: 24px !important;
+        max-width: 448px !important;
+        text-align: center !important;
+        border: 4px solid black !important;
+      ">
+        <div style="margin-bottom: 24px !important;">
+          <h2 style="font-family: monospace !important; color: #ef4444 !important; font-size: 30px !important; font-weight: bold !important; margin-bottom: 8px !important;">⚠️ Connection Lost</h2>
+          <p style="font-family: monospace !important; color: white !important; font-size: 18px !important; font-weight: bold !important;">${message}</p>
+        </div>
+        
+        <div style="display: flex !important; flex-direction: column !important; gap: 12px !important;">
+          <button id="returnToMenuBtn" style="
+            width: 100% !important;
+            color: white !important;
+            font-family: monospace !important;
+            font-size: 18px !important;
+            font-weight: bold !important;
+            background: rgb(236, 72, 153) !important;
+            padding: 12px 24px !important;
+            border-radius: 8px !important;
+            border: 2px solid black !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+          " onmouseover="this.style.background='rgb(219, 39, 119)'" onmouseout="this.style.background='rgb(236, 72, 153)'">
+            🏠 Return to Menu
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Add event listener for return to menu
+    const returnToMenuBtn = this.gameEndOverlay.querySelector('#returnToMenuBtn');
     returnToMenuBtn?.addEventListener('click', async () => {
       await this.returnToMainMenu();
     });
