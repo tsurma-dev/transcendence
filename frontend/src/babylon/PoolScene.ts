@@ -97,6 +97,7 @@ export class PoolScene {
   private onGameEndCallback?: (finalState: GameState) => void;
   private onRoomIdCallback?: (roomId: string) => void;
   private onGameStartCallback?: () => void;
+  private onGameFailedCallback?: (message: string) => void;
 
   // -------------------
   // --- CONSTRUCTOR ---
@@ -346,6 +347,10 @@ export class PoolScene {
     this.onGameStartCallback = callback;
   }
 
+  public setOnGameFailedCallback(callback: (message: string) => void): void {
+    this.onGameFailedCallback = callback;
+  }
+
 
 
   // ********************
@@ -498,6 +503,14 @@ export class PoolScene {
             }
           };
           this.handleGameEnd(finalStateWithWinner);
+        }
+      });
+
+      // Set up game-failed handler for disconnections and errors
+      this.client.setOnGameFailed((message: string) => {
+        console.log('🚨 Game failed in PoolScene:', message);
+        if (this.onGameFailedCallback) {
+          this.onGameFailedCallback(message);
         }
       });
 
