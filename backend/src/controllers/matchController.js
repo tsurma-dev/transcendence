@@ -2,8 +2,12 @@ import { createMatch } from "../models/matchModel.js";
 
 import { Game } from "../game/pongGame.js";
 import { AIplayer } from "../game/aiPlayer.js";
+import { Tournament } from "../tournament/tournament.js";
+
+const TIMEOUT = 30 * 60 * 5; // 30 times per second * 60 seconds * n minutes
 
 let db = null;
+const tournaments = new Map(); // tournamentId -> Tournament instance
 const rooms = new Map();
 const aiPlayers = new Map();
 var waitingRoom = null;
@@ -41,6 +45,9 @@ export function handlePongWebSocket(socket, req) {
 		case "input":
 			//console.log("Updating player " + data.payload.playerId + " room " + data.payload.roomId + " with direction " + data.payload.direction);
 			updatePlayer(socket, data.payload?.roomId, data.payload?.playerId, data.payload?.direction);
+			break;
+		case "tournament-join":
+			joinTournament(socket, data.payload?.tournamentId, data.payload?.playerName);
 			break;
 		default:
 			socket.send(JSON.stringify({ message: "Unknown action" }));
@@ -126,32 +133,30 @@ function endGame(roomId) {
 		payload: {
 			player1Score: room.game.score.player1,
 			player2Score: room.game.score.player2,
-			// winner: room.game.score.player1 > room.game.score.player2 ? "first" : "second",
 			winner: room.game.score.player1 > room.game.score.player2 ? room.player1.name : room.player2.name,
 		},
 	};
 	if (room.player1.socket) {
 		room.player1.socket.send(JSON.stringify(endState));
-		room.player1.socket.close();
+		//room.player1.socket.close();
 	}
 	if (room.player2.socket) {
 		room.player2.socket.send(JSON.stringify(endState));
-		room.player2.socket.close();
+		//room.player2.socket.close();
 	}
 	
-	//store match result in DB
-	//storeMatchResult(roomId);
+	//store match result in DB if both players are real
+	// if (room.player2.name !== "AIplayer") {
+	// 	storeMatchResult(roomId);
+	// }
 
 	console.log("Game ended in room " + roomId + ", rooms count: " + rooms.size);
-	clearRoom(roomId);
 
-	// if (aiPlayers.has(roomId)) {
-	// 	aiPlayers.delete(roomId);
-	// 	if (aiPlayers.size === 0 && aiPlay !== 0) {
-	// 		clearInterval(aiPlay);
-	// 		aiPlay = 0;
-	// 	}
-	// }
+	if (room.tournamentId) {
+		handleTournamentResult(room.tournamentId, roomId);
+	} // if finished remove from tournaments map
+
+	clearRoom(roomId);
 
 	// room.game = null;
 	// rooms.delete(roomId);
@@ -179,6 +184,16 @@ function storeMatchResult(roomId) {
 function clearRoom(roomId) {
 	const room = rooms.get(roomId);
 	if (!room) return;
+
+	if (!room.tournamentId || !tournaments.has(room.tournamentId)) {
+		// If the room is not part of a tournament, close player sockets
+		if (room.player1.socket) {
+			room.player1.socket.close();
+		}
+		if (room.player2.socket) {
+			room.player2.socket.close();
+		}
+	}
 
 	// Clear player data
 	room.player1 = { id: null, socket: null, name: null, ready: false };
@@ -224,35 +239,46 @@ function roomsLoop(rooms) {
 	setInterval(() => {
 		if (!rooms || rooms.size === 0) return;
 		rooms.forEach((room, roomId) => {
+			if (!room.game) {
+				room.timeout -= 1;
+				if (room.timeout <= 0) {
+					sendGameState(roomId, "room-closed");
+					console.log("Room " + roomId + " timed out due to inactivity");
+					clearRoom(roomId);
+				}
+			}
 			if (room.game && room.game.gameState === "playing") {
 				if (room.player2.name === "AIplayer" && aiPlayers.has(roomId)) {
 					const ai = aiPlayers.get(roomId);
 					const aiDirection = ai.updatePaddle();
 					room.game.paddle2.direction = aiDirection;
 				}
-				let gameState = null;
+				//let gameState = null;
 				//end game if one of players disconnected
 				if (!room.player1.socket || 
 					(!room.player2.socket && room.player2.name !== "AIplayer")) {
-					gameState = {
-						type: "game-failed",
-						payload: { message: "Opponent disconnected" },
-					};
+					// gameState = {
+					// 	type: "game-failed",
+					// 	payload: { message: "Opponent disconnected" },
+					// };
+					sendGameState(roomId, "failed");
+					console.log("Game in room " + roomId + " ended due to player disconnect");
 					clearRoom(roomId);
 				} else {
 					room.game.update();
-					const body = room.game.getState();
-					gameState = {
-						type: "game-state",
-						payload: body,
-					};
+					sendGameState(roomId, "update");
+					// const body = room.game.getState();
+					// gameState = {
+					// 	type: "game-state",
+					// 	payload: body,
+					// };
 				}
-				if (room.player1.socket) {
-					room.player1.socket.send(JSON.stringify(gameState));
-				}
-				if (room.player2.socket) {
-					room.player2.socket.send(JSON.stringify(gameState));
-				}
+				// if (room.player1.socket) {
+				// 	room.player1.socket.send(JSON.stringify(gameState));
+				// }
+				// if (room.player2.socket) {
+				// 	room.player2.socket.send(JSON.stringify(gameState));
+				// }
 				if (room.game.gameState === "finished") {
 						endGame(roomId);
 				}
@@ -261,12 +287,52 @@ function roomsLoop(rooms) {
 	}, 1000 / 30); // 30 FPS
 }
 
-function createRoom(type) {
+function sendGameState(roomId, state) {
+	const room = rooms.get(roomId);
+	if (!room) return;
+
+	let gameState = null;
+
+	switch (state) {
+		case "failed":
+			gameState = {
+				type: "game-failed",
+				payload: { message: "Opponent disconnected" },
+			};
+			break;
+		case "room-closed":
+			gameState = {
+				type: "game-failed",
+				payload: { message: "Room closed because of inactivity" },
+			};
+			break;
+		case "update":
+			const body = room.game.getState();
+			gameState = {
+				type: "game-state",
+				payload: body,
+			};
+			break;
+		default:
+			return;
+	}
+
+	if (room.player1.socket) {
+		room.player1.socket.send(JSON.stringify(gameState));
+	}
+	if (room.player2.socket) {
+		room.player2.socket.send(JSON.stringify(gameState));
+	}
+}
+
+function createRoom(type, tId) {
   const roomId = Math.random().toString(36).slice(2, 8);
   rooms.set(roomId, { 
 			player1: { id: null, socket: null, name: null, ready: false }, 
 			player2: { id: null, socket: null, name: null, ready: false }, 
-			game: null
+			game: null,
+			tournamentId: tId || null,
+			timeout: TIMEOUT
 		});
   if (type === 'public') {
 	waitingRoom = roomId;
@@ -275,7 +341,30 @@ function createRoom(type) {
   return roomId;
 }
 
-// add names received from client
+function joinTournament(socket, tournamentId, playerName) {
+	if (!tournamentId) {
+		// Join the first available tournament in 'waiting' state or create a new one
+		tournamentId = getCurTournament();
+	}
+	if (!tournamentId) {
+		// No available tournament, create a new one
+		tournamentId = Math.random().toString(36).slice(2, 8);
+		//const tournament = new Tournament(tournamentId);
+		tournaments.set(tournamentId, new Tournament(tournamentId));
+		console.log("Tournament created with ID: " + tournamentId);
+	}
+	const tournament = tournaments.get(tournamentId);
+	if (!tournament) {
+		socket.send(JSON.stringify({ type: 'fail', message: 'Tournament not found' }));
+		socket.close();
+		return;
+	}
+	let res = tournament.addPlayer(playerName, socket);
+	if (res === 4) {
+		tournament.setFirstRound(createRoom('tournament', tournamentId), createRoom('tournament', tournamentId));
+	}
+}
+
 function joinRoom(socket, roomId, playerName) {
   if (!roomId) {
 	if (waitingRoom && rooms.has(waitingRoom)) {
@@ -327,6 +416,23 @@ function joinRoom(socket, roomId, playerName) {
   }
 }
 
+function handleTournamentResult(tournamentId, roomId) {
+	if (!tournaments.has(tournamentId)) return;
+	const tournament = tournaments.get(tournamentId);
+	if (!tournament) return;
+	const room = rooms.get(roomId);
+	if (!room) return;
+	const score = [room.game.score.player1, room.game.score.player2];
+	const res = tournament.setScore(roomId, score);
+	if (res === 1) {
+		// first round finished, set up second round
+		tournament.setSecondRound(createRoom('tournament', tournamentId), createRoom('tournament', tournamentId));
+	} else if (res === 2) {
+		// tournament finished
+		tournaments.delete(tournamentId);
+	}
+}
+
 function setAIroom(socket, playerName) {
   const roomId = createRoom('AI');
   joinRoom(socket, roomId, playerName);
@@ -344,7 +450,22 @@ function setupCloseHandler(roomId, socket) {
   socket.on("close", () => {
     const room = rooms.get(roomId);
     if (!room) return;
+	if (room.player1.socket === socket) {
+		room.player1.socket = null;
+	}
+	if (room.player2.socket === socket) {
+		room.player2.socket = null;
+	}
 	console.log("Socket closed, game in room " + roomId + " ended");
-    endGame(roomId);
+    //endGame(roomId);
   });
+}
+
+function getCurTournament() {
+  for (let [id, tournament] of tournaments) {
+    if (tournament.state === 'waiting') {
+      return id;
+    }
+  }
+  return null;
 }
