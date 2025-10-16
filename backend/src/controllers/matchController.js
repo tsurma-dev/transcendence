@@ -4,6 +4,8 @@ import { Game } from "../game/pongGame.js";
 import { AIplayer } from "../game/aiPlayer.js";
 import { Tournament } from "../tournament/tournament.js";
 
+const TIMEOUT = 30 * 60 * 5; // 30 times per second * 60 seconds * n minutes
+
 let db = null;
 const tournaments = new Map(); // tournamentId -> Tournament instance
 const rooms = new Map();
@@ -237,41 +239,90 @@ function roomsLoop(rooms) {
 	setInterval(() => {
 		if (!rooms || rooms.size === 0) return;
 		rooms.forEach((room, roomId) => {
+			if (!room.game) {
+				room.timeout -= 1;
+				if (room.timeout <= 0) {
+					sendGameState(roomId, "room-closed");
+					console.log("Room " + roomId + " timed out due to inactivity");
+					clearRoom(roomId);
+				}
+			}
 			if (room.game && room.game.gameState === "playing") {
 				if (room.player2.name === "AIplayer" && aiPlayers.has(roomId)) {
 					const ai = aiPlayers.get(roomId);
 					const aiDirection = ai.updatePaddle();
 					room.game.paddle2.direction = aiDirection;
 				}
-				let gameState = null;
+				//let gameState = null;
 				//end game if one of players disconnected
 				if (!room.player1.socket || 
 					(!room.player2.socket && room.player2.name !== "AIplayer")) {
-					gameState = {
-						type: "game-failed",
-						payload: { message: "Opponent disconnected" },
-					};
+					// gameState = {
+					// 	type: "game-failed",
+					// 	payload: { message: "Opponent disconnected" },
+					// };
+					sendGameState(roomId, "failed");
+					console.log("Game in room " + roomId + " ended due to player disconnect");
 					clearRoom(roomId);
 				} else {
 					room.game.update();
-					const body = room.game.getState();
-					gameState = {
-						type: "game-state",
-						payload: body,
-					};
+					sendGameState(roomId, "update");
+					// const body = room.game.getState();
+					// gameState = {
+					// 	type: "game-state",
+					// 	payload: body,
+					// };
 				}
-				if (room.player1.socket) {
-					room.player1.socket.send(JSON.stringify(gameState));
-				}
-				if (room.player2.socket) {
-					room.player2.socket.send(JSON.stringify(gameState));
-				}
+				// if (room.player1.socket) {
+				// 	room.player1.socket.send(JSON.stringify(gameState));
+				// }
+				// if (room.player2.socket) {
+				// 	room.player2.socket.send(JSON.stringify(gameState));
+				// }
 				if (room.game.gameState === "finished") {
 						endGame(roomId);
 				}
 			}
 		});
 	}, 1000 / 30); // 30 FPS
+}
+
+function sendGameState(roomId, state) {
+	const room = rooms.get(roomId);
+	if (!room) return;
+
+	let gameState = null;
+
+	switch (state) {
+		case "failed":
+			gameState = {
+				type: "game-failed",
+				payload: { message: "Opponent disconnected" },
+			};
+			break;
+		case "room-closed":
+			gameState = {
+				type: "game-failed",
+				payload: { message: "Room closed because of inactivity" },
+			};
+			break;
+		case "update":
+			const body = room.game.getState();
+			gameState = {
+				type: "game-state",
+				payload: body,
+			};
+			break;
+		default:
+			return;
+	}
+
+	if (room.player1.socket) {
+		room.player1.socket.send(JSON.stringify(gameState));
+	}
+	if (room.player2.socket) {
+		room.player2.socket.send(JSON.stringify(gameState));
+	}
 }
 
 function createRoom(type, tId) {
@@ -281,6 +332,7 @@ function createRoom(type, tId) {
 			player2: { id: null, socket: null, name: null, ready: false }, 
 			game: null,
 			tournamentId: tId || null,
+			timeout: TIMEOUT
 		});
   if (type === 'public') {
 	waitingRoom = roomId;
