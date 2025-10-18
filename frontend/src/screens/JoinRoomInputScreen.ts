@@ -1,5 +1,6 @@
 import { Component, TemplateManager, AppRouter, ApiService } from '../core'
 import { LoggedInLandingScreen } from './LoggedInLandingScreen'
+import { RemoteGameLobbyScreen } from './RemoteGameLobbyScreen'
 import { ServerGameScreen } from './ServerGameScreen'
 
 /**
@@ -67,7 +68,7 @@ export class JoinRoomInputScreen extends Component {
 
     if (backBtn) {
       backBtn.addEventListener('click', () => {
-        this.router.navigateTo(LoggedInLandingScreen)
+        this.router.navigateTo(RemoteGameLobbyScreen)
       })
     }
 
