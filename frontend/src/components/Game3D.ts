@@ -4,14 +4,42 @@ import { PoolScene } from "../babylon/PoolScene";
 
 export type GameMode = 'local' | 'joinRoom' | 'createRoom' | 'AI';
 
+/**
+ * Game3D Component with organized overlay system:
+ * 
+ * Full Screen Overlays (z-index 20-25):
+ * - loadingOverlay: Shows while game assets are loading (for all game modes)
+ * - roomCreatedOverlay: Shows room ID while waiting for player 2 to join
+ * 
+ * Pop-up Overlays (z-index 30+, with game visible in background):
+ * - gameEndOverlay: Shows game over screen with winner and options
+ * - disconnected popup: Uses gameEndOverlay to show disconnection messages
+ * 
+ * UI Elements:
+ * - quitButton: Fixed position quit button for active games
+ * 
+ * Code Organization:
+ * - OVERLAY CREATION METHODS: Create DOM elements for all overlays
+ * - GAME FLOW METHODS: Main game lifecycle and initialization
+ * - OVERLAY DISPLAY METHODS: Show/hide overlay screens and handle UI state
+ * - CALLBACK SETUP METHODS: Configure PoolScene event handlers and callbacks
+ * - GAME INITIALIZATION METHODS: Asset loading and game mode setup
+ * - UTILITY METHODS: Helper functions and error handling
+ * - POP-UP OVERLAY METHODS: Modal overlay content and behavior
+ */
 export class Game3DComponent {
   private container: HTMLElement;
   private canvas!: HTMLCanvasElement;
   private poolScene?: PoolScene;
+  
+  // Full screen overlays
   private loadingOverlay?: HTMLElement;
-  private waitingOverlay?: HTMLElement;
-  private roomInputOverlay?: HTMLElement;
-  private gameEndOverlay?: HTMLElement;
+  private roomCreatedOverlay?: HTMLElement;
+  
+  // Pop-up overlays (with game in background)
+  private gameEndOverlay?: HTMLElement; // also used for disconnection messages
+
+  // Game parameters
   private gameMode: GameMode;
   private player1Name: string; // current user
   private player2Name?: string; // opponent (optional - only provided for local games)
@@ -21,7 +49,7 @@ export class Game3DComponent {
   constructor(
     container: HTMLElement,
     player1Name: string, // current user (required)
-    gameMode: GameMode = 'local', // game mode (required)
+    gameMode: GameMode, // game mode (required)
     player2Name?: string, // opponent (optional, only for local)
     roomId?: string, // room ID (optional, only for joinRoom)
     onReturnToMenuCallback?: () => void
@@ -62,13 +90,20 @@ export class Game3DComponent {
   ].join('\n');
 
   private setupUI(): void {
-    // Create all overlays
+    // === Full Screen Overlays ===
     this.createLoadingOverlay();
-    this.createWaitingOverlay();
-    this.createRoomInputOverlay();
+    this.createRoomCreatedOverlay();
+    
+    // === Pop-up Overlays ===
     this.createGameEndOverlay();
+    
+    // === UI Elements ===
     this.createQuitButton();
   }
+
+  // ============================================================================
+  // OVERLAY CREATION METHODS
+  // ============================================================================
 
   private createLoadingOverlay(): void {
     this.loadingOverlay = this.createBaseOverlay(20);
@@ -78,21 +113,15 @@ export class Game3DComponent {
         <div class="text-black font-mono text-2xl font-bold drop-shadow-lg animate-pulse text-center mb-6">
           Loading game assets...
         </div>
-        <button id="loading-back-to-menu-btn" class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
-          ← Back
-        </button>
       </div>
     `);
     
-    // Add click handler for back button
-    const backButton = this.loadingOverlay.querySelector('#loading-back-to-menu-btn') as HTMLElement;
-    if (backButton) {
-      backButton.addEventListener('click', () => {
-        this.returnToMainMenu();
-      });
-    }
-    
     this.container.appendChild(this.loadingOverlay);
+  }
+
+  private createRoomCreatedOverlay(): void {
+    this.roomCreatedOverlay = this.createBaseOverlay(25);
+    this.container.appendChild(this.roomCreatedOverlay);
   }
 
   private createBaseOverlay(zIndex: number): HTMLElement {
@@ -123,17 +152,6 @@ export class Game3DComponent {
     `;
   }
 
-
-  private createWaitingOverlay(): void {
-    this.waitingOverlay = this.createBaseOverlay(25);
-    this.container.appendChild(this.waitingOverlay);
-  }
-
-  private createRoomInputOverlay(): void {
-    this.roomInputOverlay = this.createBaseOverlay(25);
-    this.container.appendChild(this.roomInputOverlay);
-  }
-
   private createGameEndOverlay(): void {
     this.gameEndOverlay = document.createElement("div");
     this.gameEndOverlay.style.cssText = `
@@ -143,10 +161,11 @@ export class Game3DComponent {
       width: 100%;
       height: 100%;
       background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(5px);
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 25;
+      z-index: 30;
     `;
     this.container.appendChild(this.gameEndOverlay);
   }
@@ -290,6 +309,10 @@ export class Game3DComponent {
     document.body.appendChild(confirmOverlay);
   }
 
+  // ============================================================================
+  // GAME FLOW METHODS
+  // ============================================================================
+
   private async startGameFlow(): Promise<void> {
     console.log('🚀 Starting game flow for mode:', this.gameMode);
     
@@ -312,11 +335,115 @@ export class Game3DComponent {
     }
   }
 
+    private async startLocalGame(): Promise<void> {
+    console.log('🎮 Setting up local game');
+    
+    try {
+      // Create PoolScene for local game
+      this.poolScene = new PoolScene(this.canvas, 'local', this.player1Name, this.player2Name);
+      
+      // Set up callbacks
+      this.setupPoolSceneCallbacks();
+      
+      // Wait for assets to load completely (keep loading screen visible)
+      await this.waitForAssetsToLoadLocal();
+      
+      // Start the game - loading screen will be hidden when camera intro begins
+      await this.poolScene.startAnimation();
+      
+    } catch (error) {
+      console.error('Failed to initialize local game:', error);
+      this.showError('Failed to load local game');
+    }
+  }
+
+  private async startCreateRoomGame(): Promise<void> {
+    console.log('🌐 Setting up createRoom game');
+    
+    try {
+      // Create PoolScene for online game in createRoom mode
+      this.poolScene = new PoolScene(this.canvas, 'online', this.player1Name);
+      
+      // Set up callbacks
+      this.setupPoolSceneCallbacks();
+      
+      // Wait for assets to load
+      await this.waitForAssetsToLoad();
+      
+      // Show appropriate waiting screen based on mode
+      this.showRoomCreatedScreen();
+      
+      // Start the online game flow (PoolScene will handle server communication)
+      await this.poolScene.startAnimation();
+      
+    } catch (error) {
+      console.error('Failed to initialize createRoom game:', error);
+      this.showError('Failed to create room');
+    }
+  }
+
+  private async startJoinRoomGame(): Promise<void> {
+    // Prevent multiple initializations
+    if (this.poolScene) {
+      return;
+    }
+    
+    try {
+      if (!this.roomId) {
+        throw new Error('Room ID is required for joinRoom mode');
+      }
+      
+      // Create PoolScene for online game in joinRoom mode with specific room ID
+      this.poolScene = new PoolScene(this.canvas, 'online', this.player1Name, undefined, this.roomId);
+      
+      // Set up callbacks
+      this.setupPoolSceneCallbacks();
+      
+      // Wait for assets to load (loading screen stays visible)
+      await this.waitForAssetsToLoad();
+      
+      // Start the online game flow (PoolScene will handle server communication)
+      this.poolScene.startAnimation();
+      
+    } catch (error) {
+      console.error('Failed to initialize joinRoom game:', error);
+      this.showError('Failed to join room');
+    }
+  }
+
+  private async startAIGame(): Promise<void> {
+    console.log('🤖 Setting up AI game');
+    
+    try {
+      // Create PoolScene for AI game using online mode
+      this.poolScene = new PoolScene(this.canvas, 'AI', this.player1Name, 'AI');
+      
+      // Set up callbacks (same as online games)
+      this.setupPoolSceneCallbacks();
+      
+      // Wait for assets to load (but keep loading screen visible for AI)
+      await this.waitForAssetsToLoadLocal();
+      
+      // For AI games, we keep showing loading until the game starts
+      // No waiting screen needed since AI is immediate
+      
+      // Start the AI game flow (PoolScene will handle server communication)
+      await this.poolScene.startAnimation();
+      
+    } catch (error) {
+      console.error('Failed to initialize AI game:', error);
+      this.showError('Failed to load AI game');
+    }
+  }
+
+  // ============================================================================
+  // OVERLAY DISPLAY METHODS
+  // ============================================================================
+
   private showLoadingScreen(): void {
     this.hideQuitButton();
     if (this.loadingOverlay) this.loadingOverlay.style.display = "flex";
-    if (this.waitingOverlay) this.waitingOverlay.style.display = "none";
-    if (this.roomInputOverlay) this.roomInputOverlay.style.display = "none";
+    if (this.roomCreatedOverlay) this.roomCreatedOverlay.style.display = "none";
   }
 
   private hideLoadingScreen(): void {
@@ -327,6 +454,81 @@ export class Game3DComponent {
       this.showQuitButton();
     }
   }
+
+  private showRoomCreatedScreen(roomId?: string): void {
+    if (!this.roomCreatedOverlay) return;
+    
+    this.hideQuitButton();
+    
+    // Show empty room ID initially, will be updated when received from server
+    const displayRoomId = roomId || '------';
+    
+    this.roomCreatedOverlay.innerHTML = this.createPongContentWrapper(`
+      <p class="font-mono text-black text-2xl font-bold drop-shadow-lg mb-6">Room Created!</p>
+      <div class="mb-6">
+        <p class="font-mono text-black text-lg font-bold mb-2">Room ID:</p>
+        <div class="relative">
+          <div class="w-full bg-black text-white font-mono text-2xl font-bold px-8 py-3 rounded border-4 border-black text-center">
+            <span id="roomIdDisplay">${displayRoomId}</span>
+          </div>
+          <button 
+            id="copyRoomIdBtn" 
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 bg-gray-700 hover:bg-gray-600 rounded border border-gray-500 text-sm transition-colors duration-150" 
+            title="Copy Room ID"
+          >
+            🔗
+          </button>
+        </div>
+      </div>
+      <div class="animate-pulse mb-6">
+        <p class="font-mono text-black text-lg font-bold">Waiting for Player 2...</p>
+      </div>
+      <div class="space-y-4">
+        <button 
+          id="backToMenuFromWaitingBtn" 
+          class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider"
+        >
+          ← Back
+        </button>
+      </div>
+    `);
+    
+    this.roomCreatedOverlay.style.display = "flex";
+    
+    // Add event listeners
+    const copyBtn = this.roomCreatedOverlay.querySelector('#copyRoomIdBtn');
+    const backBtn = this.roomCreatedOverlay.querySelector('#backToMenuFromWaitingBtn');
+    
+    copyBtn?.addEventListener('click', () => {
+      const roomIdElement = document.getElementById('roomIdDisplay');
+      if (roomIdElement) {
+        const roomId = roomIdElement.textContent || '';
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(roomId).then(() => {
+            // Visual feedback
+            copyBtn.textContent = '✅';
+            setTimeout(() => {
+              copyBtn.textContent = '🔗';
+            }, 1000);
+          }).catch(() => {
+            // Fallback for older browsers
+            alert(`Room ID: ${roomId}\nCopy this manually!`);
+          });
+        } else {
+          // Fallback for older browsers
+          alert(`Room ID: ${roomId}\nCopy this manually!`);
+        }
+      }
+    });
+    
+    backBtn?.addEventListener('click', async () => {
+      await this.returnToMainMenu();
+    });
+  }
+
+  // ============================================================================
+  // CALLBACK SETUP METHODS
+  // ============================================================================
 
   private setupPoolSceneCallbacks(): void {
     if (!this.poolScene) return;
@@ -367,8 +569,8 @@ export class Game3DComponent {
     
     // Game start callback to hide waiting screens
     this.poolScene.setOnGameStartCallback(() => {
-      if (this.waitingOverlay) this.waitingOverlay.style.display = "none";
-      if (this.roomInputOverlay) this.roomInputOverlay.style.display = "none";
+      if (this.roomCreatedOverlay) this.roomCreatedOverlay.style.display = "none";
+      if (this.loadingOverlay) this.loadingOverlay.style.display = "none";
       this.showQuitButton();
     });
     
@@ -379,6 +581,10 @@ export class Game3DComponent {
       });
     }
   }
+
+  // ============================================================================
+  // GAME INITIALIZATION METHODS
+  // ============================================================================
 
   private async waitForAssetsToLoad(): Promise<void> {
     if (!this.poolScene) throw new Error('PoolScene not initialized');
@@ -402,192 +608,6 @@ export class Game3DComponent {
     });
   }
 
-  private async startLocalGame(): Promise<void> {
-    console.log('🎮 Setting up local game');
-    
-    try {
-      // Create PoolScene for local game
-      this.poolScene = new PoolScene(this.canvas, 'local', this.player1Name, this.player2Name);
-      
-      // Set up callbacks
-      this.setupPoolSceneCallbacks();
-      
-      // Wait for assets to load completely (keep loading screen visible)
-      await this.waitForAssetsToLoadLocal();
-      
-      // Start the game - loading screen will be hidden when camera intro begins
-      await this.poolScene.startAnimation();
-      
-    } catch (error) {
-      console.error('Failed to initialize local game:', error);
-      this.showError('Failed to load local game');
-    }
-  }
-
-  private async startCreateRoomGame(): Promise<void> {
-    console.log('🌐 Setting up createRoom game');
-    
-    try {
-      // Create PoolScene for online game in createRoom mode
-      this.poolScene = new PoolScene(this.canvas, 'online', this.player1Name);
-      
-      // Set up callbacks
-      this.setupPoolSceneCallbacks();
-      
-      // Wait for assets to load
-      await this.waitForAssetsToLoad();
-      
-      // Show appropriate waiting screen based on mode
-      this.showWaitingForPlayerScreen();
-      
-      // Start the online game flow (PoolScene will handle server communication)
-      await this.poolScene.startAnimation();
-      
-    } catch (error) {
-      console.error('Failed to initialize createRoom game:', error);
-      this.showError('Failed to create room');
-    }
-  }
-
-  private async startJoinRoomGame(): Promise<void> {
-    // Prevent multiple initializations
-    if (this.poolScene) {
-      return;
-    }
-    
-    try {
-      if (!this.roomId) {
-        // Show room input screen
-        this.showRoomInputScreen();
-        return;
-      }
-      
-      // Create PoolScene for online game in joinRoom mode with specific room ID
-      this.poolScene = new PoolScene(this.canvas, 'online', this.player1Name, undefined, this.roomId);
-      
-      // Set up callbacks
-      this.setupPoolSceneCallbacks();
-      
-      // Wait for assets to load
-      await this.waitForAssetsToLoad();
-      
-      // Only show waiting screen if it's not already shown (from room input)
-      if (!this.waitingOverlay || this.waitingOverlay.style.display === "none") {
-        this.showWaitingForConnectionScreen();
-      }
-      
-      // Start the online game flow (PoolScene will handle server communication)
-      // This should happen in background while showing the waiting screen
-      this.poolScene.startAnimation();
-      
-    } catch (error) {
-      console.error('Failed to initialize joinRoom game:', error);
-      this.showError('Failed to join room');
-    }
-  }
-
-  private async startAIGame(): Promise<void> {
-    console.log('🤖 Setting up AI game');
-    
-    try {
-      // Create PoolScene for AI game using online mode
-      this.poolScene = new PoolScene(this.canvas, 'AI', this.player1Name, 'AI');
-      
-      // Set up callbacks (same as online games)
-      this.setupPoolSceneCallbacks();
-      
-      // Wait for assets to load (but keep loading screen visible for AI)
-      await this.waitForAssetsToLoadLocal();
-      
-      // For AI games, we keep showing loading until the game starts
-      // No waiting screen needed since AI is immediate
-      
-      // Start the AI game flow (PoolScene will handle server communication)
-      await this.poolScene.startAnimation();
-      
-    } catch (error) {
-      console.error('Failed to initialize AI game:', error);
-      this.showError('Failed to load AI game');
-    }
-  }
-
-  private showWaitingForPlayerScreen(roomId?: string): void {
-    if (!this.waitingOverlay) return;
-    
-    this.hideQuitButton();
-    
-    // Show empty room ID initially, will be updated when received from server
-    const displayRoomId = roomId || '------';
-    
-    this.waitingOverlay.innerHTML = this.createPongContentWrapper(`
-      <p class="font-mono text-black text-2xl font-bold drop-shadow-lg mb-6">Room Created!</p>
-      <div class="mb-6">
-        <p class="font-mono text-black text-lg font-bold mb-2">Room ID:</p>
-        <div class="relative">
-          <div class="w-full bg-black text-white font-mono text-2xl font-bold px-8 py-3 rounded border-4 border-black text-center">
-            <span id="roomIdDisplay">${displayRoomId}</span>
-          </div>
-          <button 
-            id="copyRoomIdBtn" 
-            class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 bg-gray-700 hover:bg-gray-600 rounded border border-gray-500 text-sm transition-colors duration-150" 
-            title="Copy Room ID"
-          >
-            🔗
-          </button>
-        </div>
-      </div>
-      <div class="animate-pulse mb-6">
-        <p class="font-mono text-black text-lg font-bold">Waiting for Player 2...</p>
-      </div>
-      <div class="space-y-4">
-        <button 
-          id="backToMenuFromWaitingBtn" 
-          class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider"
-        >
-          ← Back
-        </button>
-      </div>
-    `);
-    
-    this.waitingOverlay.style.display = "flex";
-    
-    // Add event listeners
-    const copyBtn = this.waitingOverlay.querySelector('#copyRoomIdBtn');
-    const backBtn = this.waitingOverlay.querySelector('#backToMenuFromWaitingBtn');
-    
-    copyBtn?.addEventListener('click', () => {
-      const roomIdElement = document.getElementById('roomIdDisplay');
-      if (roomIdElement) {
-        const roomId = roomIdElement.textContent || '';
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(roomId).then(() => {
-            // Visual feedback
-            copyBtn.textContent = '✅';
-            setTimeout(() => {
-              copyBtn.textContent = '🔗';
-            }, 1000);
-          }).catch(() => {
-            // Fallback for older browsers
-            alert(`Room ID: ${roomId}\nCopy this manually!`);
-          });
-        } else {
-          // Fallback for older browsers
-          alert(`Room ID: ${roomId}\nCopy this manually!`);
-        }
-      }
-    });
-    
-    backBtn?.addEventListener('click', async () => {
-      await this.returnToMainMenu();
-    });
-  }
-
-  public updateRoomId(roomId: string): void {
-    const roomIdDisplay = document.getElementById('roomIdDisplay');
-    if (roomIdDisplay) {
-      roomIdDisplay.textContent = roomId;
-    }
-  }
 
   public handleGameFailure(message: string): void {
     console.log('🚨 Game failure received:', message);
@@ -599,113 +619,18 @@ export class Game3DComponent {
     }
     
     // Hide all other overlays
-    if (this.waitingOverlay) this.waitingOverlay.style.display = "none";
-    if (this.roomInputOverlay) this.roomInputOverlay.style.display = "none";
+    if (this.roomCreatedOverlay) this.roomCreatedOverlay.style.display = "none";
     if (this.loadingOverlay) this.loadingOverlay.style.display = "none";
     
     // Show the disconnect overlay with the message
     this.showDisconnectOverlay(message);
   }
 
-  private showWaitingForConnectionScreen(): void {
-    if (!this.waitingOverlay) return;
-    
-    this.hideQuitButton();
-    
-    this.waitingOverlay.innerHTML = this.createPongContentWrapper(`
-      <p class="font-mono text-black text-2xl font-bold drop-shadow-lg mb-6">Joining Room</p>
-      <div class="mb-6">
-        <p class="font-mono text-black text-lg font-bold mb-2">Room ID:</p>
-        <div class="bg-black text-white font-mono text-2xl font-bold px-4 py-2 rounded border-4 border-black">
-          ${this.roomId}
-        </div>
-      </div>
-      <div class="animate-pulse mb-6">
-        <p class="font-mono text-black text-lg font-bold">Connecting...</p>
-      </div>
-      <button id="back-to-menu-btn" class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider">
-        ← Back
-      </button>
-    `);
-    
-    // Add click handler for back button
-    const backButton = this.waitingOverlay.querySelector('#back-to-menu-btn') as HTMLElement;
-    if (backButton) {
-      backButton.addEventListener('click', () => {
-        this.returnToMainMenu();
-      });
-    }
-    
-    this.waitingOverlay.style.display = "flex";
-  }
 
-  private showRoomInputScreen(): void {
-    if (!this.roomInputOverlay) return;
-    
-    this.hideQuitButton();
-    
-    this.roomInputOverlay.innerHTML = this.createPongContentWrapper(`
-      <p class="font-mono text-black text-2xl font-bold drop-shadow-lg mb-6">Join Room</p>
-      <div class="mb-6">
-        <p class="font-mono text-black text-lg font-bold mb-2">Enter Room ID:</p>
-        <input 
-          id="roomIdInput" 
-          type="text" 
-          class="w-full bg-white text-black font-mono text-2xl font-bold px-6 py-3 rounded border-4 border-black text-center"
-          placeholder="ABC123"
-          maxlength="6"
-        />
-      </div>
-      <div class="space-y-4">
-        <button 
-          id="joinRoomBtn" 
-          class="w-full text-black font-mono text-lg font-bold bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 px-6 py-3 rounded border-4 border-black cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 uppercase tracking-wider"
-        >
-          Join Room
-        </button>
-        <button 
-          id="backFromJoinRoomBtn" 
-          class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider"
-        >
-          ← Back
-        </button>
-      </div>
-    `);
-    
-    // Add event listeners
-    const joinBtn = this.roomInputOverlay.querySelector('#joinRoomBtn');
-    const backBtn = this.roomInputOverlay.querySelector('#backFromJoinRoomBtn');
-    const roomInput = this.roomInputOverlay.querySelector('#roomIdInput') as HTMLInputElement;
-    
-    joinBtn?.addEventListener('click', () => {
-      const roomId = roomInput.value.trim().toLowerCase();
-      if (roomId.length >= 3) {
-        this.roomId = roomId;
-        this.roomInputOverlay!.style.display = "none";
-        this.showWaitingForConnectionScreen();
-        this.startJoinRoomGame();
-      } else {
-        alert('Please enter a valid room ID (at least 3 characters)');
-      }
-    });
-    
-    backBtn?.addEventListener('click', async () => {
-      await this.returnToMainMenu();
-    });
-    
-    // Handle Enter key
-    roomInput?.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        (joinBtn as HTMLButtonElement)?.click();
-      }
-    });
-    
-    this.hideLoadingScreen();
-    this.roomInputOverlay.style.display = "flex";
-    
-    // Focus the input
-    setTimeout(() => roomInput?.focus(), 100);
-  }
+
+  // ============================================================================
+  // UTILITY METHODS
+  // ============================================================================
 
   private showError(message: string): void {
     if (this.loadingOverlay) {
@@ -730,9 +655,16 @@ export class Game3DComponent {
     }
   }
 
+  public updateRoomId(roomId: string): void {
+    const roomIdDisplay = document.getElementById('roomIdDisplay');
+    if (roomIdDisplay) {
+      roomIdDisplay.textContent = roomId;
+    }
+  }
 
-
-
+  // ============================================================================
+  // POP-UP OVERLAY METHODS (appear over game with backdrop)
+  // ============================================================================
 
   private showGameEndOverlay(finalState: any): void {
     if (!this.gameEndOverlay) return;
@@ -801,7 +733,7 @@ export class Game3DComponent {
     // Only add Play Again listener for local games
     if (isLocalGame && playAgainBtn) {
       playAgainBtn.addEventListener('click', () => {
-        this.restartGameQuick();
+        this.restartLocalGame();
       });
     }
 
@@ -868,43 +800,20 @@ export class Game3DComponent {
     this.gameEndOverlay.style.display = "flex";
   }
 
-  private restartGameQuick(): void {
+  private restartLocalGame(): void {
+    // Only available for local games
+    if (this.gameMode !== 'local' || !this.poolScene) return;
+
     // Hide game end overlay
     if (this.gameEndOverlay) {
       this.gameEndOverlay.style.display = "none";
     }
 
     // Reset the current scene without disposing it
-    if (this.poolScene && this.gameMode === 'local') {
-      // For local games, restart without animation
-      this.poolScene.restartQuick();
-      // Show quit button again after restart
-      this.showQuitButton();
-    } else {
-      // For online games, fall back to full restart
-      this.restartGame();
-    }
-  }
-
-  private restartGame(): void {
-    // Hide game end overlay
-    if (this.gameEndOverlay) {
-      this.gameEndOverlay.style.display = "none";
-    }
-
-    // Dispose current scene
-    if (this.poolScene) {
-      this.poolScene.dispose();
-      this.poolScene = undefined;
-    }
-
-    // Show loading overlay again
-    if (this.loadingOverlay) {
-      this.loadingOverlay.style.display = "flex";
-    }
-
-    // Reinitialize the scene
-    this.startGameFlow();
+    this.poolScene.restartQuick();
+    
+    // Show quit button again after restart
+    this.showQuitButton();
   }
 
   private async returnToMainMenu(): Promise<void> {
@@ -950,6 +859,9 @@ export class Game3DComponent {
     }
   }
 
+  // ===========================================================================  
+  // DISPOSE METHOD
+  // ===========================================================================
   dispose(): void {
     if (this.poolScene) {
       this.poolScene.dispose();
@@ -959,11 +871,8 @@ export class Game3DComponent {
     if (this.loadingOverlay && this.loadingOverlay.parentElement) {
       this.loadingOverlay.parentElement.removeChild(this.loadingOverlay);
     }
-    if (this.waitingOverlay && this.waitingOverlay.parentElement) {
-      this.waitingOverlay.parentElement.removeChild(this.waitingOverlay);
-    }
-    if (this.roomInputOverlay && this.roomInputOverlay.parentElement) {
-      this.roomInputOverlay.parentElement.removeChild(this.roomInputOverlay);
+    if (this.roomCreatedOverlay && this.roomCreatedOverlay.parentElement) {
+      this.roomCreatedOverlay.parentElement.removeChild(this.roomCreatedOverlay);
     }
     if (this.gameEndOverlay && this.gameEndOverlay.parentElement) {
       this.gameEndOverlay.parentElement.removeChild(this.gameEndOverlay);

@@ -15,7 +15,8 @@ import {
   QuickPlayScreen, 
   UserProfileScreen, 
   UserSettingsScreen, 
-  MatchHistoryScreen 
+  MatchHistoryScreen,
+  JoinRoomInputScreen
 } from '../screens';
 
 /**
@@ -58,6 +59,7 @@ export class AppRouter {
     this.routes.set('/register', { component: RegisterScreen })
     this.routes.set('/landing', { component: LoggedInLandingScreen })
     this.routes.set('/remote-game', { component: RemoteGameLobbyScreen })
+    this.routes.set('/join', { component: JoinRoomInputScreen })
     this.routes.set('/profile', { component: UserProfileScreen })
     this.routes.set('/settings', { component: UserSettingsScreen })
     this.routes.set('/match-history', { component: MatchHistoryScreen })
@@ -117,6 +119,9 @@ export class AppRouter {
       case '/match-history':
         const historyUsername = urlParams.get('user') ? decodeURIComponent(urlParams.get('user')!) : undefined
         return historyUsername ? [historyUsername] : []
+
+      case '/join':
+        return [] // JoinRoomInputScreen takes no parameters
 
       case '/game/local':
         const localPlayer1 = urlParams.get('p1') ? decodeURIComponent(urlParams.get('p1')!) : 'Player 1'
@@ -212,6 +217,8 @@ export class AppRouter {
         return '/landing'
       case 'RemoteGameLobbyScreen':
         return '/remote-game'
+      case 'JoinRoomInputScreen':
+        return '/join'
       case 'UserProfileScreen':
         // Handle username parameter for viewing other users' profiles
         const profileUser = args[0] ? encodeURIComponent(args[0]) : undefined

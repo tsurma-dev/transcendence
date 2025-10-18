@@ -1,6 +1,7 @@
 import { Component, TemplateManager, AppRouter, ApiService } from '../core'
 import { LoggedInLandingScreen } from './LoggedInLandingScreen'
 import { ServerGameScreen } from './ServerGameScreen'
+import { JoinRoomInputScreen } from './JoinRoomInputScreen'
 
 /**
  * Remote Game Lobby Screen
@@ -45,19 +46,9 @@ export class RemoteGameLobbyScreen extends Component {
     }
 
     if (joinRoomBtn) {
-      joinRoomBtn.addEventListener('click', async () => {
-        try {
-          const currentUser = await this.apiService.getCurrentUser()
-          if (!currentUser) {
-            console.error('No current user found')
-            return
-          }
-        
-          // Navigate to join room server game
-          this.router.navigateTo(ServerGameScreen, currentUser.username, '', 'joinRoom')
-        } catch (error) {
-          console.error('Failed to join room:', error)
-        }
+      joinRoomBtn.addEventListener('click', () => {
+        // Navigate to room input screen first
+        this.router.navigateTo(JoinRoomInputScreen)
       })
     }
 

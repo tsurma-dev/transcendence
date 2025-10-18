@@ -921,6 +921,48 @@ _|          _|_|    _|      _|    _|_|_|</pre>
     </div>
   </template>
 
+  <!-- Join Room Input template -->
+  <template id="joinRoomInputTemplate">
+    <div class="container-main-pink max-w-lg">
+      <div class="text-center mb-8">
+        <pre class="font-mono text-black text-1xl font-bold drop-shadow-lg">_|_|_|      _|_|    _|      _|    _|_|_|
+_|    _|  _|    _|  _|_|    _|  _|      
+_|_|_|    _|    _|  _|  _|  _|  _|  _|_|
+_|        _|    _|  _|    _|_|  _|    _|
+_|          _|_|    _|      _|    _|_|_|</pre>
+      </div>
+      
+      <h1 class="font-mono text-black text-2xl font-bold drop-shadow-lg mb-6 text-center">Join Room</h1>
+      
+      <div class="mb-6">
+        <label class="font-mono text-black text-lg font-bold mb-2 block">Enter Room ID:</label>
+        <input 
+          id="roomIdInput" 
+          type="text" 
+          class="w-full bg-white text-black font-mono text-2xl font-bold px-6 py-3 rounded border-4 border-black text-center"
+          placeholder="g7epr7"
+          maxlength="6"
+        />
+        <div id="errorMessage" class="text-red-600 font-mono text-sm mt-2 hidden"></div>
+      </div>
+      
+      <div class="space-y-4">
+        <button 
+          id="joinRoomBtn" 
+          class="w-full text-black font-mono text-lg font-bold bg-gradient-to-b from-lime-400 to-green-600 hover:from-lime-300 hover:to-green-500 px-6 py-3 rounded border-4 border-black cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 uppercase tracking-wider"
+        >
+          Join Room
+        </button>
+        <button 
+          id="backBtn" 
+          class="w-full px-6 py-4 bg-gradient-to-b from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider"
+        >
+          ← Back
+        </button>
+      </div>
+    </div>
+  </template>
+
   <!-- Main application script -->
   <script type="module" src="index.ts"></script>
 </body>
