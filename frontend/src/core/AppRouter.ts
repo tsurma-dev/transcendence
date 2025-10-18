@@ -67,6 +67,7 @@ export class AppRouter {
     this.routes.set('/tournament-lobby', { component: TournamentLobbyScreen })
     this.routes.set('/game/local', { component: QuickPlayScreen })
     this.routes.set('/game/ai', { component: ServerGameScreen })
+    this.routes.set('/game/tournament', { component: ServerGameScreen })
     this.routes.set('/game/create-room', { component: ServerGameScreen })
     this.routes.set('/game/join-room', { component: ServerGameScreen })
     this.routes.set('/logged-out', { component: LoggedOutScreen })
@@ -254,6 +255,8 @@ export class AppRouter {
             return `/game/create-room?p1=${serverPlayer1}`
           case 'joinRoom':
             return `/game/join-room?p1=${serverPlayer1}${serverRoomId ? `&roomId=${serverRoomId}` : ''}`
+          case 'tournament':
+            return `/game/tournament?p1=${serverPlayer1}`
           default:
             return `/game/ai?p1=${serverPlayer1}`
         }

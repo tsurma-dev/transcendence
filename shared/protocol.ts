@@ -8,6 +8,11 @@ export type ServerToClient =
   | { type: "game-state"; payload: GameState }
   | { type: "game-over"; payload: { player1Score: number; player2Score: number; winner: string } }
   | { type: "game-failed"; payload: { message: string } }
+  | { type: "registered"; payload: { tournamentId: string; players: string[]; state: string } }
+  | { type: "tournament-player-joined"; payload: { playerNumber: number; playerName: string; players: string[]; state: string } }
+  | { type: "tournament-game-invite"; payload: { roomId: string } }
+  | { type: "tournament-results"; payload: { results: any; state: string } }
+  | { type: "join-tournament-room"; payload: { roomId?: string; room?: string } }
 
 export type Snapshot = {
   //version: number;           // = GAME_CONFIG.VERSION
@@ -22,5 +27,6 @@ export type ClientToServer =
   | { type: "join"; payload: { playerName: string; roomId: string } }
   | { type: "ready-to-play"; payload: { roomId: string; playerId: "first" | "second" } }
   | { type: "input"; payload: { roomId: string; playerId: "first" | "second"; direction: number } }
+  | { type: "tournament-join"; payload: { playerName: string } }
 
 

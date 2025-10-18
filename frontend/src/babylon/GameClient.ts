@@ -22,6 +22,12 @@ export class GameClient {
   private onGameOver?: (result: { player1Score: number; player2Score: number; winner: string}) => void;
   private onGameFailed?: (message: string) => void;
 
+  // Tournament-specific event handlers
+  private onTournamentRegistered?: (tournamentId: string, players: string[], state: string) => void;
+  private onTournamentPlayerJoined?: (playerNumber: number, playerName: string, players: string[], state: string) => void;
+  private onTournamentGameInvite?: (roomId: string) => void;
+  private onTournamentResults?: (results: any) => void;
+
   constructor(serverUrl: string, playerName: string, roomId?: string, gameMode?: string) {
     this.serverUrl = serverUrl;
     this.playerName = playerName;
@@ -34,7 +40,9 @@ export class GameClient {
     
     this.ws.onopen = () => {
       console.log(`✅ Connected to server ${this.serverUrl}`);
-      if (this.roomId) {
+      if (this.gameMode === 'tournament') {
+        this.joinTournament();
+      } else if (this.roomId) {
         this.joinRoom(this.roomId);
       } else if (this.gameMode === 'AI') {
         this.createAiRoom();
@@ -76,6 +84,13 @@ export class GameClient {
     this.sendMessage({
       type: "join", 
       payload: { playerName: this.playerName, roomId }
+    });
+  }
+
+  public joinTournament(): void {
+    this.sendMessage({
+      type: "tournament-join",
+      payload: { playerName: this.playerName }
     });
   }
 
@@ -141,6 +156,35 @@ export class GameClient {
       case "game-failed":
         console.log("💥 Game failed!", message.payload);
         this.onGameFailed?.(message.payload.message || "Game failed");
+        break;
+
+      case "registered":
+        console.log("🏆 Tournament registered:", message.payload);
+        this.onTournamentRegistered?.(
+          message.payload.tournamentId,
+          message.payload.players,
+          message.payload.state
+        );
+        break;
+
+      case "tournament-player-joined":
+        console.log("🏆 Tournament player joined:", message.payload);
+        this.onTournamentPlayerJoined?.(
+          message.payload.playerNumber,
+          message.payload.playerName,
+          message.payload.players,
+          message.payload.state
+        );
+        break;
+
+      case "tournament-game-invite":
+        console.log("🏆 Tournament game invitation:", message.payload);
+        this.onTournamentGameInvite?.(message.payload.roomId);
+        break;
+
+      case "tournament-results":
+        console.log("🏆 Tournament results:", message.payload);
+        this.onTournamentResults?.(message.payload);
         break;
 
       default:
@@ -219,6 +263,23 @@ export class GameClient {
 
   public setOnGameFailed(handler: (message: string) => void): void {
     this.onGameFailed = handler;
+  }
+
+  // Tournament callback setters
+  public setOnTournamentRegistered(handler: (tournamentId: string, players: string[], state: string) => void): void {
+    this.onTournamentRegistered = handler;
+  }
+
+  public setOnTournamentPlayerJoined(handler: (playerNumber: number, playerName: string, players: string[], state: string) => void): void {
+    this.onTournamentPlayerJoined = handler;
+  }
+
+  public setOnTournamentGameInvite(handler: (roomId: string) => void): void {
+    this.onTournamentGameInvite = handler;
+  }
+
+  public setOnTournamentResults(handler: (results: any) => void): void {
+    this.onTournamentResults = handler;
   }
 
   public dispose(): void {

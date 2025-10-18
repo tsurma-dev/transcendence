@@ -2,7 +2,7 @@
 
 import { PoolScene } from "../babylon/PoolScene";
 
-export type GameMode = 'local' | 'joinRoom' | 'createRoom' | 'AI';
+export type GameMode = 'local' | 'joinRoom' | 'createRoom' | 'AI' | 'tournament';
 
 /**
  * Game3D Component with organized overlay system:
@@ -35,6 +35,8 @@ export class Game3DComponent {
   // Full screen overlays
   private loadingOverlay?: HTMLElement;
   private roomCreatedOverlay?: HTMLElement;
+  private tournamentConnectingOverlay?: HTMLElement;
+  private tournamentLobbyOverlay?: HTMLElement;
   
   // Pop-up overlays (with game in background)
   private gameEndOverlay?: HTMLElement; // also used for disconnection messages
@@ -45,6 +47,10 @@ export class Game3DComponent {
   private player2Name?: string; // opponent (optional - only provided for local games)
   private roomId?: string; // room ID for joinRoom
   private onReturnToMenuCallback?: () => void;
+  
+  // Tournament state
+  private tournamentPlayers: string[] = [];
+  private tournamentState: string = 'waiting';
 
   constructor(
     container: HTMLElement,
@@ -67,6 +73,137 @@ export class Game3DComponent {
     this.createCanvas();
     this.setupUI();
     this.startGameFlow();
+  }
+
+  // ============================================================================
+  // PUBLIC METHODS FOR POOLSCENE COMMUNICATION
+  // ============================================================================
+
+  // Update tournament lobby with server data
+  updateTournamentLobby(tournamentId: string, players: string[], state: string): void {
+    if (!this.tournamentLobbyOverlay || this.tournamentLobbyOverlay.style.display === 'none') return;
+    
+    // Ensure players array is valid
+    if (!players || !Array.isArray(players)) {
+      console.warn('updateTournamentLobby: players array is invalid', players);
+      return;
+    }
+    
+    console.log('🏆 Updating tournament lobby with players:', players, 'state:', state);
+    
+    // Update tournament player count
+    const playerCountElement = document.getElementById('tournamentPlayers');
+    if (playerCountElement) {
+      playerCountElement.textContent = players.length.toString();
+    }
+    
+    // Update tournament status
+    const statusElement = document.getElementById('tournamentStatus');
+    if (statusElement) {
+      statusElement.textContent = state.toUpperCase();
+    }
+    
+    // Update player list
+    const playersList = document.getElementById('tournamentPlayersList');
+    if (playersList) {
+      if (players.length === 0) {
+        playersList.innerHTML = `
+          <div class="col-span-2 text-center text-gray-500 font-mono p-8">
+            Loading tournament players...
+          </div>
+        `;
+      } else {
+        // Create player slots (4 slots total)
+        const playerSlots = [];
+        for (let i = 0; i < 4; i++) {
+          const player = players[i];
+          if (player && player.trim() !== '') {
+            playerSlots.push(`
+              <div class="bg-white border-2 border-black p-4 text-center">
+                <div class="text-black font-mono font-bold text-lg">${player}</div>
+                <div class="text-green-600 font-mono text-sm">✓ READY</div>
+              </div>
+            `);
+          } else {
+            playerSlots.push(`
+              <div class="bg-gray-100 border-2 border-dashed border-gray-400 p-4 text-center">
+                <div class="text-gray-500 font-mono font-bold text-lg">Waiting...</div>
+                <div class="text-gray-400 font-mono text-sm">Player ${i + 1}</div>
+              </div>
+            `);
+          }
+        }
+        
+        playersList.innerHTML = playerSlots.join('');
+      }
+    }
+    
+    // Show/hide tournament bracket based on player count
+    const placeholderElement = document.getElementById('tournamentPlaceholder');
+    const bracketElement = document.getElementById('tournamentBracketContainer');
+    
+    if (players.length >= 4) {
+      // Show bracket and populate with players
+      if (placeholderElement) placeholderElement.style.display = 'none';
+      if (bracketElement) {
+        bracketElement.classList.remove('hidden');
+        
+        // Update semifinal matches
+        const semi1Player1 = document.getElementById('semi1Player1');
+        const semi1Player2 = document.getElementById('semi1Player2');
+        const semi2Player1 = document.getElementById('semi2Player1');
+        const semi2Player2 = document.getElementById('semi2Player2');
+        
+        if (semi1Player1) semi1Player1.textContent = players[0] || 'Player 1';
+        if (semi1Player2) semi1Player2.textContent = players[1] || 'Player 2';
+        if (semi2Player1) semi2Player1.textContent = players[2] || 'Player 3';
+        if (semi2Player2) semi2Player2.textContent = players[3] || 'Player 4';
+      }
+    } else {
+      // Show placeholder
+      if (placeholderElement) placeholderElement.style.display = 'block';
+      if (bracketElement) bracketElement.classList.add('hidden');
+    }
+  }
+
+  // Handle when a new player joins the tournament
+  onTournamentPlayerJoined(playerNumber: number, playerName: string, players: string[], state: string): void {
+    console.log(`🏆 Player ${playerNumber} joined: ${playerName}`);
+    
+    // Update state
+    this.tournamentState = state;
+    
+    // Update our local players list
+    // Since server doesn't send full list, we need to maintain it ourselves
+    if (players && Array.isArray(players)) {
+      // If server sent full list, use it
+      this.tournamentPlayers = [...players];
+    } else {
+      // Server didn't send full list, add this player if not already present
+      if (!this.tournamentPlayers.includes(playerName)) {
+        // Instead of using server's playerNumber (which might have gaps), 
+        // add player to next available slot
+        const nextSlot = this.tournamentPlayers.findIndex(p => !p || p.trim() === '');
+        if (nextSlot >= 0) {
+          // Fill the next empty slot
+          this.tournamentPlayers[nextSlot] = playerName;
+        } else {
+          // No empty slots, add to end
+          this.tournamentPlayers.push(playerName);
+        }
+        console.log(`🏆 Added ${playerName} to slot ${nextSlot >= 0 ? nextSlot + 1 : this.tournamentPlayers.length}`);
+      }
+    }
+    
+    console.log('🏆 Updated tournament players list:', this.tournamentPlayers);
+    
+    // Update the tournament lobby with current player list
+    this.updateTournamentLobby('', this.tournamentPlayers, this.tournamentState);
+    
+    // TODO: You could add visual effects here like:
+    // - Flash animation on the new player slot
+    // - Sound effect
+    // - Toast notification
   }
 
   private createCanvas(): void {
@@ -93,6 +230,8 @@ export class Game3DComponent {
     // === Full Screen Overlays ===
     this.createLoadingOverlay();
     this.createRoomCreatedOverlay();
+    this.createTournamentConnectingOverlay();
+    this.createTournamentLobbyOverlay();
     
     // === Pop-up Overlays ===
     this.createGameEndOverlay();
@@ -122,6 +261,39 @@ export class Game3DComponent {
   private createRoomCreatedOverlay(): void {
     this.roomCreatedOverlay = this.createBaseOverlay(25);
     this.container.appendChild(this.roomCreatedOverlay);
+  }
+
+  private createTournamentConnectingOverlay(): void {
+    this.tournamentConnectingOverlay = document.createElement("div");
+    this.tournamentConnectingOverlay.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom right, #fde047, #f59e0b, #fb923c);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 25;
+    `;
+    this.container.appendChild(this.tournamentConnectingOverlay);
+  }
+
+  private createTournamentLobbyOverlay(): void {
+    this.tournamentLobbyOverlay = document.createElement("div");
+    this.tournamentLobbyOverlay.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom right, #fde047, #f59e0b, #fb923c);
+      display: none;
+      overflow-y: auto;
+      z-index: 25;
+    `;
+    this.container.appendChild(this.tournamentLobbyOverlay);
   }
 
   private createBaseOverlay(zIndex: number): HTMLElement {
@@ -332,6 +504,9 @@ export class Game3DComponent {
       case 'AI':
         await this.startAIGame();
         break;
+      case 'tournament':
+        await this.startTournamentMode();
+        break;
     }
   }
 
@@ -436,6 +611,29 @@ export class Game3DComponent {
     }
   }
 
+  private async startTournamentMode(): Promise<void> {
+    console.log('🏆 Setting up tournament mode');
+    
+    try {
+      // Show tournament connecting screen first
+      this.showTournamentConnectingScreen();
+      
+      // Create PoolScene for tournament - PoolScene will handle all tournament logic
+      this.poolScene = new PoolScene(this.canvas, 'tournament', this.player1Name);
+      
+      // Set up callbacks - this will listen for tournament data from server
+      this.setupPoolSceneCallbacks();
+      
+      // Start tournament connection (no asset loading yet)
+      // Assets will be loaded when we get tournament pairs and start actual games
+      await this.poolScene.startAnimation();
+      
+    } catch (error) {
+      console.error('Failed to initialize tournament:', error);
+      this.showError('Failed to join tournament');
+    }
+  }
+
   // ============================================================================
   // OVERLAY DISPLAY METHODS
   // ============================================================================
@@ -453,6 +651,41 @@ export class Game3DComponent {
     if (this.gameMode === 'local') {
       this.showQuitButton();
     }
+  }
+
+  private showTournamentConnectingScreen(): void {
+    if (!this.tournamentConnectingOverlay) return;
+    
+    this.hideQuitButton();
+    
+    this.tournamentConnectingOverlay.innerHTML = this.createPongContentWrapper(`
+      <p class="font-mono text-black text-2xl font-bold drop-shadow-lg mb-6">🏆 Joining Tournament</p>
+      <div class="mb-6">
+        <div class="text-black font-mono text-lg animate-pulse text-center">
+          Connecting to tournament server...
+        </div>
+      </div>
+      <div class="space-y-4">
+        <button 
+          id="cancelTournamentBtn" 
+          class="w-full px-6 py-4 bg-gradient-to-b from-red-400 to-red-600 hover:from-red-300 hover:to-red-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider"
+        >
+          ← Cancel
+        </button>
+      </div>
+    `);
+    
+    this.tournamentConnectingOverlay.style.display = "flex";
+    
+    // Add event listener for cancel button
+    const cancelBtn = this.tournamentConnectingOverlay.querySelector('#cancelTournamentBtn');
+    cancelBtn?.addEventListener('click', async () => {
+      await this.returnToMainMenu();
+    });
+  }
+
+  private hideTournamentConnectingScreen(): void {
+    if (this.tournamentConnectingOverlay) this.tournamentConnectingOverlay.style.display = "none";
   }
 
   private showRoomCreatedScreen(roomId?: string): void {
@@ -526,6 +759,169 @@ export class Game3DComponent {
     });
   }
 
+  private showTournamentLobbyScreen(tournamentId?: string): void {
+    if (!this.tournamentLobbyOverlay) return;
+    
+    this.hideQuitButton();
+    
+    // Show tournament ID or placeholder  
+    const displayTournamentId = tournamentId || '------';
+    
+    this.tournamentLobbyOverlay.innerHTML = `
+      <div class="min-h-full p-4 flex items-center justify-center">
+        <div class="container-main-pink max-w-4xl w-full">
+        <div class="text-center mb-8">
+          <h1 class="text-4xl font-bold text-white mb-4 drop-shadow-lg">
+            🏆 Tournament Lobby
+          </h1>
+          <p class="text-black font-mono text-lg">
+            Waiting for players to join...
+          </p>
+        </div>
+
+        <!-- Tournament Info Panel -->
+        <div class="container-white p-6 mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center">
+              <div class="text-black text-2xl font-bold font-mono" id="tournamentPlayers">-</div>
+              <div class="text-black text-sm font-mono uppercase">Players Joined</div>
+            </div>
+            <div class="text-center">
+              <div class="text-black text-2xl font-bold font-mono" id="tournamentMaxPlayers">4</div>
+              <div class="text-black text-sm font-mono uppercase">Max Players</div>
+            </div>
+            <div class="text-center">
+              <div class="text-black text-2xl font-bold font-mono" id="tournamentStatus">Loading...</div>
+              <div class="text-black text-sm font-mono uppercase">Status</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Players List -->
+        <div class="container-white p-6 mb-6">
+          <h2 class="text-2xl font-bold text-black mb-4 font-mono uppercase text-center">Players</h2>
+          <div id="tournamentPlayersList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Player slots will be populated dynamically -->
+            <div class="col-span-2 text-center text-gray-500 font-mono p-8">
+              Loading tournament players...
+            </div>
+          </div>
+        </div>
+
+        <!-- Tournament Matches -->
+        <div class="container-white p-6 mb-6">
+          <h2 class="text-2xl font-bold text-black mb-4 font-mono uppercase text-center">Tournament Matches</h2>
+          
+          <!-- Placeholder (shown when waiting for players) -->
+          <div id="tournamentPlaceholder" class="text-center">
+            <div class="inline-block border-2 border-dashed border-gray-400 p-8 rounded-none">
+              <div class="text-content">Matches will be generated when all players join</div>
+            </div>
+          </div>
+
+          <!-- Tournament Bracket (hidden by default) -->
+          <div id="tournamentBracketContainer" class="tournament-bracket space-y-6 hidden">
+            <!-- Semifinals -->
+            <div class="semifinals">
+              <h3 class="text-lg font-bold text-black mb-4 text-center font-mono uppercase">Semifinals</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <!-- Semi-Final 1 -->
+                <div class="match-card container-shadowed bg-gradient-to-r from-blue-100 to-blue-200 p-4">
+                  <div class="text-center mb-2">
+                    <div class="text-black font-mono font-bold text-sm">SEMIFINAL 1</div>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between p-2 bg-white border-2 border-black">
+                      <span id="semi1Player1" class="font-mono font-bold text-black">Player 1</span>
+                      <span class="text-black">VS</span>
+                      <span id="semi1Player2" class="font-mono font-bold text-black">Player 2</span>
+                    </div>
+                    <div class="text-center">
+                      <span id="semi1Status" class="text-xs font-mono uppercase text-black bg-yellow-200 px-2 py-1 border border-black">
+                        PENDING
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Semi-Final 2 -->
+                <div class="match-card container-shadowed bg-gradient-to-r from-green-100 to-green-200 p-4">
+                  <div class="text-center mb-2">
+                    <div class="text-black font-mono font-bold text-sm">SEMIFINAL 2</div>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between p-2 bg-white border-2 border-black">
+                      <span id="semi2Player1" class="font-mono font-bold text-black">Player 3</span>
+                      <span class="text-black">VS</span>
+                      <span id="semi2Player2" class="font-mono font-bold text-black">Player 4</span>
+                    </div>
+                    <div class="text-center">
+                      <span id="semi2Status" class="text-xs font-mono uppercase text-black bg-yellow-200 px-2 py-1 border border-black">
+                        PENDING
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Finals -->
+            <div class="finals">
+              <h3 class="text-lg font-bold text-black mb-4 text-center font-mono uppercase">Final</h3>
+              <div class="flex justify-center">
+                <div class="match-card container-shadowed bg-gradient-to-r from-yellow-100 to-yellow-200 p-6 w-full max-w-md">
+                  <div class="text-center mb-4">
+                    <div class="text-black font-mono font-bold text-lg">🏆 FINAL MATCH</div>
+                  </div>
+                  <div class="space-y-4">
+                    <div class="flex items-center justify-center p-3 bg-white border-2 border-black">
+                      <span id="finalPlayer1" class="text-gray-500 font-mono italic">Winner of SF1</span>
+                      <span class="mx-4 text-black font-bold">VS</span>
+                      <span id="finalPlayer2" class="text-gray-500 font-mono italic">Winner of SF2</span>
+                    </div>
+                    <div class="text-center">
+                      <span id="finalStatus" class="text-xs font-mono uppercase text-black bg-gray-200 px-2 py-1 border border-black">
+                        WAITING
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tournament Start Button -->
+            <div class="flex justify-center mt-6">
+              <button id="startTournamentBtn" class="btn-green px-8 py-3 text-lg font-bold">
+                START TOURNAMENT
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tournament Controls -->
+        <div class="container-white p-6">
+          <div class="flex justify-center">
+            <button 
+              id="leaveTournamentBtn"
+              class="btn-red px-8">
+              Leave Tournament
+            </button>
+          </div>
+        </div>
+        </div>
+      </div>
+    `;
+    
+    this.tournamentLobbyOverlay.style.display = "block";
+    
+    // Add event listeners
+    const leaveTournamentBtn = this.tournamentLobbyOverlay.querySelector('#leaveTournamentBtn');
+    
+    leaveTournamentBtn?.addEventListener('click', async () => {
+      await this.returnToMainMenu();
+    });
+  }
+
   // ============================================================================
   // CALLBACK SETUP METHODS
   // ============================================================================
@@ -561,6 +957,9 @@ export class Game3DComponent {
     } else if (this.gameMode === 'createRoom' || this.gameMode === 'joinRoom') {
       // Only set up multiplayer callbacks for online modes
       this.setupOnlineCallbacks();
+    } else if (this.gameMode === 'tournament') {
+      // Set up tournament callbacks
+      this.setupTournamentCallbacks();
     }
   }
 
@@ -580,6 +979,50 @@ export class Game3DComponent {
         this.updateRoomId(roomId);
       });
     }
+  }
+
+  private setupTournamentCallbacks(): void {
+    if (!this.poolScene) return;
+    
+    // Don't show tournament lobby immediately - wait for server response
+    
+    // Game start callback - hide tournament lobby when actual game begins
+    this.poolScene.setOnGameStartCallback(() => {
+      if (this.tournamentLobbyOverlay) this.tournamentLobbyOverlay.style.display = "none";
+      if (this.loadingOverlay) this.loadingOverlay.style.display = "none";
+      this.showQuitButton();
+    });
+    
+    // Room ID callback for tournament registration (when server assigns tournament ID)
+    this.poolScene.setOnRoomIdCallback((tournamentId) => {
+      console.log('🏆 Tournament registered with ID:', tournamentId);
+      // Don't show lobby yet - wait for complete registration data
+      // Just store the tournament ID for later use
+    });
+    
+    // Tournament registered callback - receives complete player list from server
+    this.poolScene.setOnTournamentRegisteredCallback((tournamentId, players, state) => {
+      console.log('🏆 Tournament registered callback with complete players:', players);
+      // Use the authoritative player list from server
+      this.tournamentPlayers = [...players];
+      this.tournamentState = state;
+      // Now hide connecting screen and show tournament lobby with complete data
+      this.hideTournamentConnectingScreen();
+      this.showTournamentLobbyScreen(tournamentId);
+      // Update lobby with complete player information
+      this.updateTournamentLobby(tournamentId, this.tournamentPlayers, this.tournamentState);
+    });
+    
+    // Tournament player joined callback
+    this.poolScene.setOnTournamentPlayerJoinedCallback((playerNumber, playerName, players, state) => {
+      console.log('🏆 Tournament player joined callback received in Game3D');
+      // Update tournament lobby with new player information
+      this.onTournamentPlayerJoined(playerNumber, playerName, players, state);
+    });
+    
+    // TODO: Add remaining tournament callbacks:
+    // - onTournamentGameInvite: (roomId) => void
+    // - onTournamentResults: (results) => void
   }
 
   // ============================================================================
