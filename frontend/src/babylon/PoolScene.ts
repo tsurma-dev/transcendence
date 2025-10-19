@@ -101,6 +101,7 @@ export class PoolScene {
   private onTournamentPlayerJoinedCallback?: (playerNumber: number, playerName: string, state: string) => void;
   private onTournamentRegisteredCallback?: (tournamentId: string, players: string[], state: string) => void;
   private onTournamentGameInviteCallback?: (roomId: string) => void;
+  private onTournamentFinishedCallback?: (results: any) => void;
   private tournamentGameResolver?: () => void;
 
 
@@ -396,6 +397,10 @@ export class PoolScene {
     this.onTournamentGameInviteCallback = callback;
   }
 
+  public setOnTournamentFinishedCallback(callback: (results: any) => void): void {
+    this.onTournamentFinishedCallback = callback;
+  }
+
 
   // ********************
   // --LOCAL GAME SETUP --
@@ -459,6 +464,36 @@ export class PoolScene {
     this.gameStarted = true;
   }
 
+  // TOURNAMENT RESET - Reset visual state between tournament rounds while preserving WebSocket
+  // --------------------------------------------------------------------------------------
+  public resetTournamentVisualState(): void {
+    console.log('🏆 Resetting tournament visual state - gameStarted was:', this.gameStarted);
+
+    // Stop background music
+    this.stopBackgroundMusic();
+
+    // Reset game flags but immediately set gameStarted back to true for tournaments
+    // This ensures we can receive new game state updates right away
+    this.gameStarted = false;  // Reset first
+    this.gameEnded = false;
+    
+    // Reset visual elements
+    this.duck.updatePosition({ x: 0, z: 0, dir: Math.PI / 2 });
+    this.Paddle1.updatePosition({ x: 0 });
+    this.Paddle2.updatePosition({ x: 0 });
+    this.scoreboard.reset();
+
+    // For tournament mode, we want to be ready to receive game states immediately
+    // The server will start sending game states for the next round right away
+    this.gameStarted = true;
+
+    // Reset camera position smoothly (no await needed for tournament)
+    this.resetCameraPosition().catch(() => {
+      console.warn('Failed to reset camera position');
+    });
+
+    console.log('🏆 Tournament visual state reset complete - gameStarted now:', this.gameStarted);
+  }
 
   // **************************
   // --- ONLINE GAME SETUP ---
@@ -469,10 +504,8 @@ export class PoolScene {
 
       // For tournament mode with roomId, reuse existing client
       if (this.gameMode === 'tournament' && this.roomId && this.client) {
-        console.log('🏆 Reusing tournament client for game room:', this.roomId);
         // Update the existing client's roomId and switch to online game mode
         this.client.updateRoomId(this.roomId);
-        this.client.switchToGameMode();
       } else {
         // Create new client for regular online games
         this.client = new GameClient(
@@ -587,7 +620,6 @@ export class PoolScene {
 
       // Tournament registration callback
       this.client.setOnTournamentRegistered((tournamentId: string, players: string[], state: string) => {
-        console.log('🏆 Tournament registered:', { tournamentId, players, state });
         // Notify Game3D about tournament registration with complete player list
         if (this.onTournamentRegisteredCallback) {
           this.onTournamentRegisteredCallback(tournamentId, players, state);
@@ -600,7 +632,6 @@ export class PoolScene {
 
       // Tournament player joined callback
       this.client.setOnTournamentPlayerJoined((playerNumber: number, playerName: string, state: string) => {
-        console.log('🏆 Tournament player joined:', { playerNumber, playerName, state });
         // Notify Game3D about new player joining tournament
         if (this.onTournamentPlayerJoinedCallback) {
           this.onTournamentPlayerJoinedCallback(playerNumber, playerName, state);
@@ -609,13 +640,23 @@ export class PoolScene {
 
       // Tournament game invite callback - this is where we transition to actual game
       this.client.setOnTournamentGameInvite((roomId: string) => {
-        console.log("🏆 Tournament game invite received - starting actual game:", roomId);
+        console.log("🏆 Tournament game invite received - starting actual game in room:", roomId);
         // Store the room ID for game initialization
         this.roomId = roomId;
         
         // Notify Game3D to show loading screen and start tournament game
         if (this.onTournamentGameInviteCallback) {
           this.onTournamentGameInviteCallback(roomId);
+        }
+      });
+
+      // Tournament finished callback - receives all tournament results
+      this.client.setOnTournamentFinished((results: any) => {
+        console.log("🏆 Tournament finished - received complete results:", results);
+        
+        // Notify Game3D to update lobby with tournament results
+        if (this.onTournamentFinishedCallback) {
+          this.onTournamentFinishedCallback(results);
         }
       });
 
@@ -629,7 +670,6 @@ export class PoolScene {
 
   // Start actual tournament game - called when user clicks "Start Tournament Game"
   public async updateRoomIdAndStartGame(roomId: string): Promise<void> {
-    console.log("🏆 Starting tournament game with room:", roomId);
     
     // Update room ID but KEEP tournament mode (don't switch to online)
     this.roomId = roomId;
