@@ -144,7 +144,24 @@ export class PoolScene {
     // 1. Create Babylon engine and scene
     this.engine = new Engine(this.canvas, true);
     this.scene = this.CreateScene();
-    this.scoreboard = new Scoreboard(this.player1Name, this.player2Name, this.gameMode);
+    
+    // Create scoreboard with names in correct position order
+    if (this.gameMode !== 'local') {
+        const myPosition = this.client?.getMyPosition();
+        let scoreboardPlayer1Name: string;
+        let scoreboardPlayer2Name: string;
+        
+        if (myPosition === 2) {
+          scoreboardPlayer1Name = this.player2Name;
+          scoreboardPlayer2Name = this.player1Name;
+        } else {
+          scoreboardPlayer1Name = this.player1Name;
+          scoreboardPlayer2Name = this.player2Name;
+        }
+        this.scoreboard = new Scoreboard(scoreboardPlayer1Name, scoreboardPlayer2Name, this.gameMode);
+    } else {
+      this.scoreboard = new Scoreboard(this.player1Name, this.player2Name, this.gameMode);
+    }
     this.createCountdownUI();
     console.log('✅ Scene loaded');
 
@@ -605,15 +622,23 @@ export class PoolScene {
   
   // Handles the complete online game initialization flow when room is ready
   private async handleOnlineGameReady(player1Name: string, player2Name: string): Promise<void> {
-
+    console.log('🎮 Room ready - initializing online game');
     
-    // Initialize the 3D scene now that room is ready
-    this.player2Name = player2Name;
+    // Set opponent name based on my position
+    // player1Name = current user (me), player2Name = opponent
+    const myPosition = this.client?.getMyPosition();
+    if (myPosition === 2) {
+      // I'm player 2, so player1Name from server is my opponent
+      this.player2Name = player1Name;
+    } else {
+      // I'm player 1, so player2Name from server is my opponent
+      this.player2Name = player2Name;
+    }
+    
     await this.initializeScene();
 
     this.onGameStartCallback?.(); // Tell Game3D to hide loading screen
 
-    const myPosition = this.client?.getMyPosition();
     if (myPosition) {
       await this.playOnlineIntro(myPosition);
       console.log('✅ Animation complete');
