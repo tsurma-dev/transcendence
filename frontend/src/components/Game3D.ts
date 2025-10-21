@@ -358,7 +358,6 @@ export class Game3DComponent {
   // ============================================================================
 
   private async startGameFlow(): Promise<void> {
-    console.log('🚀 Starting game flow for mode:', this.gameMode);
 
     // Show loading screen while assets load
     this.showLoadingScreen();
@@ -414,14 +413,11 @@ export class Game3DComponent {
       // Set up callbacks
       this.setupPoolSceneCallbacks();
 
-      // Wait for assets to load
-      await this.waitForAssetsToLoad();
-
       // Show appropriate waiting screen based on mode
       this.showRoomCreatedScreen();
 
-      // Start the online game flow (PoolScene will handle server communication)
-      await this.poolScene.startAnimation();
+      // Wait for assets to load
+      await this.waitForAssetsToLoad();
 
     } catch (error) {
       console.error('Failed to initialize createRoom game:', error);
@@ -449,8 +445,6 @@ export class Game3DComponent {
       // Wait for assets to load (loading screen stays visible)
       await this.waitForAssetsToLoad();
 
-      // Start the online game flow (PoolScene will handle server communication)
-      this.poolScene.startAnimation();
 
     } catch (error) {
       console.error('Failed to initialize joinRoom game:', error);
@@ -471,11 +465,6 @@ export class Game3DComponent {
       // Wait for assets to load (but keep loading screen visible for AI)
       await this.waitForAssetsToLoadLocal();
 
-      // For AI games, we keep showing loading until the game starts
-      // No waiting screen needed since AI is immediate
-
-      // Start the AI game flow (PoolScene will handle server communication)
-      await this.poolScene.startAnimation();
 
     } catch (error) {
       console.error('Failed to initialize AI game:', error);
@@ -498,7 +487,7 @@ export class Game3DComponent {
 
       // Start tournament connection (no asset loading yet)
       // Assets will be loaded when we get tournament pairs and start actual games
-      await this.poolScene.startAnimation();
+      // await this.poolScene.startAnimation();
 
     } catch (error) {
       console.error('Failed to initialize tournament:', error);
@@ -805,8 +794,6 @@ export class Game3DComponent {
       return;
     }
 
-    console.log('🏆 Updating tournament lobby with players:', players, 'state:', state);
-
     // Update tournament player count
     const playerCountElement = document.getElementById('tournamentPlayers');
     if (playerCountElement) {
@@ -900,7 +887,6 @@ export class Game3DComponent {
 
   // Handle when a new player joins the tournament
   onTournamentPlayerJoined(playerNumber: number, playerName: string, state: string): void {
-    console.log(`🏆 Player ${playerNumber} joined: ${playerName}`);
 
     // Update state
     this.tournamentState = state;
@@ -1107,7 +1093,6 @@ export class Game3DComponent {
   }
 
   public async onTournamentGameInvite(roomId: string): Promise<void> {
-    console.log("🏆 Tournament game invitation received in Game3D:", roomId);
     
     // Store the room ID for when user clicks start
     this.tournamentRoomId = roomId;
@@ -1145,9 +1130,9 @@ export class Game3DComponent {
         this.resetTournamentGameForNextRound();
         
         // Tournament round should already be set when user clicked continue button
-        // Use updateRoomIdAndStartGame for proper game setup with animation
+        // Use updateRoomIdandSendJoin for proper game setup with animation
         if (this.poolScene) {
-          await this.poolScene.updateRoomIdAndStartGame(roomId);
+          await this.poolScene.updateRoomIdandSendJoin(roomId);
         }
       }
     }
@@ -1197,7 +1182,7 @@ export class Game3DComponent {
 
   // Start the tournament game with the given room ID
   private async startTournamentGame(roomId: string): Promise<void> {
-    console.log("🏆 Starting tournament game with room:", roomId);
+    console.log("🏆 Starting game in room:", roomId);
     
     // Hide tournament lobby
     if (this.tournamentLobbyOverlay) {
@@ -1207,17 +1192,13 @@ export class Game3DComponent {
     // Show loading overlay while assets load and game initializes
     this.showLoadingScreen();
 
-    // Update PoolScene's roomId and transition to actual online game with asset loading
-    if (this.poolScene) {
-      try {
-        await this.poolScene.updateRoomIdAndStartGame(roomId);
-        console.log("🏆 Tournament game initialization complete!");
-      } catch (error) {
-        console.error("🚨 Failed to start tournament game:", error);
-        this.hideLoadingScreen();
-        // Could show error overlay here
-      }
-    }
+    this.poolScene?.updateRoomIdandSendJoin(roomId);
+
+    // Wait for assets to load before proceeding
+
+    await this.waitForAssetsToLoad();
+
+
   }
 
   // ============================================================================
@@ -1312,12 +1293,12 @@ export class Game3DComponent {
       this.showQuitButton();
     });
 
-    // Room ID callback for tournament registration (when server assigns tournament ID)
-    this.poolScene.setOnRoomIdCallback((tournamentId) => {
-      console.log('🏆 Tournament registered with ID:', tournamentId);
-      // Don't show lobby yet - wait for complete registration data
-      // Just store the tournament ID for later use
-    });
+    // // Room ID callback for tournament registration (when server assigns tournament ID)
+    // this.poolScene.setOnRoomIdCallback((tournamentId) => {
+    //   console.log('🏆 Tournament registered with ID:', tournamentId);
+    //   // Don't show lobby yet - wait for complete registration data
+    //   // Just store the tournament ID for later use
+    // });
 
     // Tournament registered callback - receives complete player list from server
     this.poolScene.setOnTournamentRegisteredCallback((tournamentId, players, state) => {
@@ -1357,7 +1338,7 @@ export class Game3DComponent {
     if (!this.poolScene) throw new Error('PoolScene not initialized');
 
     return new Promise<void>((resolve) => {
-      this.poolScene!.onLoaded(() => {
+      this.poolScene!.setOnLoadedCallback(() => {
         this.hideLoadingScreen();
         resolve();
       });
@@ -1368,7 +1349,7 @@ export class Game3DComponent {
     if (!this.poolScene) throw new Error('PoolScene not initialized');
 
     return new Promise<void>((resolve) => {
-      this.poolScene!.onLoaded(() => {
+      this.poolScene!.setOnLoadedCallback(() => {
         // Don't hide loading screen yet for local games - wait for animation to start
         resolve();
       });
@@ -1619,9 +1600,9 @@ export class Game3DComponent {
         // Show loading screen while game initializes
         this.showLoadingScreen();
         
-        // Use updateRoomIdAndStartGame for proper game setup with animation
+        // Use updateRoomIdandSendJoin for proper game setup with animation
         if (this.poolScene) {
-          await this.poolScene.updateRoomIdAndStartGame(this.tournamentRoomId);
+          await this.poolScene.updateRoomIdandSendJoin(this.tournamentRoomId);
         }
       } else {
         console.log('🏆 No room ID available yet, showing loading screen');
@@ -1650,9 +1631,9 @@ export class Game3DComponent {
         // Show loading screen while game initializes
         this.showLoadingScreen();
         
-        // Use updateRoomIdAndStartGame for proper game setup with animation
+        // Use updateRoomIdandSendJoin for proper game setup with animation
         if (this.poolScene) {
-          await this.poolScene.updateRoomIdAndStartGame(this.tournamentRoomId);
+          await this.poolScene.updateRoomIdandSendJoin(this.tournamentRoomId);
         }
       } else {
         console.log('🥉 No room ID available yet, showing loading screen');

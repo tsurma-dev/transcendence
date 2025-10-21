@@ -237,7 +237,7 @@ private createInitialGameState(): GameState {
     // Player 1 scores when duck hits the positive Z end of the pool
     if (duck.z + duckRadius > scoreZone2) {
       this.gameState.scores!.player1++;
-      console.log(`🎉 ${this.Player1Name} scores! ${this.gameState.scores!.player1} - ${this.gameState.scores!.player2} `);
+      // console.log(`🎉 ${this.Player1Name} scores! ${this.gameState.scores!.player1} - ${this.gameState.scores!.player2} `);
       this.gameState.events.push({
         type: 'score',
         playerID: 'first',
@@ -248,7 +248,7 @@ private createInitialGameState(): GameState {
     // Player 2 scores when duck hits the negative Z end of the pool
     else if (duck.z - duckRadius < scoreZone1) {
       this.gameState.scores!.player2++;
-      console.log(`🎉 ${this.Player2Name} scores! ${this.gameState.scores!.player2} - ${this.gameState.scores!.player1} `);
+      // console.log(`🎉 ${this.Player2Name} scores! ${this.gameState.scores!.player2} - ${this.gameState.scores!.player1} `);
       this.gameState.events.push({
         type: 'score',
         playerID: 'second',

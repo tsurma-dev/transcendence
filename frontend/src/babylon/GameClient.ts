@@ -161,7 +161,7 @@ export class GameClient {
         break;
 
       case "registered":
-        console.log("🏆 Tournament registered:", message.payload);
+        console.log("🏆 Tournament registered with ID:", message.payload.tournamentId);
         this.onTournamentRegistered?.(
           message.payload.tournamentId,
           message.payload.players,
@@ -170,7 +170,7 @@ export class GameClient {
         break;
 
       case "tournament-player-joined":
-        console.log("🏆 Tournament player joined:", message.payload);
+        console.log("🏆New player joined:", message.payload.playerName);
         this.onTournamentPlayerJoined?.(
           message.payload.playerNumber,
           message.payload.playerName,
