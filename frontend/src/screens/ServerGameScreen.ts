@@ -97,6 +97,10 @@ export class ServerGameScreen extends Component {
             // Return to LoggedInLandingScreen for single player
             this.router.navigateTo(LoggedInLandingScreen)
             break
+          case 'tournament':
+            // Return to LoggedInLandingScreen after tournament
+            this.router.navigateTo(LoggedInLandingScreen)
+            break
           default:
             // Fallback to landing
             this.router.navigateTo(LoggedInLandingScreen)

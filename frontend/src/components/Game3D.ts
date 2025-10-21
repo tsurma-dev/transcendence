@@ -2,7 +2,7 @@
 
 import { PoolScene } from "../babylon/PoolScene";
 
-export type GameMode = 'local' | 'joinRoom' | 'createRoom' | 'AI';
+export type GameMode = 'local' | 'joinRoom' | 'createRoom' | 'AI' | 'tournament';
 
 /**
  * Game3D Component with organized overlay system:
@@ -31,11 +31,13 @@ export class Game3DComponent {
   private container: HTMLElement;
   private canvas!: HTMLCanvasElement;
   private poolScene?: PoolScene;
-  
+
   // Full screen overlays
   private loadingOverlay?: HTMLElement;
   private roomCreatedOverlay?: HTMLElement;
-  
+  private tournamentConnectingOverlay?: HTMLElement;
+  private tournamentLobbyOverlay?: HTMLElement;
+
   // Pop-up overlays (with game in background)
   private gameEndOverlay?: HTMLElement; // also used for disconnection messages
 
@@ -45,6 +47,13 @@ export class Game3DComponent {
   private player2Name?: string; // opponent (optional - only provided for local games)
   private roomId?: string; // room ID for joinRoom
   private onReturnToMenuCallback?: () => void;
+
+  // Tournament state
+  private tournamentPlayers: string[] = [];
+  private tournamentState: string = 'waiting';
+  private tournamentRoomId?: string; // Room ID for tournament game
+  private tournamentRound: 'semifinals' | 'final' | 'bronze' = 'semifinals'; // Track current tournament round
+  private tournamentFinalResults?: any; // Store complete tournament results from server
 
   constructor(
     container: HTMLElement,
@@ -93,10 +102,12 @@ export class Game3DComponent {
     // === Full Screen Overlays ===
     this.createLoadingOverlay();
     this.createRoomCreatedOverlay();
-    
+    this.createTournamentConnectingOverlay();
+    this.createTournamentLobbyOverlay();
+
     // === Pop-up Overlays ===
     this.createGameEndOverlay();
-    
+
     // === UI Elements ===
     this.createQuitButton();
   }
@@ -115,13 +126,46 @@ export class Game3DComponent {
         </div>
       </div>
     `);
-    
+
     this.container.appendChild(this.loadingOverlay);
   }
 
   private createRoomCreatedOverlay(): void {
     this.roomCreatedOverlay = this.createBaseOverlay(25);
     this.container.appendChild(this.roomCreatedOverlay);
+  }
+
+  private createTournamentConnectingOverlay(): void {
+    this.tournamentConnectingOverlay = document.createElement("div");
+    this.tournamentConnectingOverlay.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom right, #fde047, #f59e0b, #fb923c);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 25;
+    `;
+    this.container.appendChild(this.tournamentConnectingOverlay);
+  }
+
+  private createTournamentLobbyOverlay(): void {
+    this.tournamentLobbyOverlay = document.createElement("div");
+    this.tournamentLobbyOverlay.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom right, #fde047, #f59e0b, #fb923c);
+      display: none;
+      overflow-y: auto;
+      z-index: 25;
+    `;
+    this.container.appendChild(this.tournamentLobbyOverlay);
   }
 
   private createBaseOverlay(zIndex: number): HTMLElement {
@@ -171,7 +215,7 @@ export class Game3DComponent {
   }
 
   private createQuitButton(): void {
-  
+
     const quitButton = document.createElement('button');
     quitButton.id = 'quit-button';
     quitButton.innerHTML = 'Quit';
@@ -190,19 +234,19 @@ export class Game3DComponent {
       transition: background-color 0.2s;
       display: none;
     `;
-    
+
     quitButton.addEventListener('mouseenter', () => {
       quitButton.style.backgroundColor = '#374151';
     });
-    
+
     quitButton.addEventListener('mouseleave', () => {
       quitButton.style.backgroundColor = '#000000';
     });
-    
+
     quitButton.addEventListener('click', () => {
       this.showQuitConfirmation();
     });
-    
+
     document.body.appendChild(quitButton);
 
     // Create confirmation overlay
@@ -220,7 +264,7 @@ export class Game3DComponent {
       justify-content: center;
       z-index: 1001;
     `;
-    
+
     const confirmContent = document.createElement('div');
     confirmContent.style.cssText = `
       background-color: white;
@@ -230,7 +274,7 @@ export class Game3DComponent {
       text-align: center;
       max-width: 400px;
     `;
-    
+
     const confirmTitle = document.createElement('h3');
     confirmTitle.style.cssText = `
       font-size: 24px;
@@ -239,7 +283,7 @@ export class Game3DComponent {
       color: #374151;
     `;
     confirmTitle.textContent = 'Quit Game?';
-    
+
     const confirmMessage = document.createElement('p');
     confirmMessage.style.cssText = `
       color: #6b7280;
@@ -247,14 +291,14 @@ export class Game3DComponent {
       line-height: 1.5;
     `;
     confirmMessage.textContent = 'Are you sure you want to quit the game and return to menu?';
-    
+
     const confirmButtons = document.createElement('div');
     confirmButtons.style.cssText = `
       display: flex;
       gap: 16px;
       justify-content: center;
     `;
-    
+
     const cancelButton = document.createElement('button');
     cancelButton.style.cssText = `
       padding: 8px 24px;
@@ -275,7 +319,7 @@ export class Game3DComponent {
     cancelButton.addEventListener('click', () => {
       this.hideQuitConfirmation();
     });
-    
+
     const confirmQuitButton = document.createElement('button');
     confirmQuitButton.style.cssText = `
       padding: 8px 24px;
@@ -297,15 +341,15 @@ export class Game3DComponent {
       this.hideQuitConfirmation();
       await this.returnToMainMenu();
     });
-    
+
     confirmButtons.appendChild(cancelButton);
     confirmButtons.appendChild(confirmQuitButton);
-    
+
     confirmContent.appendChild(confirmTitle);
     confirmContent.appendChild(confirmMessage);
     confirmContent.appendChild(confirmButtons);
     confirmOverlay.appendChild(confirmContent);
-    
+
     document.body.appendChild(confirmOverlay);
   }
 
@@ -314,11 +358,10 @@ export class Game3DComponent {
   // ============================================================================
 
   private async startGameFlow(): Promise<void> {
-    console.log('🚀 Starting game flow for mode:', this.gameMode);
-    
+
     // Show loading screen while assets load
     this.showLoadingScreen();
-    
+
     switch (this.gameMode) {
       case 'local':
         await this.startLocalGame();
@@ -332,25 +375,28 @@ export class Game3DComponent {
       case 'AI':
         await this.startAIGame();
         break;
+      case 'tournament':
+        await this.startTournamentMode();
+        break;
     }
   }
 
-    private async startLocalGame(): Promise<void> {
+  private async startLocalGame(): Promise<void> {
     console.log('🎮 Setting up local game');
-    
+
     try {
       // Create PoolScene for local game
       this.poolScene = new PoolScene(this.canvas, 'local', this.player1Name, this.player2Name);
-      
+
       // Set up callbacks
       this.setupPoolSceneCallbacks();
-      
+
       // Wait for assets to load completely (keep loading screen visible)
       await this.waitForAssetsToLoadLocal();
-      
+
       // Start the game - loading screen will be hidden when camera intro begins
       await this.poolScene.startAnimation();
-      
+
     } catch (error) {
       console.error('Failed to initialize local game:', error);
       this.showError('Failed to load local game');
@@ -359,23 +405,20 @@ export class Game3DComponent {
 
   private async startCreateRoomGame(): Promise<void> {
     console.log('🌐 Setting up createRoom game');
-    
+
     try {
       // Create PoolScene for online game in createRoom mode
       this.poolScene = new PoolScene(this.canvas, 'online', this.player1Name);
-      
+
       // Set up callbacks
       this.setupPoolSceneCallbacks();
-      
-      // Wait for assets to load
-      await this.waitForAssetsToLoad();
-      
+
       // Show appropriate waiting screen based on mode
       this.showRoomCreatedScreen();
-      
-      // Start the online game flow (PoolScene will handle server communication)
-      await this.poolScene.startAnimation();
-      
+
+      // Wait for assets to load
+      await this.waitForAssetsToLoad();
+
     } catch (error) {
       console.error('Failed to initialize createRoom game:', error);
       this.showError('Failed to create room');
@@ -387,24 +430,22 @@ export class Game3DComponent {
     if (this.poolScene) {
       return;
     }
-    
+
     try {
       if (!this.roomId) {
         throw new Error('Room ID is required for joinRoom mode');
       }
-      
+
       // Create PoolScene for online game in joinRoom mode with specific room ID
       this.poolScene = new PoolScene(this.canvas, 'online', this.player1Name, undefined, this.roomId);
-      
+
       // Set up callbacks
       this.setupPoolSceneCallbacks();
-      
+
       // Wait for assets to load (loading screen stays visible)
       await this.waitForAssetsToLoad();
-      
-      // Start the online game flow (PoolScene will handle server communication)
-      this.poolScene.startAnimation();
-      
+
+
     } catch (error) {
       console.error('Failed to initialize joinRoom game:', error);
       this.showError('Failed to join room');
@@ -413,26 +454,44 @@ export class Game3DComponent {
 
   private async startAIGame(): Promise<void> {
     console.log('🤖 Setting up AI game');
-    
+
     try {
       // Create PoolScene for AI game using online mode
       this.poolScene = new PoolScene(this.canvas, 'AI', this.player1Name, 'AI');
-      
+
       // Set up callbacks (same as online games)
       this.setupPoolSceneCallbacks();
-      
+
       // Wait for assets to load (but keep loading screen visible for AI)
       await this.waitForAssetsToLoadLocal();
-      
-      // For AI games, we keep showing loading until the game starts
-      // No waiting screen needed since AI is immediate
-      
-      // Start the AI game flow (PoolScene will handle server communication)
-      await this.poolScene.startAnimation();
-      
+
+
     } catch (error) {
       console.error('Failed to initialize AI game:', error);
       this.showError('Failed to load AI game');
+    }
+  }
+
+  private async startTournamentMode(): Promise<void> {
+    console.log('🏆 Setting up tournament mode');
+
+    try {
+      // Show tournament connecting screen first
+      this.showTournamentConnectingScreen();
+
+      // Create PoolScene for tournament - PoolScene will handle all tournament logic
+      this.poolScene = new PoolScene(this.canvas, 'tournament', this.player1Name);
+
+      // Set up callbacks - this will listen for tournament data from server
+      this.setupPoolSceneCallbacks();
+
+      // Start tournament connection (no asset loading yet)
+      // Assets will be loaded when we get tournament pairs and start actual games
+      // await this.poolScene.startAnimation();
+
+    } catch (error) {
+      console.error('Failed to initialize tournament:', error);
+      this.showError('Failed to join tournament');
     }
   }
 
@@ -448,21 +507,56 @@ export class Game3DComponent {
 
   private hideLoadingScreen(): void {
     if (this.loadingOverlay) this.loadingOverlay.style.display = "none";
-    
+
     // Show quit button for local games when loading screen is hidden
     if (this.gameMode === 'local') {
       this.showQuitButton();
     }
   }
 
+  private showTournamentConnectingScreen(): void {
+    if (!this.tournamentConnectingOverlay) return;
+
+    this.hideQuitButton();
+
+    this.tournamentConnectingOverlay.innerHTML = this.createPongContentWrapper(`
+      <p class="font-mono text-black text-2xl font-bold drop-shadow-lg mb-6">🏆 Joining Tournament</p>
+      <div class="mb-6">
+        <div class="text-black font-mono text-lg animate-pulse text-center">
+          Connecting to tournament server...
+        </div>
+      </div>
+      <div class="space-y-4">
+        <button 
+          id="cancelTournamentBtn" 
+          class="w-full px-6 py-4 bg-gradient-to-b from-red-400 to-red-600 hover:from-red-300 hover:to-red-500 text-white font-bold text-lg rounded-none border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-150 font-mono uppercase tracking-wider"
+        >
+          ← Cancel
+        </button>
+      </div>
+    `);
+
+    this.tournamentConnectingOverlay.style.display = "flex";
+
+    // Add event listener for cancel button
+    const cancelBtn = this.tournamentConnectingOverlay.querySelector('#cancelTournamentBtn');
+    cancelBtn?.addEventListener('click', async () => {
+      await this.returnToMainMenu();
+    });
+  }
+
+  private hideTournamentConnectingScreen(): void {
+    if (this.tournamentConnectingOverlay) this.tournamentConnectingOverlay.style.display = "none";
+  }
+
   private showRoomCreatedScreen(roomId?: string): void {
     if (!this.roomCreatedOverlay) return;
-    
+
     this.hideQuitButton();
-    
+
     // Show empty room ID initially, will be updated when received from server
     const displayRoomId = roomId || '------';
-    
+
     this.roomCreatedOverlay.innerHTML = this.createPongContentWrapper(`
       <p class="font-mono text-black text-2xl font-bold drop-shadow-lg mb-6">Room Created!</p>
       <div class="mb-6">
@@ -492,13 +586,13 @@ export class Game3DComponent {
         </button>
       </div>
     `);
-    
+
     this.roomCreatedOverlay.style.display = "flex";
-    
+
     // Add event listeners
     const copyBtn = this.roomCreatedOverlay.querySelector('#copyRoomIdBtn');
     const backBtn = this.roomCreatedOverlay.querySelector('#backToMenuFromWaitingBtn');
-    
+
     copyBtn?.addEventListener('click', () => {
       const roomIdElement = document.getElementById('roomIdDisplay');
       if (roomIdElement) {
@@ -520,10 +614,591 @@ export class Game3DComponent {
         }
       }
     });
-    
+
     backBtn?.addEventListener('click', async () => {
       await this.returnToMainMenu();
     });
+  }
+
+  private showTournamentLobbyScreen(tournamentId?: string): void {
+    if (!this.tournamentLobbyOverlay) return;
+
+    this.hideQuitButton();
+
+    // Show tournament ID or placeholder  
+    const displayTournamentId = tournamentId || '------';
+
+    this.tournamentLobbyOverlay.innerHTML = `
+      <div class="min-h-full p-4 flex items-center justify-center">
+        <div class="container-main-pink max-w-4xl w-full">
+        <div class="text-center mb-8">
+          <h1 class="text-4xl font-bold text-white mb-4 drop-shadow-lg">
+            🏆 Tournament Lobby
+          </h1>
+          <p class="text-black font-mono text-lg" id="tournamentStatusMessage">
+            Waiting for players to join...
+          </p>
+        </div>
+
+        <!-- Tournament Info Panel -->
+        <div class="container-white p-6 mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center">
+              <div class="text-black text-2xl font-bold font-mono" id="tournamentPlayers">-</div>
+              <div class="text-black text-sm font-mono uppercase">Players Joined</div>
+            </div>
+            <div class="text-center">
+              <div class="text-black text-2xl font-bold font-mono" id="tournamentMaxPlayers">4</div>
+              <div class="text-black text-sm font-mono uppercase">Max Players</div>
+            </div>
+            <div class="text-center">
+              <div class="text-black text-2xl font-bold font-mono" id="tournamentStatus">Loading...</div>
+              <div class="text-black text-sm font-mono uppercase">Status</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Players List -->
+        <div class="container-white p-6 mb-6">
+          <h2 class="text-2xl font-bold text-black mb-4 font-mono uppercase text-center">Players</h2>
+          <div id="tournamentPlayersList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Player slots will be populated dynamically -->
+            <div class="col-span-2 text-center text-gray-500 font-mono p-8">
+              Loading tournament players...
+            </div>
+          </div>
+        </div>
+
+        <!-- Tournament Matches -->
+        <div class="container-white p-6 mb-6">
+          <h2 class="text-2xl font-bold text-black mb-4 font-mono uppercase text-center">Tournament Matches</h2>
+          
+          <!-- Placeholder (shown when waiting for players) -->
+          <div id="tournamentPlaceholder" class="text-center">
+            <div class="inline-block border-2 border-dashed border-gray-400 p-8 rounded-none">
+              <div class="text-content">Matches will be generated when all players join</div>
+            </div>
+          </div>
+
+          <!-- Tournament Bracket (hidden by default) -->
+          <div id="tournamentBracketContainer" class="tournament-bracket space-y-6 hidden">
+            <!-- Semifinals -->
+            <div class="semifinals">
+              <h3 class="text-lg font-bold text-black mb-4 text-center font-mono uppercase">Semifinals</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <!-- Semi-Final 1 -->
+                <div class="match-card container-shadowed bg-gradient-to-r from-blue-100 to-blue-200 p-4">
+                  <div class="text-center mb-2">
+                    <div class="text-black font-mono font-bold text-sm">SEMIFINAL 1</div>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between p-2 bg-white border-2 border-black">
+                      <span id="semi1Player1" class="font-mono font-bold text-black">Player 1</span>
+                      <span class="text-black">VS</span>
+                      <span id="semi1Player2" class="font-mono font-bold text-black">Player 2</span>
+                    </div>
+                    <div class="text-center">
+                      <span id="semi1Status" class="text-xs font-mono uppercase text-black bg-yellow-200 px-2 py-1 border border-black">
+                        PENDING
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Semi-Final 2 -->
+                <div class="match-card container-shadowed bg-gradient-to-r from-green-100 to-green-200 p-4">
+                  <div class="text-center mb-2">
+                    <div class="text-black font-mono font-bold text-sm">SEMIFINAL 2</div>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between p-2 bg-white border-2 border-black">
+                      <span id="semi2Player1" class="font-mono font-bold text-black">Player 3</span>
+                      <span class="text-black">VS</span>
+                      <span id="semi2Player2" class="font-mono font-bold text-black">Player 4</span>
+                    </div>
+                    <div class="text-center">
+                      <span id="semi2Status" class="text-xs font-mono uppercase text-black bg-yellow-200 px-2 py-1 border border-black">
+                        PENDING
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Finals -->
+            <div class="finals">
+              <h3 class="text-lg font-bold text-black mb-4 text-center font-mono uppercase">Final</h3>
+              <div class="flex justify-center">
+                <div class="match-card container-shadowed bg-gradient-to-r from-yellow-100 to-yellow-200 p-6 w-full max-w-md">
+                  <div class="text-center mb-4">
+                    <div class="text-black font-mono font-bold text-lg">🏆 FINAL MATCH</div>
+                  </div>
+                  <div class="space-y-4">
+                    <div class="flex items-center justify-center p-3 bg-white border-2 border-black">
+                      <span id="finalPlayer1" class="text-gray-500 font-mono italic">Winner of SF1</span>
+                      <span class="mx-4 text-black font-bold">VS</span>
+                      <span id="finalPlayer2" class="text-gray-500 font-mono italic">Winner of SF2</span>
+                    </div>
+                    <div class="text-center">
+                      <span id="finalStatus" class="text-xs font-mono uppercase text-black bg-gray-200 px-2 py-1 border border-black">
+                        WAITING
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tournament Start Button (outside white box) -->
+        <div class="flex justify-center mt-6">
+          <button id="startTournamentBtn" class="btn-green px-8 py-3 text-lg font-bold w-full max-w-md" style="display: none;">
+            START TOURNAMENT
+          </button>
+        </div>
+
+        <!-- Tournament Controls (at the bottom) -->
+        <div class="flex justify-center mt-6">
+          <button 
+            id="leaveTournamentBtn"
+            class="btn-red px-8 py-3 text-lg font-bold w-full max-w-md">
+            Leave Tournament
+          </button>
+        </div>
+      </div>
+    `;
+
+    this.tournamentLobbyOverlay.style.display = "block";
+
+    // Add event listeners
+    const leaveTournamentBtn = this.tournamentLobbyOverlay.querySelector('#leaveTournamentBtn');
+
+    leaveTournamentBtn?.addEventListener('click', async () => {
+      await this.returnToMainMenu();
+    });
+  }
+
+    // ============================================================================
+  // PUBLIC METHODS FOR POOLSCENE COMMUNICATION
+  // ============================================================================
+
+  // Update tournament lobby with server data
+  updateTournamentLobby(tournamentId: string, players: string[], state: string): void {
+    if (!this.tournamentLobbyOverlay || this.tournamentLobbyOverlay.style.display === 'none') return;
+
+    // Ensure players array is valid
+    if (!players || !Array.isArray(players)) {
+      console.warn('updateTournamentLobby: players array is invalid', players);
+      return;
+    }
+
+    // Update tournament player count
+    const playerCountElement = document.getElementById('tournamentPlayers');
+    if (playerCountElement) {
+      playerCountElement.textContent = players.length.toString();
+    }
+
+    // Update tournament status
+    const statusElement = document.getElementById('tournamentStatus');
+    if (statusElement) {
+      statusElement.textContent = state.toUpperCase();
+    }
+
+    // Update main status message based on player count
+    const statusMessageElement = document.getElementById('tournamentStatusMessage');
+    if (statusMessageElement) {
+      if (players.length >= 4) {
+        // All players joined - show ready message with lighter green
+        statusMessageElement.textContent = 'All players ready!';
+        statusMessageElement.style.color = '';
+        statusMessageElement.style.fontWeight = '';
+      } else {
+        // Still waiting for players - keep black as requested
+        statusMessageElement.textContent = 'Waiting for players to join...';
+        statusMessageElement.style.color = ''; 
+        statusMessageElement.style.fontWeight = ''; 
+      }
+    }
+
+    // Update player list
+    const playersList = document.getElementById('tournamentPlayersList');
+    if (playersList) {
+      if (players.length === 0) {
+        playersList.innerHTML = `
+          <div class="col-span-2 text-center text-gray-500 font-mono p-8">
+            Loading tournament players...
+          </div>
+        `;
+      } else {
+        // Create player slots (4 slots total)
+        const playerSlots = [];
+        for (let i = 0; i < 4; i++) {
+          const player = players[i];
+          if (player && player.trim() !== '') {
+            playerSlots.push(`
+              <div class="bg-white border-2 border-black p-4 text-center">
+                <div class="text-black font-mono font-bold text-lg">${player}</div>
+                <div class="text-green-600 font-mono text-sm">✓ READY</div>
+              </div>
+            `);
+          } else {
+            playerSlots.push(`
+              <div class="bg-gray-100 border-2 border-dashed border-gray-400 p-4 text-center">
+                <div class="text-gray-500 font-mono font-bold text-lg">Waiting...</div>
+                <div class="text-gray-400 font-mono text-sm">Player ${i + 1}</div>
+              </div>
+            `);
+          }
+        }
+
+        playersList.innerHTML = playerSlots.join('');
+      }
+    }
+
+    // Show/hide tournament bracket based on player count
+    const placeholderElement = document.getElementById('tournamentPlaceholder');
+    const bracketElement = document.getElementById('tournamentBracketContainer');
+
+    if (players.length >= 4) {
+      // Show bracket and populate with players
+      if (placeholderElement) placeholderElement.style.display = 'none';
+      if (bracketElement) {
+        bracketElement.classList.remove('hidden');
+
+        // Update semifinal matches
+        const semi1Player1 = document.getElementById('semi1Player1');
+        const semi1Player2 = document.getElementById('semi1Player2');
+        const semi2Player1 = document.getElementById('semi2Player1');
+        const semi2Player2 = document.getElementById('semi2Player2');
+
+        if (semi1Player1) semi1Player1.textContent = players[0] || 'Player 1';
+        if (semi1Player2) semi1Player2.textContent = players[1] || 'Player 2';
+        if (semi2Player1) semi2Player1.textContent = players[2] || 'Player 3';
+        if (semi2Player2) semi2Player2.textContent = players[3] || 'Player 4';
+      }
+    } else {
+      // Show placeholder
+      if (placeholderElement) placeholderElement.style.display = 'block';
+      if (bracketElement) bracketElement.classList.add('hidden');
+    }
+  }
+
+  // Handle when a new player joins the tournament
+  onTournamentPlayerJoined(playerNumber: number, playerName: string, state: string): void {
+
+    // Update state
+    this.tournamentState = state;
+
+    // Update players list to ensure correct order
+    while (this.tournamentPlayers.length < playerNumber) {
+      this.tournamentPlayers.push('');
+    }
+    
+    // Set the player at the correct position (playerNumber is 1-based, array is 0-based)
+    this.tournamentPlayers[playerNumber - 1] = playerName;
+
+    // Update the tournament lobby with current player list
+    this.updateTournamentLobby('', this.tournamentPlayers, this.tournamentState);
+  }
+
+  // Update tournament lobby with round results from server data
+  private updateTournamentWithResults(tournamentResults?: any): void {
+
+    // Update main status message 
+    const statusMessageElement = document.getElementById('tournamentStatusMessage');
+    if (statusMessageElement) {
+      statusMessageElement.textContent = 'Semifinals completed! Final round ready.';
+      statusMessageElement.style.color = ''; // Reset to default black
+      statusMessageElement.style.fontWeight = ''; // Reset to default
+    }
+
+    // Update tournament status to FINAL ROUND
+    const statusElement = document.getElementById('tournamentStatus');
+    if (statusElement) {
+      statusElement.textContent = 'FINAL ROUND';
+      statusElement.style.color = '#00dd00'; // Lighter green
+      statusElement.style.fontWeight = 'bold';
+    }
+
+    // Update semifinal results with actual scores from server
+    if (tournamentResults) {
+      this.updateSemifinalResults(tournamentResults);
+      this.updateFinalMatch(tournamentResults);
+      this.addBronzeGameBox(tournamentResults);
+    } else {
+      // Fallback: Mark semifinals as completed without specific scores
+      this.markSemifinalsCompleted();
+    }
+
+    // Show the start tournament button for final round
+    const startTournamentBtn = document.getElementById('startTournamentBtn') as HTMLButtonElement;
+    if (startTournamentBtn) {
+      startTournamentBtn.style.display = 'block';
+      startTournamentBtn.textContent = '🎮 START FINAL GAME';
+      startTournamentBtn.style.opacity = '1';
+      startTournamentBtn.disabled = false;
+      
+      // Remove any existing event listeners to avoid duplicates
+      const newBtn = startTournamentBtn.cloneNode(true) as HTMLButtonElement;
+      startTournamentBtn.parentNode?.replaceChild(newBtn, startTournamentBtn);
+      
+      // Add event listener for final game
+      newBtn.addEventListener('click', async () => {
+        if (this.tournamentRoomId) {
+          await this.startTournamentGame(this.tournamentRoomId);
+        } else {
+          console.log('🏆 Waiting for final game room ID from server...');
+        }
+      });
+    }
+  }
+
+  // Update semifinal match results with scores from server
+  private updateSemifinalResults(tournamentResults: any): void {
+    // Update Semifinal 1
+    if (tournamentResults.semifinal1) {
+      const semi1 = tournamentResults.semifinal1;
+      const semi1VSBox = document.querySelector('#semi1Player1')?.parentElement;
+      if (semi1VSBox) {
+        semi1VSBox.innerHTML = `
+          <span class="font-mono font-bold text-lg ${semi1.winner === semi1.player1 ? 'text-green-600' : 'text-black'}">${semi1.player1} (${semi1.score1})</span>
+          <span class="text-black text-sm">VS</span>
+          <span class="font-mono font-bold text-lg ${semi1.winner === semi1.player2 ? 'text-green-600' : 'text-black'}">${semi1.player2} (${semi1.score2})</span>
+        `;
+      }
+      
+      const semi1Status = document.getElementById('semi1Status');
+      if (semi1Status) {
+        semi1Status.textContent = 'COMPLETED';
+        semi1Status.className = 'text-xs font-mono uppercase text-white bg-green-600 px-2 py-1 border border-black';
+      }
+    }
+
+    // Update Semifinal 2  
+    if (tournamentResults.semifinal2) {
+      const semi2 = tournamentResults.semifinal2;
+      const semi2VSBox = document.querySelector('#semi2Player1')?.parentElement;
+      if (semi2VSBox) {
+        semi2VSBox.innerHTML = `
+          <span class="font-mono font-bold text-lg ${semi2.winner === semi2.player1 ? 'text-green-600' : 'text-black'}">${semi2.player1} (${semi2.score1})</span>
+          <span class="text-black text-sm">VS</span>
+          <span class="font-mono font-bold text-lg ${semi2.winner === semi2.player2 ? 'text-green-600' : 'text-black'}">${semi2.player2} (${semi2.score2})</span>
+        `;
+      }
+      
+      const semi2Status = document.getElementById('semi2Status');
+      if (semi2Status) {
+        semi2Status.textContent = 'COMPLETED';
+        semi2Status.className = 'text-xs font-mono uppercase text-white bg-green-600 px-2 py-1 border border-black';
+      }
+    }
+  }
+
+  // Update final match with winners from semifinals
+  private updateFinalMatch(tournamentResults: any): void {
+    const finalPlayer1Element = document.getElementById('finalPlayer1');
+    const finalPlayer2Element = document.getElementById('finalPlayer2');
+    const finalStatusElement = document.getElementById('finalStatus');
+    
+    if (finalPlayer1Element && finalPlayer2Element && finalStatusElement) {
+      const winner1 = tournamentResults.semifinal1?.winner || 'Winner 1';
+      const winner2 = tournamentResults.semifinal2?.winner || 'Winner 2';
+      
+      finalPlayer1Element.textContent = winner1;
+      finalPlayer2Element.textContent = winner2;
+      finalStatusElement.textContent = 'READY';
+      finalStatusElement.className = 'text-xs font-mono uppercase text-white bg-blue-600 px-2 py-1 border border-black';
+    }
+  }
+
+  // Add bronze game box for 3rd place match
+  private addBronzeGameBox(tournamentResults: any): void {
+    const bracketContainer = document.getElementById('tournamentBracketContainer');
+    if (!bracketContainer) return;
+
+    // Check if bronze game already exists
+    if (document.getElementById('bronzeGame')) return;
+
+    const loser1 = tournamentResults.semifinal1?.winner === tournamentResults.semifinal1?.player1 
+      ? tournamentResults.semifinal1?.player2 
+      : tournamentResults.semifinal1?.player1;
+    
+    const loser2 = tournamentResults.semifinal2?.winner === tournamentResults.semifinal2?.player1 
+      ? tournamentResults.semifinal2?.player2 
+      : tournamentResults.semifinal2?.player1;
+
+    const bronzeGameHTML = `
+      <!-- Bronze Game (3rd Place) -->
+      <div class="bronze-game">
+        <h3 class="text-lg font-bold text-black mb-4 text-center font-mono uppercase">3rd Place Match</h3>
+        <div class="flex justify-center">
+          <div id="bronzeGame" class="match-card container-shadowed bg-gradient-to-r from-orange-100 to-orange-200 p-6 w-full max-w-md">
+            <div class="text-center mb-4">
+              <div class="text-black font-mono font-bold text-lg">🥉 BRONZE MATCH</div>
+            </div>
+            <div class="space-y-4">
+              <div class="flex items-center justify-center p-3 bg-white border-2 border-black">
+                <span id="bronzePlayer1" class="font-mono font-bold text-black">${loser1 || 'Loser SF1'}</span>
+                <span class="mx-4 text-black font-bold">VS</span>
+                <span id="bronzePlayer2" class="font-mono font-bold text-black">${loser2 || 'Loser SF2'}</span>
+              </div>
+              <div class="text-center">
+                <span id="bronzeStatus" class="text-xs font-mono uppercase text-white bg-orange-600 px-2 py-1 border border-black">
+                  READY
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Insert bronze game after finals
+    const finalsDiv = bracketContainer.querySelector('.finals');
+    if (finalsDiv) {
+      finalsDiv.insertAdjacentHTML('afterend', bronzeGameHTML);
+    }
+  }
+
+  // Fallback method to mark semifinals as completed without detailed scores
+  private markSemifinalsCompleted(): void {
+    const semi1Status = document.getElementById('semi1Status');
+    if (semi1Status) {
+      semi1Status.textContent = 'COMPLETED';
+      semi1Status.className = 'text-xs font-mono uppercase text-white bg-green-600 px-2 py-1 border border-black';
+    }
+
+    const semi2Status = document.getElementById('semi2Status');
+    if (semi2Status) {
+      semi2Status.textContent = 'COMPLETED';
+      semi2Status.className = 'text-xs font-mono uppercase text-white bg-green-600 px-2 py-1 border border-black';
+    }
+  }
+
+  // Reset tournament game state for next round while preserving WebSocket connection
+  private resetTournamentGameForNextRound(): void {
+    console.log('🏆 Resetting tournament game for next round');
+
+    // Reset the PoolScene's visual state without disposing WebSocket connection
+    // This keeps the tournament WebSocket alive for continued communication
+    if (this.poolScene) {
+      // Use tournament-specific reset that preserves WebSocket and stops sounds
+      this.poolScene.resetTournamentVisualState();
+      console.log('🏆 Tournament visual state reset complete - WebSocket connection preserved');
+    } else {
+      console.warn('🏆 No PoolScene found to reset');
+    }
+  }
+
+  public async onTournamentGameInvite(roomId: string): Promise<void> {
+    
+    // Store the room ID for when user clicks start
+    this.tournamentRoomId = roomId;
+    
+    // Check if tournament lobby is visible (first round)
+    const isLobbyVisible = this.tournamentLobbyOverlay && this.tournamentLobbyOverlay.style.display !== 'none';
+    
+    if (isLobbyVisible) {
+      
+      // Set tournament round to semifinals
+      this.tournamentRound = 'semifinals';
+      
+      // Update the tournament status to lighter green
+      const statusElement = document.getElementById('tournamentStatus');
+      if (statusElement) {
+        statusElement.textContent = 'SEMIFINALS';
+        statusElement.style.color = '#00dd00'; 
+        statusElement.style.fontWeight = 'bold';
+      }
+
+      // Show the start tournament button in the existing lobby
+      this.showStartTournamentButton();
+    } else {
+      // Second round: Just store room ID, wait for user to click continue button
+      // Room ID is already stored in this.tournamentRoomId
+      // The continue buttons in the game end overlay will use this when clicked
+      
+      // However, if user already clicked continue and we're showing loading screen,
+      // start the game immediately since they're waiting for it
+      const isLoadingScreenVisible = this.loadingOverlay && this.loadingOverlay.style.display === 'flex';
+      if (isLoadingScreenVisible) {
+        console.log("🏆 User already clicked continue and is waiting - starting game immediately");
+        
+        // Reset tournament game state including scoreboards before starting new game
+        this.resetTournamentGameForNextRound();
+        
+        // Tournament round should already be set when user clicked continue button
+        // Use updateRoomIdandSendJoin for proper game setup with animation
+        if (this.poolScene) {
+          await this.poolScene.updateRoomIdandSendJoin(roomId);
+        }
+      }
+    }
+  }
+
+  // Handle tournament results from server (after semifinal round)
+  public onTournamentResults(tournamentResults: any): void {
+    console.log("🏆 Tournament results received from server:", tournamentResults);
+    
+    // Store the complete tournament results for later display
+    this.tournamentFinalResults = tournamentResults;
+    
+    // Check if this is the tournament-finished payload with complete results
+    if (tournamentResults.finalMatch && tournamentResults.thirdPlaceMatch && tournamentResults.champions) {
+      // This is the final tournament results - show lobby with all results
+      this.showTournamentLobbyWithFinalResults(tournamentResults);
+    } else {
+      // This is intermediate results (like semifinal results) - update lobby accordingly
+      this.updateTournamentWithResults(tournamentResults);
+    }
+  }
+
+  // Enable the existing start tournament button
+  private showStartTournamentButton(): void {
+    // Find the existing start tournament button
+    const startTournamentBtn = this.tournamentLobbyOverlay?.querySelector('#startTournamentBtn') as HTMLButtonElement;
+    
+    if (startTournamentBtn) {
+      // Make the button visible and enabled (it might have been disabled/hidden initially)
+      startTournamentBtn.style.display = 'block';
+      startTournamentBtn.disabled = false;
+      startTournamentBtn.style.opacity = '1';
+      
+      // Update button text to be more clear
+      startTournamentBtn.textContent = '🎮 START TOURNAMENT GAME';
+      
+      // Add click event listener
+      startTournamentBtn.addEventListener('click', async () => {
+        if (this.tournamentRoomId) {
+          await this.startTournamentGame(this.tournamentRoomId);
+        }
+      });
+    }
+  }
+
+
+
+  // Start the tournament game with the given room ID
+  private async startTournamentGame(roomId: string): Promise<void> {
+    console.log("🏆 Starting game in room:", roomId);
+    
+    // Hide tournament lobby
+    if (this.tournamentLobbyOverlay) {
+      this.tournamentLobbyOverlay.style.display = 'none';
+    }
+
+    // Show loading overlay while assets load and game initializes
+    this.showLoadingScreen();
+
+    this.poolScene?.updateRoomIdandSendJoin(roomId);
+
+    // Wait for assets to load before proceeding
+
+    await this.waitForAssetsToLoad();
+
+
   }
 
   // ============================================================================
@@ -532,19 +1207,40 @@ export class Game3DComponent {
 
   private setupPoolSceneCallbacks(): void {
     if (!this.poolScene) return;
-    
+
     // Always set up game end callback
     this.poolScene.setOnGameEndCallback((finalState) => {
       this.hideQuitButton();
-      this.showGameEndOverlay(finalState);
+      if (this.gameMode === 'tournament') {
+        console.log(`🏆 Game ended - current tournamentRound: ${this.tournamentRound}, winner: ${finalState.winner}`);
+        // Check if this is a second round game (final or bronze)
+        if (this.tournamentRound === 'final' || this.tournamentRound === 'bronze') {
+          console.log(`🏆 ${this.tournamentRound} match completed - auto-redirecting to lobby with results`);
+          
+          // Show a brief celebration message then redirect to lobby
+          this.showTournamentCompletionMessage(finalState, this.tournamentRound);
+          
+          // Auto-redirect to lobby after 3 seconds
+          setTimeout(() => {
+            // Use stored tournament results if available, otherwise use game state
+            const resultsToShow = this.tournamentFinalResults || finalState;
+            this.showTournamentLobbyWithFinalResults(resultsToShow, this.tournamentRound as 'final' | 'bronze');
+          }, 3000);
+        } else {
+          // First round (semifinals) - show continue buttons
+          this.showTournamentGameEndOverlay(finalState);
+        }
+      } else {
+        this.showGameEndOverlay(finalState);
+      }
     });
-    
+
     // Always set up game failed callback for online games
     this.poolScene.setOnGameFailedCallback((message) => {
       this.hideQuitButton();
       this.handleGameFailure(message);
     });
-    
+
     // Set up mode-specific callbacks
     if (this.gameMode === 'local') {
       // For local games, hide loading screen when camera intro starts
@@ -561,19 +1257,22 @@ export class Game3DComponent {
     } else if (this.gameMode === 'createRoom' || this.gameMode === 'joinRoom') {
       // Only set up multiplayer callbacks for online modes
       this.setupOnlineCallbacks();
+    } else if (this.gameMode === 'tournament') {
+      // Set up tournament callbacks
+      this.setupTournamentCallbacks();
     }
   }
 
   private setupOnlineCallbacks(): void {
     if (!this.poolScene) return;
-    
+
     // Game start callback to hide waiting screens
     this.poolScene.setOnGameStartCallback(() => {
       if (this.roomCreatedOverlay) this.roomCreatedOverlay.style.display = "none";
       if (this.loadingOverlay) this.loadingOverlay.style.display = "none";
       this.showQuitButton();
     });
-    
+
     // Room ID callback for createRoom mode
     if (this.gameMode === 'createRoom') {
       this.poolScene.setOnRoomIdCallback((roomId) => {
@@ -582,15 +1281,64 @@ export class Game3DComponent {
     }
   }
 
+  private setupTournamentCallbacks(): void {
+    if (!this.poolScene) return;
+
+    // Don't show tournament lobby immediately - wait for server response
+
+    // Game start callback - hide tournament lobby when actual game begins
+    this.poolScene.setOnGameStartCallback(() => {
+      if (this.tournamentLobbyOverlay) this.tournamentLobbyOverlay.style.display = "none";
+      if (this.loadingOverlay) this.loadingOverlay.style.display = "none";
+      this.showQuitButton();
+    });
+
+    // // Room ID callback for tournament registration (when server assigns tournament ID)
+    // this.poolScene.setOnRoomIdCallback((tournamentId) => {
+    //   console.log('🏆 Tournament registered with ID:', tournamentId);
+    //   // Don't show lobby yet - wait for complete registration data
+    //   // Just store the tournament ID for later use
+    // });
+
+    // Tournament registered callback - receives complete player list from server
+    this.poolScene.setOnTournamentRegisteredCallback((tournamentId, players, state) => {
+
+      // Use the authoritative player list from server
+      this.tournamentPlayers = [...players];
+      this.tournamentState = state;
+      // Now hide connecting screen and show tournament lobby with complete data
+      this.hideTournamentConnectingScreen();
+      this.showTournamentLobbyScreen(tournamentId);
+      // Update lobby with complete player information
+      this.updateTournamentLobby(tournamentId, this.tournamentPlayers, this.tournamentState);
+    });
+
+    // Tournament player joined callback
+    this.poolScene.setOnTournamentPlayerJoinedCallback((playerNumber, playerName, state) => {
+      // Update tournament lobby with new player information
+      this.onTournamentPlayerJoined(playerNumber, playerName, state);
+    });
+
+    // Tournament game invite callback - when server assigns players to tournament matches
+    this.poolScene.setOnTournamentGameInviteCallback((roomId: string) => {
+      this.onTournamentGameInvite(roomId);
+    });
+
+    // Tournament finished callback - receives complete tournament results
+    this.poolScene.setOnTournamentFinishedCallback((results: any) => {
+      this.onTournamentResults(results);
+    });
+  }
+
   // ============================================================================
   // GAME INITIALIZATION METHODS
   // ============================================================================
 
   private async waitForAssetsToLoad(): Promise<void> {
     if (!this.poolScene) throw new Error('PoolScene not initialized');
-    
+
     return new Promise<void>((resolve) => {
-      this.poolScene!.onLoaded(() => {
+      this.poolScene!.setOnLoadedCallback(() => {
         this.hideLoadingScreen();
         resolve();
       });
@@ -599,29 +1347,28 @@ export class Game3DComponent {
 
   private async waitForAssetsToLoadLocal(): Promise<void> {
     if (!this.poolScene) throw new Error('PoolScene not initialized');
-    
+
     return new Promise<void>((resolve) => {
-      this.poolScene!.onLoaded(() => {
+      this.poolScene!.setOnLoadedCallback(() => {
         // Don't hide loading screen yet for local games - wait for animation to start
         resolve();
       });
     });
   }
 
-
   public handleGameFailure(message: string): void {
     console.log('🚨 Game failure received:', message);
-    
+
     // Stop all animations and dispose of the PoolScene immediately
     if (this.poolScene) {
       this.poolScene.dispose();
       this.poolScene = undefined;
     }
-    
+
     // Hide all other overlays
     if (this.roomCreatedOverlay) this.roomCreatedOverlay.style.display = "none";
     if (this.loadingOverlay) this.loadingOverlay.style.display = "none";
-    
+
     // Show the disconnect overlay with the message
     this.showDisconnectOverlay(message);
   }
@@ -647,7 +1394,7 @@ export class Game3DComponent {
           </button>
         </div>
       `);
-      
+
       const retryBtn = this.loadingOverlay.querySelector('#retryBtn');
       retryBtn?.addEventListener('click', () => {
         this.startGameFlow();
@@ -745,6 +1492,365 @@ export class Game3DComponent {
     this.gameEndOverlay.style.display = "flex";
   }
 
+  private showTournamentGameEndOverlay(finalState: any): void {
+    if (!this.gameEndOverlay) return;
+
+    const winner = finalState.winner || "Unknown";
+    const isCurrentPlayerWinner = winner === this.player1Name;
+
+    this.gameEndOverlay.innerHTML = `
+      <div style="
+        background: rgba(0, 0, 0, 0.4) !important;
+        backdrop-filter: blur(10px) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        padding: 24px !important;
+        max-width: 448px !important;
+        text-align: center !important;
+        border: 4px solid black !important;
+      ">
+        <div style="margin-bottom: 24px !important;">
+          <h2 style="font-family: monospace !important; color: white !important; font-size: 30px !important; font-weight: bold !important; margin-bottom: 8px !important;">
+            ${isCurrentPlayerWinner ? '🏆 You Won!!' : '💔 You Lost!'}
+          </h2>
+          <p style="font-family: monospace !important; color: white !important; font-size: 18px !important; font-weight: bold !important;">
+            ${winner} wins the semifinal!
+          </p>
+          <p style="font-family: monospace !important; color: rgb(249, 115, 22) !important; font-size: 16px !important; margin-top: 8px !important;">
+            ${isCurrentPlayerWinner ? 'You advance to the Final!' : 'You can still fight for 3rd place!'}
+          </p>
+        </div>
+        
+        <div style="display: flex !important; flex-direction: column !important; gap: 12px !important;">
+          ${isCurrentPlayerWinner ? `
+            <button id="continueToFinalBtn" style="
+              width: 100% !important;
+              color: white !important;
+              font-family: monospace !important;
+              font-size: 18px !important;
+              font-weight: bold !important;
+              background: rgb(34, 197, 94) !important;
+              padding: 12px 24px !important;
+              border-radius: 8px !important;
+              border: 2px solid black !important;
+              cursor: pointer !important;
+              transition: all 0.2s !important;
+            " onmouseover="this.style.background='rgb(22, 163, 74)'" onmouseout="this.style.background='rgb(34, 197, 94)'">
+              🏆 Continue to the FINAL!
+            </button>
+          ` : `
+            <button id="continueToBronzeBtn" style="
+              width: 100% !important;
+              color: white !important;
+              font-family: monospace !important;
+              font-size: 18px !important;
+              font-weight: bold !important;
+              background: rgb(249, 115, 22) !important;
+              padding: 12px 24px !important;
+              border-radius: 8px !important;
+              border: 2px solid black !important;
+              cursor: pointer !important;
+              transition: all 0.2s !important;
+            " onmouseover="this.style.background='rgb(234, 88, 12)'" onmouseout="this.style.background='rgb(249, 115, 22)'">
+              🥉 Continue to Bronze Match!
+            </button>
+          `}
+          
+          <button id="returnToMenuBtn" style="
+            width: 100% !important;
+            color: white !important;
+            font-family: monospace !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            background: rgb(107, 114, 128) !important;
+            padding: 10px 20px !important;
+            border-radius: 8px !important;
+            border: 2px solid black !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+          " onmouseover="this.style.background='rgb(75, 85, 99)'" onmouseout="this.style.background='rgb(107, 114, 128)'">
+            🏠 Return to Menu
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Add event listeners for winner/loser buttons
+    const continueToFinalBtn = this.gameEndOverlay.querySelector('#continueToFinalBtn');
+    const continueToBronzeBtn = this.gameEndOverlay.querySelector('#continueToBronzeBtn');
+    const returnToMenuBtn = this.gameEndOverlay.querySelector('#returnToMenuBtn');
+
+    // Winner continues to final match
+    continueToFinalBtn?.addEventListener('click', async () => {
+      console.log('🏆 Winner continuing to final match');
+      // Hide the game end overlay
+      this.gameEndOverlay!.style.display = "none";
+      
+      // Set tournament round to final
+      this.tournamentRound = 'final';
+      console.log('🏆 Tournament round set to:', this.tournamentRound);
+      
+      // Check if we have a room ID from the server
+      if (this.tournamentRoomId) {
+        console.log('🏆 Starting final match with room ID:', this.tournamentRoomId);
+        
+        // Reset tournament game state including scoreboards before starting new game
+        this.resetTournamentGameForNextRound();
+        
+        // Show loading screen while game initializes
+        this.showLoadingScreen();
+        
+        // Use updateRoomIdandSendJoin for proper game setup with animation
+        if (this.poolScene) {
+          await this.poolScene.updateRoomIdandSendJoin(this.tournamentRoomId);
+        }
+      } else {
+        console.log('🏆 No room ID available yet, showing loading screen');
+        // Show loading screen while waiting for final match room ID from server
+        this.showLoadingScreen();
+      }
+    });
+
+    // Loser continues to bronze match
+    continueToBronzeBtn?.addEventListener('click', async () => {
+      console.log('🥉 Loser continuing to bronze match');
+      // Hide the game end overlay
+      this.gameEndOverlay!.style.display = "none";
+      
+      // Set tournament round to bronze
+      this.tournamentRound = 'bronze';
+      console.log('🥉 Tournament round set to:', this.tournamentRound);
+      
+      // Check if we have a room ID from the server
+      if (this.tournamentRoomId) {
+        console.log('🥉 Starting bronze match with room ID:', this.tournamentRoomId);
+        
+        // Reset tournament game state including scoreboards before starting new game
+        this.resetTournamentGameForNextRound();
+        
+        // Show loading screen while game initializes
+        this.showLoadingScreen();
+        
+        // Use updateRoomIdandSendJoin for proper game setup with animation
+        if (this.poolScene) {
+          await this.poolScene.updateRoomIdandSendJoin(this.tournamentRoomId);
+        }
+      } else {
+        console.log('🥉 No room ID available yet, showing loading screen');
+        // Show loading screen while waiting for bronze match room ID from server
+        this.showLoadingScreen();
+      }
+    });
+
+    // Return to main menu
+    returnToMenuBtn?.addEventListener('click', async () => {
+      await this.returnToMainMenu();
+    });
+
+    // Show the overlay
+    this.gameEndOverlay.style.display = "flex";
+  }
+
+  private showTournamentCompletionMessage(finalState: any, round: 'final' | 'bronze'): void {
+    if (!this.gameEndOverlay) return;
+
+    const winner = finalState.winner || "Unknown";
+    const isCurrentPlayerWinner = winner === this.player1Name;
+    const isFinal = round === 'final';
+
+    this.gameEndOverlay.innerHTML = `
+      <div style="
+        background: rgba(0, 0, 0, 0.4) !important;
+        backdrop-filter: blur(10px) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        padding: 32px !important;
+        max-width: 500px !important;
+        text-align: center !important;
+        border: 4px solid black !important;
+      ">
+        <div style="margin-bottom: 32px !important;">
+          <h1 style="font-family: monospace !important; color: white !important; font-size: 36px !important; font-weight: bold !important; margin-bottom: 16px !important;">
+            ${isFinal ? '🏆 TOURNAMENT CHAMPION!' : '🥉 BRONZE MATCH WINNER!'}
+          </h1>
+          <h2 style="font-family: monospace !important; color: ${isFinal ? '#FFD700' : '#CD7F32'} !important; font-size: 28px !important; font-weight: bold !important; margin-bottom: 12px !important;">
+            ${winner}
+          </h2>
+          <p style="font-family: monospace !important; color: white !important; font-size: 18px !important; font-weight: bold !important;">
+            ${isFinal ? 
+              (isCurrentPlayerWinner ? 'You are the Tournament Champion!' : `Congratulations to ${winner}!`) :
+              (isCurrentPlayerWinner ? 'You won 3rd place!' : `${winner} takes 3rd place!`)
+            }
+          </p>
+        </div>
+        
+        <div style="font-family: monospace !important; color: rgb(249, 115, 22) !important; font-size: 16px !important; animate: pulse;">
+          Returning to tournament results...
+        </div>
+      </div>
+    `;
+
+    // Show the overlay
+    this.gameEndOverlay.style.display = "flex";
+  }
+
+  private showTournamentLobbyWithFinalResults(tournamentResults: any, round?: 'final' | 'bronze'): void {
+    console.log('🏆 Showing tournament lobby with final results:', tournamentResults);
+    
+    // Hide game end overlay
+    if (this.gameEndOverlay) {
+      this.gameEndOverlay.style.display = "none";
+    }
+
+    // Show tournament lobby
+    this.showTournamentLobbyScreen();
+
+    // Update the tournament lobby to show tournament completed
+    const statusMessageElement = document.getElementById('tournamentStatusMessage');
+    if (statusMessageElement) {
+      statusMessageElement.textContent = 'Tournament completed! Check the results below.';
+      statusMessageElement.style.color = '';
+      statusMessageElement.style.fontWeight = '';
+    }
+
+    // Update tournament status
+    const statusElement = document.getElementById('tournamentStatus');
+    if (statusElement) {
+      statusElement.textContent = 'COMPLETED';
+      statusElement.style.color = '#00dd00'; // Lighter green
+      statusElement.style.fontWeight = 'bold';
+    }
+
+    // Update all matches with complete tournament results
+    if (tournamentResults.finalMatch || tournamentResults.thirdPlaceMatch || tournamentResults.champions) {
+      this.displayCompleteTournamentResults(tournamentResults);
+    } else if (round) {
+      // Fallback for individual round completion
+      if (round === 'final') {
+        const finalStatus = document.getElementById('finalStatus');
+        if (finalStatus) {
+          finalStatus.textContent = 'COMPLETED';
+          finalStatus.className = 'text-xs font-mono uppercase text-white bg-green-600 px-2 py-1 border border-black';
+        }
+      } else if (round === 'bronze') {
+        const bronzeStatus = document.getElementById('bronzeStatus');
+        if (bronzeStatus) {
+          bronzeStatus.textContent = 'COMPLETED';
+          bronzeStatus.className = 'text-xs font-mono uppercase text-white bg-green-600 px-2 py-1 border border-black';
+        }
+      }
+    }
+  }
+
+  // Display complete tournament results with all game scores
+  private displayCompleteTournamentResults(results: any): void {
+    console.log('🏆 Displaying complete tournament results:', results);
+
+    // Update semifinals results if available (they might be in different structure)
+    if (results.semifinals || (results.finalMatch && results.thirdPlaceMatch)) {
+      // If we have complete results, reconstruct semifinals from final/bronze match data
+      this.updateAllMatchResults(results);
+    }
+
+    // Update final match results
+    if (results.finalMatch) {
+      this.updateFinalMatchResults(results.finalMatch);
+    }
+
+    // Update bronze match results  
+    if (results.thirdPlaceMatch) {
+      this.updateBronzeMatchResults(results.thirdPlaceMatch);
+    }
+
+    // Display champions information if available
+    if (results.champions) {
+      this.displayChampionsResults(results.champions);
+    }
+  }
+
+  // Update final match with complete results and scores
+  private updateFinalMatchResults(finalMatch: any): void {
+    const finalVSBox = document.querySelector('#finalPlayer1')?.parentElement;
+    if (finalVSBox && finalMatch.player1 && finalMatch.player2) {
+      finalVSBox.innerHTML = `
+        <span class="font-mono font-bold text-lg ${finalMatch.winner === finalMatch.player1 ? 'text-green-600' : 'text-black'}">${finalMatch.player1} (${finalMatch.score1 || 0})</span>
+        <span class="text-black text-sm">VS</span>
+        <span class="font-mono font-bold text-lg ${finalMatch.winner === finalMatch.player2 ? 'text-green-600' : 'text-black'}">${finalMatch.player2} (${finalMatch.score2 || 0})</span>
+      `;
+    }
+
+    const finalStatus = document.getElementById('finalStatus');
+    if (finalStatus) {
+      finalStatus.textContent = 'COMPLETED';
+      finalStatus.className = 'text-xs font-mono uppercase text-white bg-green-600 px-2 py-1 border border-black';
+    }
+  }
+
+  // Update bronze match with complete results and scores
+  private updateBronzeMatchResults(thirdPlaceMatch: any): void {
+    const bronzeVSBox = document.querySelector('#bronzePlayer1')?.parentElement;
+    if (bronzeVSBox && thirdPlaceMatch.player1 && thirdPlaceMatch.player2) {
+      bronzeVSBox.innerHTML = `
+        <span class="font-mono font-bold text-lg ${thirdPlaceMatch.winner === thirdPlaceMatch.player1 ? 'text-green-600' : 'text-black'}">${thirdPlaceMatch.player1} (${thirdPlaceMatch.score1 || 0})</span>
+        <span class="text-black text-sm">VS</span>
+        <span class="font-mono font-bold text-lg ${thirdPlaceMatch.winner === thirdPlaceMatch.player2 ? 'text-green-600' : 'text-black'}">${thirdPlaceMatch.player2} (${thirdPlaceMatch.score2 || 0})</span>
+      `;
+    }
+
+    const bronzeStatus = document.getElementById('bronzeStatus');
+    if (bronzeStatus) {
+      bronzeStatus.textContent = 'COMPLETED';
+      bronzeStatus.className = 'text-xs font-mono uppercase text-white bg-green-600 px-2 py-1 border border-black';
+    }
+  }
+
+  // Update all match results including semifinals if available
+  private updateAllMatchResults(results: any): void {
+    // Update semifinals if they're provided directly
+    if (results.semifinals) {
+      if (results.semifinals.semi1) {
+        this.updateSemifinalResult('semi1', results.semifinals.semi1);
+      }
+      if (results.semifinals.semi2) {
+        this.updateSemifinalResult('semi2', results.semifinals.semi2);
+      }
+    }
+  }
+
+  // Update a specific semifinal result
+  private updateSemifinalResult(semiId: 'semi1' | 'semi2', semiData: any): void {
+    const semiVSBox = document.querySelector(`#${semiId}Player1`)?.parentElement;
+    if (semiVSBox && semiData.player1 && semiData.player2) {
+      semiVSBox.innerHTML = `
+        <span class="font-mono font-bold text-lg ${semiData.winner === semiData.player1 ? 'text-green-600' : 'text-black'}">${semiData.player1} (${semiData.score1 || 0})</span>
+        <span class="text-black text-sm">VS</span>
+        <span class="font-mono font-bold text-lg ${semiData.winner === semiData.player2 ? 'text-green-600' : 'text-black'}">${semiData.player2} (${semiData.score2 || 0})</span>
+      `;
+    }
+
+    const semiStatus = document.getElementById(`${semiId}Status`);
+    if (semiStatus) {
+      semiStatus.textContent = 'COMPLETED';
+      semiStatus.className = 'text-xs font-mono uppercase text-white bg-green-600 px-2 py-1 border border-black';
+    }
+  }
+
+  // Display champions and placement information
+  private displayChampionsResults(champions: any): void {
+    console.log('🏆 Tournament Champions:', champions);
+    
+    // You could add a champions display section to the lobby here if needed
+    // For now, the individual match results with highlighted winners show the results
+    
+    // Update status message with champion info
+    const statusMessageElement = document.getElementById('tournamentStatusMessage');
+    if (statusMessageElement && champions.first) {
+      statusMessageElement.textContent = `🏆 Tournament Champion: ${champions.first}! 🎉 Check all results below.`;
+      statusMessageElement.style.color = '#00dd00';
+      statusMessageElement.style.fontWeight = 'bold';
+    }
+  }
+
   private showDisconnectOverlay(message: string): void {
     if (!this.gameEndOverlay) return;
 
@@ -753,7 +1859,7 @@ export class Game3DComponent {
 
     // Increase z-index to ensure it's above animations and other content
     this.gameEndOverlay.style.zIndex = '9999';
-    
+
     this.gameEndOverlay.innerHTML = `
       <div style="
         background: rgba(0, 0, 0, 0.4) !important;
@@ -811,7 +1917,7 @@ export class Game3DComponent {
 
     // Reset the current scene without disposing it
     this.poolScene.restartQuick();
-    
+
     // Show quit button again after restart
     this.showQuitButton();
   }
@@ -819,7 +1925,7 @@ export class Game3DComponent {
   private async returnToMainMenu(): Promise<void> {
     // Hide quit button when returning to menu
     this.hideQuitButton();
-    
+
     // Use the callback if provided
     if (this.onReturnToMenuCallback) {
       this.onReturnToMenuCallback();
@@ -877,16 +1983,18 @@ export class Game3DComponent {
     if (this.gameEndOverlay && this.gameEndOverlay.parentElement) {
       this.gameEndOverlay.parentElement.removeChild(this.gameEndOverlay);
     }
-    
+
     // Clean up quit button and confirmation overlay
     const quitButton = document.getElementById('quit-button');
     if (quitButton && quitButton.parentElement) {
       quitButton.parentElement.removeChild(quitButton);
     }
-    
+
     const quitConfirmOverlay = document.getElementById('quit-confirmation-overlay');
     if (quitConfirmOverlay && quitConfirmOverlay.parentElement) {
       quitConfirmOverlay.parentElement.removeChild(quitConfirmOverlay);
     }
   }
 }
+
+

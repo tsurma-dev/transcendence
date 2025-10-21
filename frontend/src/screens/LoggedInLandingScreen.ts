@@ -73,9 +73,21 @@ export class LoggedInLandingScreen extends Component {
     }
 
     if (startTournamentBtn) {
-      startTournamentBtn.addEventListener('click', () => {
-        console.log('Navigating to TournamentLobbyScreen')
-        this.router.navigateTo(TournamentLobbyScreen)
+      startTournamentBtn.addEventListener('click', async () => {
+        console.log('Starting tournament...')
+        
+        try {
+          // Get current user for player name
+          const currentUser = await this.apiService.getCurrentUser()
+          const playerName = currentUser?.username || 'Player'
+          
+          // Navigate to ServerGameScreen for tournament game
+          this.router.navigateTo(ServerGameScreen, playerName, 'Player 2', 'tournament')
+          
+        } catch (error) {
+          console.error('Error starting tournament:', error)
+          alert('Failed to join tournament. Please try again.')
+        }
       })
     }
     // User Profile button removed, access via online users dropdown

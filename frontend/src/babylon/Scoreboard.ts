@@ -10,7 +10,7 @@ export class Scoreboard {
   private player2ScoreText!: TextBlock;
   private gameStatusText!: TextBlock;
 
-  constructor(player1Name: string, player2Name: string, gameMode: 'local' | 'online' | 'AI' = 'local') {
+  constructor(player1Name: string, player2Name: string, gameMode: 'local' | 'online' | 'AI' | 'tournament'= 'local') {
     this.player1NameText = new TextBlock("player1Name", player1Name || "Player 1");
     this.player2NameText = new TextBlock("player2Name", player2Name || "Player 2");
     // Create GUI texture
