@@ -65,7 +65,7 @@ export class PoolScene {
   private client?: GameClient; // for all other game modes
   private currentState?: GameState; // Track current game state for game-over handling
 
-  // Sounds - HTML5 Audio 
+  // Sounds - HTML5 Audio
   private wallHitAudio!: HTMLAudioElement;
   private paddleHitAudio!: HTMLAudioElement;
   private scoreAudio!: HTMLAudioElement;
@@ -99,6 +99,7 @@ export class PoolScene {
   private onTournamentPlayerJoinedCallback?: (playerNumber: number, playerName: string, state: string) => void;
   private onTournamentRegisteredCallback?: (tournamentId: string, players: string[], state: string) => void;
   private onTournamentGameInviteCallback?: (roomId: string) => void;
+  private onTournamentRoundFinishedCallback?: (results: any, round: number) => void;
   private onTournamentFinishedCallback?: (results: any) => void;
   private tournamentGameResolver?: () => void;
 
@@ -140,17 +141,17 @@ export class PoolScene {
   // Sets up the Babylon engine, scene, camera, lights, and loads assets.
   private async initializeScene(): Promise<void> {
     console.log('🎮 Initializing 3D scene');
-    
+
     // 1. Create Babylon engine and scene
     this.engine = new Engine(this.canvas, true);
     this.scene = this.CreateScene();
-    
+
     // Create scoreboard with names in correct position order
     if (this.gameMode !== 'local') {
         const myPosition = this.client?.getMyPosition();
         let scoreboardPlayer1Name: string;
         let scoreboardPlayer2Name: string;
-        
+
         if (myPosition === 2) {
           scoreboardPlayer1Name = this.player2Name;
           scoreboardPlayer2Name = this.player1Name;
@@ -178,7 +179,7 @@ export class PoolScene {
     };
     window.addEventListener("resize", this.resizeHandler);
 
-    // 4. Enable audio 
+    // 4. Enable audio
     await this.enableAudio();
     console.log('✅ Audio enabled');
 
@@ -247,7 +248,7 @@ export class PoolScene {
       console.log('🎮 Scene already initialized, skipping');
       return;
     }
-    
+
     await this.initializeScene();
   }
 
@@ -257,7 +258,7 @@ export class PoolScene {
   // Sets up the GameClient for online and tournament modes.
   private initializeConnection(): void {
     console.log('🌐 Initializing connection');
-    
+
     this.client = new GameClient(
       GAME_CONFIG.SERVER_URL,
       this.player1Name,
@@ -273,7 +274,7 @@ export class PoolScene {
   // ============================================================================
   // CALLBACKS AND HELPERS
   // ============================================================================
- 
+
   // --- SETUP CLIENT CALLBACKS ---
   private setupClientCallbacks(): void {
     if (!this.client) return;
@@ -288,6 +289,9 @@ export class PoolScene {
     });
     this.client.setOnTournamentGameInvite((roomId: string) => {
       this.onTournamentGameInviteCallback?.(roomId);
+    });
+    this.client.setOnTournamentRoundFinished((results: any, round: number) => {
+      this.onTournamentRoundFinishedCallback?.(results, round);
     });
     this.client.setOnTournamentFinished((results: any) => {
       this.onTournamentFinishedCallback?.(results);
@@ -370,6 +374,10 @@ export class PoolScene {
 
   public setOnTournamentGameInviteCallback(callback: (roomId: string) => void): void {
     this.onTournamentGameInviteCallback = callback;
+  }
+
+  public setOnTournamentRoundFinishedCallback(callback: (results: any, round: number) => void): void {
+    this.onTournamentRoundFinishedCallback = callback;
   }
 
   public setOnTournamentFinishedCallback(callback: (results: any) => void): void {
@@ -484,14 +492,14 @@ export class PoolScene {
     if (this.gameMode === 'tournament') {
       // Tournament game - play animation but return to tournament lobby instead of game over screen
       const currentPlayerWon = finalState.winner === this.player1Name;
-      
+
       // Play animation first
       if (currentPlayerWon) {
         await this.playWinnerAnimation();
       } else {
         await this.playLoserAnimation();
       }
-      
+
       // For tournament, show tournament results instead of regular game over
       // The tournament system will handle showing results and next round info
       if (this.onGameEndCallback) {
@@ -499,14 +507,14 @@ export class PoolScene {
       }
     } else if (this.gameMode === 'online' || this.gameMode === 'AI') {
       const currentPlayerWon = finalState.winner === this.player1Name;
-      
+
       // Play animation first, then show game over screen
       if (currentPlayerWon) {
         await this.playWinnerAnimation();
       } else {
         await this.playLoserAnimation();
       }
-      
+
       // Show regular game over screen
       if (this.onGameEndCallback) {
         this.onGameEndCallback(finalState);
@@ -514,7 +522,7 @@ export class PoolScene {
     } else if (this.gameMode === 'local') {
       // Always play winning animation for local games (both players can enjoy it)
       await this.playWinnerAnimation();
-      
+
       // Show local game over screen
       if (this.onGameEndCallback) {
         this.onGameEndCallback(finalState);
@@ -595,9 +603,9 @@ export class PoolScene {
   public resetTournamentVisualState(): void {
     console.log('🔄  Resetting game for second round');
 
-    this.gameStarted = false; 
+    this.gameStarted = false;
     this.gameEnded = false;
-    
+
     // Reset visual elements
     this.duck.updatePosition({ x: 0, z: 0, dir: Math.PI / 2 });
     this.Paddle1.updatePosition({ x: 0 });
@@ -613,17 +621,17 @@ export class PoolScene {
       console.warn('Failed to reset camera position');
     });
 
-    console.log('🏆 Tournament visual state reset complete - gameStarted now:', this.gameStarted);
+    console.log('🏆 Tournament visual state reset complete');
   }
 
   // **************************
   // --- ONLINE GAME SETUP ---
   // **************************
-  
+
   // Handles the complete online game initialization flow when room is ready
   private async handleOnlineGameReady(player1Name: string, player2Name: string): Promise<void> {
     console.log('🎮 Room ready - initializing online game');
-    
+
     // Set opponent name based on my position
     // player1Name = current user (me), player2Name = opponent
     const myPosition = this.client?.getMyPosition();
@@ -634,7 +642,7 @@ export class PoolScene {
       // I'm player 1, so player2Name from server is my opponent
       this.player2Name = player2Name;
     }
-    
+
     await this.initializeScene();
 
     this.onGameStartCallback?.(); // Tell Game3D to hide loading screen
@@ -663,7 +671,7 @@ export class PoolScene {
   //     this.client.setOnStartCountdown(async () => {
   //       await this.runCountdown();
   //       this.gameStarted = true;
-  //       resolve(); 
+  //       resolve();
   //     });
 
   //   });
@@ -694,7 +702,7 @@ export class PoolScene {
 
   //     // Connect to tournament server (just for lobby)
   //     this.client.connect();
-      
+
   //     // This promise resolves when tournament game actually starts (called from updateRoomIdAndStartGame)
   //     this.tournamentGameResolver = resolve;
   //   });
@@ -712,7 +720,7 @@ export class PoolScene {
 
   // // Start actual tournament game - called when user clicks "Start Tournament Game"
   // public async updateRoomIdAndStartGame(roomId: string): Promise<void> {
-    
+
   //   // Update room ID but KEEP tournament mode (don't switch to online)
   //   this.roomId = roomId;
   //   // Keep this.gameMode = 'tournament' - don't change it!
@@ -723,9 +731,9 @@ export class PoolScene {
   //     await this.initializeSceneWhenReady();
   //   }
 
-  //   // Now initialize the actual online game 
+  //   // Now initialize the actual online game
   //   await this.initializeOnlineGameAndWait();
-    
+
   //   // Resolve the tournament promise to indicate game has started
   //   if (this.tournamentGameResolver) {
   //     this.tournamentGameResolver();
@@ -817,10 +825,31 @@ export class PoolScene {
             }
           }
           if (state.scores) {
-            console.log(`🎉 Score! ${this.player1Name}: ${state.scores.player1} - ${this.player2Name}: ${state.scores.player2}`);
+            // Map scores based on player position
+            const myPosition = this.client?.getMyPosition();
+            let displayName1: string;
+            let displayName2: string;
+            let displayScore1: number;
+            let displayScore2: number;
+
+            if (myPosition === 2) {
+              // Current user is player2, opponent is player1
+              displayName1 = this.player2Name; // opponent (position 1)
+              displayName2 = this.player1Name; // current user (position 2)
+              displayScore1 = state.scores.player1;
+              displayScore2 = state.scores.player2;
+            } else {
+              // Current user is player1, opponent is player2
+              displayName1 = this.player1Name; // current user (position 1)
+              displayName2 = this.player2Name; // opponent (position 2)
+              displayScore1 = state.scores.player1;
+              displayScore2 = state.scores.player2;
+            }
+
+            console.log(`🎉 Score! ${displayName1}: ${displayScore1} - ${displayName2}: ${displayScore2}`);
           }
           this.scoreboard.updateFromGameState(state);
-          
+
           break;
       }
     }
@@ -1256,10 +1285,10 @@ export class PoolScene {
 
   private async playWinnerAnimation(): Promise<void> {
     console.log('🎉 Playing winner animation!');
-    
+
     // Zoom camera to duck for close-up view
     await this.zoomCameraToDuck();
-    
+
     // Play winning sound after zoom completes
     if (this.audioEnabled && this.winningAudio) {
       try {
@@ -1269,20 +1298,20 @@ export class PoolScene {
         // Silent error handling
       }
     }
-    
+
     // Animate the duck bouncing
     await this.animateDuckCelebration();
-    
+
     // Wait for animation to finish (reduced from 2000ms)
     await this.wait(500);
   }
 
   private async playLoserAnimation(): Promise<void> {
     console.log('😢 Playing loser animation...');
-    
+
     // Zoom camera to duck for close-up view
     await this.zoomCameraToDuck();
-    
+
     // Play losing sound after zoom completes
     if (this.audioEnabled && this.losingAudio) {
       try {
@@ -1292,10 +1321,10 @@ export class PoolScene {
         // Silent error handling
       }
     }
-    
+
     // Animate the duck sinking/tilting
     await this.animateDuckDrowning();
-    
+
   }
 
   // Winning animation
@@ -1306,10 +1335,10 @@ export class PoolScene {
         resolve();
         return;
       }
-      
+
       const originalY = duckMesh.position.y;
-      
-      // Create rotation animation 
+
+      // Create rotation animation
       const rotationAnimation = new Animation(
         "duckRotation",
         "rotation.y",
@@ -1317,13 +1346,13 @@ export class PoolScene {
         Animation.ANIMATIONTYPE_FLOAT,
         Animation.ANIMATIONLOOPMODE_CONSTANT
       );
-      
+
       const rotationKeys = [];
       rotationKeys.push({ frame: 0, value: duckMesh.rotation.y });
       rotationKeys.push({ frame: 60, value: duckMesh.rotation.y + Math.PI * 4 }); // 2 full rotations in 2 seconds
-      
+
       rotationAnimation.setKeys(rotationKeys);
-      
+
       // Create bouncing animation
       const bounceAnimation = new Animation(
         "duckBounce",
@@ -1332,7 +1361,7 @@ export class PoolScene {
         Animation.ANIMATIONTYPE_FLOAT,
         Animation.ANIMATIONLOOPMODE_CONSTANT
       );
-      
+
       const bounceKeys = [];
       // Start bouncing after rotation
       bounceKeys.push({ frame: 0, value: originalY });
@@ -1343,19 +1372,19 @@ export class PoolScene {
       bounceKeys.push({ frame: 140, value: originalY }); // Back down
       bounceKeys.push({ frame: 160, value: originalY + 0.2 }); // Third jump
       bounceKeys.push({ frame: 180, value: originalY }); // Final position
-      
+
       bounceAnimation.setKeys(bounceKeys);
       rotationAnimation.setKeys(rotationKeys);
-      
+
       // Add easing
       const easingFunction = new CubicEase();
       easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
       bounceAnimation.setEasingFunction(easingFunction);
       rotationAnimation.setEasingFunction(easingFunction);
-      
+
       // Start both animations
       const animatable = this.scene.beginDirectAnimation(duckMesh, [rotationAnimation, bounceAnimation], 0, 180, false);
-      
+
       animatable.onAnimationEnd = () => {
         resolve();
       };
@@ -1370,7 +1399,7 @@ export class PoolScene {
         resolve();
         return;
       }
-      
+
       // Create sinking animation (downward movement)
       const sinkAnimation = new Animation(
         "duckSinking",
@@ -1379,7 +1408,7 @@ export class PoolScene {
         Animation.ANIMATIONTYPE_FLOAT,
         Animation.ANIMATIONLOOPMODE_CONSTANT
       );
-      
+
       const sinkKeys = [];
       const originalY = duckMesh.position.y;
       sinkKeys.push({ frame: 0, value: originalY });
@@ -1389,9 +1418,9 @@ export class PoolScene {
       sinkKeys.push({ frame: 120, value: originalY - 3.0 }); // Much deeper
       sinkKeys.push({ frame: 150, value: originalY - 4.0 }); // Very deep
       sinkKeys.push({ frame: 180, value: originalY - 5.0 }); // All the way to bottom
-      
+
       sinkAnimation.setKeys(sinkKeys);
-      
+
       // Create smooth tilting animation (rotation)
       const tiltAnimation = new Animation(
         "duckTilting",
@@ -1400,25 +1429,25 @@ export class PoolScene {
         Animation.ANIMATIONTYPE_FLOAT,
         Animation.ANIMATIONLOOPMODE_CONSTANT
       );
-      
+
       const tiltKeys = [];
       tiltKeys.push({ frame: 0, value: 0 });
       tiltKeys.push({ frame: 45, value: Math.PI / 8 }); // Slight tilt
       tiltKeys.push({ frame: 90, value: Math.PI / 6 }); // Tilt 30 degrees
       tiltKeys.push({ frame: 135, value: Math.PI / 4.5 }); // More tilt
       tiltKeys.push({ frame: 180, value: Math.PI / 4 }); // Final tilt 45 degrees
-      
+
       tiltAnimation.setKeys(tiltKeys);
-      
+
       // Add smooth easing for elegant movement
       const easingFunction = new CubicEase();
       easingFunction.setEasingMode(EasingFunction.EASINGMODE_EASEIN);
       sinkAnimation.setEasingFunction(easingFunction);
       tiltAnimation.setEasingFunction(easingFunction);
-      
+
       // Start both animations - 6 seconds long
       const animatable = this.scene.beginDirectAnimation(duckMesh, [sinkAnimation, tiltAnimation], 0, 180, false);
-      
+
       animatable.onAnimationEnd = () => {
         resolve();
       };
@@ -1437,23 +1466,23 @@ export class PoolScene {
       // Move duck to center of the pool for cinematic effect
       const centerPosition = new Vector3(0, GAME_CONFIG.WATER_LEVEL - 0.15, 0);
       duckMesh.position = centerPosition.clone();
-      
+
       // Get duck's current rotation to position camera facing it
       const duckRotation = duckMesh.rotation.y;
-      
+
       // Calculate camera position based on duck's facing direction
       // Position camera opposite to where duck is facing for a front view
-      const cameraDistance = 2.5; 
+      const cameraDistance = 2.5;
       const cameraHeight = 1.2;
       const cameraX = centerPosition.x + Math.sin(duckRotation + Math.PI) * cameraDistance;
       const cameraZ = centerPosition.z + Math.cos(duckRotation + Math.PI) * cameraDistance;
-      
+
       const zoomPosition = new Vector3(
         cameraX,
         GAME_CONFIG.WATER_LEVEL + cameraHeight,
         cameraZ
       );
-      
+
       // Target the duck at center, slightly above for better framing
       const zoomTarget = centerPosition.add(new Vector3(0, 0.3, 0));
 
@@ -1563,7 +1592,7 @@ export class PoolScene {
     if (!this.engine) {
       throw new Error('Engine must be initialized before creating scene');
     }
-    
+
     const scene: Scene = new Scene(this.engine);
     const materials: Materials = new Materials(scene);
 
