@@ -39,7 +39,7 @@ export function getMatchesForPlayer(db, playerId) {
     JOIN users u1 ON m.player1_id = u1.id
     JOIN users u2 ON m.player2_id = u2.id
     JOIN users u3 ON m.winner_id = u3.id
-    WHERE u1.id = ? OR u2.id = ?
+    WHERE m.player1_id = ? OR m.player2_id = ?
     ORDER BY m.played_at DESC
   `);
   return stmt.all(playerId, playerId);
