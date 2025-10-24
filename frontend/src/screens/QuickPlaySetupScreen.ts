@@ -15,6 +15,7 @@ export class QuickPlaySetupScreen extends Component {
     if (fragment) {
       div.appendChild(fragment)
     }
+
     return div
   }
 
@@ -32,19 +33,12 @@ export class QuickPlaySetupScreen extends Component {
     this.prefillCurrentUser(player1Input)
 
     const updateStartButton = () => {
-      const hasPlayer1 = player1Input.value.trim().length > 0
-      const hasPlayer2 = player2Input.value.trim().length > 0
-      
       // Enable button always so users can click to see validation errors
       startBtn.disabled = false
       
-      // Hide error messages when typing
-      if (hasPlayer1) {
-        player1Error.classList.add('hidden')
-      }
-      if (hasPlayer2) {
-        player2Error.classList.add('hidden')
-      }
+      // Always hide error messages when typing (they'll reappear on submit if still invalid)
+      player1Error.classList.add('hidden')
+      player2Error.classList.add('hidden')
     }
 
     // Initial call to set up the button state
@@ -58,22 +52,23 @@ export class QuickPlaySetupScreen extends Component {
       const player2Name = player2Input.value.trim()
       let hasErrors = false
 
-      // Show error messages for empty fields
-      if (!player1Name) {
+      // Validate Player 1
+      if (!player1Name || player1Name.length < 3 || player1Name.length > 6) {
         player1Error.classList.remove('hidden')
         hasErrors = true
       } else {
         player1Error.classList.add('hidden')
       }
 
-      if (!player2Name) {
+      // Validate Player 2
+      if (!player2Name || player2Name.length < 3 || player2Name.length > 6) {
         player2Error.classList.remove('hidden')
         hasErrors = true
       } else {
         player2Error.classList.add('hidden')
       }
 
-      // Only navigate if both fields are filled
+      // Only navigate if both fields are filled and valid
       if (!hasErrors && player1Name && player2Name) {
         this.router.navigateTo(QuickPlayScreen, player1Name, player2Name, 'local')
       }
