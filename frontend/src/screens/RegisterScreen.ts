@@ -48,7 +48,13 @@ export class RegisterScreen extends Component {
 
       // Validate username length (3-6 characters)
       if (registerData.username.length < 3 || registerData.username.length > 6) {
-        errorDiv.textContent = 'Username must be between 3 and 6 characters'
+        errorDiv.textContent = 'Username must be 3-6 characters'
+        errorDiv.classList.remove('hidden')
+        return
+      }
+
+      if (registerData.password.length < 6) {
+        errorDiv.textContent = 'Password must be at least 6 characters'
         errorDiv.classList.remove('hidden')
         return
       }
@@ -82,8 +88,17 @@ export class RegisterScreen extends Component {
             })
           }
         } else {
-          const error = await response.text()
-          errorDiv.textContent = error || 'Registration failed'
+          const errorText = await response.text()
+          let errorMessage = 'Registration failed'
+          
+          try {
+            const errorJson = JSON.parse(errorText)
+            errorMessage = errorJson.message || errorText
+          } catch {
+            errorMessage = errorText
+          }
+          
+          errorDiv.textContent = errorMessage
           errorDiv.classList.remove('hidden')
         }
       } catch (error) {
