@@ -1,7 +1,5 @@
 import { gameProperties, PAD_MAX_POS_X } from "./gameProperties.js";
 
-//const PAD_MAX_POS_X = gameProperties.PAD_MAX_POS_X;
-
 export class Game {
 	constructor(gameState) {
 		this.ball = {
@@ -35,18 +33,30 @@ export class Game {
 		this.winner = null;
 	}
 
-	resetBall() {
-		this.ballCount += 1;
-		if (this.ballCount >= gameProperties.BALL_COUNT) {
+	resetBall(paddleHit) {
+		//this.ballCount += 1;
+		//if (this.ballCount >= gameProperties.BALL_COUNT) {
+		if (this.score.player1 >= gameProperties.WINNING_SCORE || this.score.player2 >= gameProperties.WINNING_SCORE) {
 			this.gameState = "finished";
 			this.winner = this.score.player1 > this.score.player2 ? "first" : "second";
 			return;
 		}
-		this.ball.z = 0;
-		this.ball.x = 0;
-		this.ball.speedZ = (Math.random() > 0.5 ? 1 : -1) * gameProperties.BALL_SPEED_Z;
+		if (!paddleHit) {
+			this.ball.z = 0;
+			this.ball.x = 0;
+			this.ball.speedZ = (Math.random() > 0.5 ? 1 : -1) * gameProperties.BALL_SPEED_Z;
+		}
+		if (paddleHit === "first") {
+			this.ball.z = this.paddle1.z + this.ball.radius;
+			this.ball.x = this.paddle1.x;
+			this.ball.speedZ = Math.abs(this.ball.speedZ);
+		} else if (paddleHit === "second") {
+			this.ball.z = this.paddle2.z - this.ball.radius;
+			this.ball.x = this.paddle2.x;
+			this.ball.speedZ = -Math.abs(this.ball.speedZ);
+		}
 		this.ball.speedX = (Math.random() > 0.5 ? 1 : -1) * gameProperties.BALL_SPEED_X;
-		this.ball.deltaSpeed -= 1; // increase ball speed each score
+		this.ball.deltaSpeed = gameProperties.DELTA_SPEED;
 	}
 
 	movePaddle(paddle) {
@@ -80,22 +90,29 @@ export class Game {
 			this.collisionEvent = "wall";
 		}
 
+		// Ball collision with paddles
+		let distanceToPaddle = this.paddle1.z - this.ball.z;
 		if (
-			this.ball.z - this.ball.radius < this.paddle1.z &&
+			//this.ball.z - this.ball.radius < this.paddle1.z &&
+			distanceToPaddle < 0 && distanceToPaddle > -this.ball.radius &&
 			this.ball.x + this.ball.radius / 2 > this.paddle1.x - gameProperties.PADDLE_HEIGHT / 2 &&
 			this.ball.x - this.ball.radius / 2 < this.paddle1.x + gameProperties.PADDLE_HEIGHT / 2
 		) {
 			this.ball.speedZ *= -1;
+			this.ball.deltaSpeed = Math.max(this.ball.deltaSpeed - 1, 3);
 			this.ball.z = this.paddle1.z + this.ball.radius;
 			this.collisionEvent = "paddle";
 		}
 
+		distanceToPaddle = this.paddle2.z - this.ball.z;
 		if (
-			this.ball.z + this.ball.radius > this.paddle2.z &&
+			//this.ball.z + this.ball.radius > this.paddle2.z &&
+			distanceToPaddle > 0 && distanceToPaddle < this.ball.radius &&
 			this.ball.x + this.ball.radius / 2 > this.paddle2.x - gameProperties.PADDLE_HEIGHT / 2 &&
 			this.ball.x - this.ball.radius / 2 < this.paddle2.x + gameProperties.PADDLE_HEIGHT / 2
 		) {
 			this.ball.speedZ *= -1;
+			this.ball.deltaSpeed = Math.max(this.ball.deltaSpeed - 1, 3);
 			this.ball.z = this.paddle2.z - this.ball.radius;
 			this.collisionEvent = "paddle";
 		}
@@ -113,11 +130,11 @@ export class Game {
 	}
 
 	getState() {
-		const eventses = new Array();
+		const evs = new Array();
 		if (this.collisionEvent)
-			eventses.push({type: "collision", collisionType: this.collisionEvent});
+			evs.push({type: "collision", collisionType: this.collisionEvent});
 		if (this.scoreEvent)
-			eventses.push({
+			evs.push({
 				type: "score", 
 				playerID: this.scoreEvent, 
 				points: this.scoreEvent === "first" ? this.score.player1 : this.score.player2
@@ -131,8 +148,8 @@ export class Game {
 			player2Score: this.score.player2,
 			gameState: this.gameState,
 			winner: this.winner,
-			//collision: this.collisionEvent, // events: "paddle", "wall", null
-			events: eventses,
+			//duck direction
+			events: evs,
 		};
 	}
 
