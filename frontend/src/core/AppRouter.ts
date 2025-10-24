@@ -83,12 +83,28 @@ export class AppRouter {
     })
   }
 
-  private handlePopState(event: PopStateEvent): void {
+  private async handlePopState(event: PopStateEvent): Promise<void> {
     const path = window.location.pathname
     const search = window.location.search
     const state = event.state
 
     console.log('PopState event:', { path, search, state })
+
+    // Redirect logged-in users from /start to /landing
+    if (path === '/start' || path === '/') {
+      const apiService = new ApiService()
+      try {
+        const user = await apiService.getCurrentUser()
+        if (user && user.username) {
+          // User is logged in, redirect to landing
+          window.history.replaceState({ componentName: 'LoggedInLandingScreen' }, '', '/landing')
+          this.renderComponent(LoggedInLandingScreen)
+          return
+        }
+      } catch (error) {
+        // User not logged in, continue to start page
+      }
+    }
 
     // Handle navigation based on current URL
     const routeInfo = this.routes.get(path)
@@ -272,9 +288,26 @@ export class AppRouter {
   }
 
   // Method to handle initial page load routing
-  handleInitialRoute(): void {
+  async handleInitialRoute(): Promise<void> {
     const path = window.location.pathname
     const search = window.location.search
+    
+    // Redirect logged-in users from /start to /landing
+    if (path === '/start' || path === '/') {
+      const apiService = new ApiService()
+      try {
+        const user = await apiService.getCurrentUser()
+        if (user && user.username) {
+          // User is logged in, redirect to landing
+          window.history.replaceState({ componentName: 'LoggedInLandingScreen' }, '', '/landing')
+          this.renderComponent(LoggedInLandingScreen)
+          return
+        }
+      } catch (error) {
+        // User not logged in, continue to start page
+      }
+    }
+    
     const routeInfo = this.routes.get(path)
 
     if (routeInfo) {
