@@ -46,6 +46,13 @@ export class RegisterScreen extends Component {
         password: formData.get('password') as string
       }
 
+      // Validate username length (3-6 characters)
+      if (registerData.username.length < 3 || registerData.username.length > 6) {
+        errorDiv.textContent = 'Username must be between 3 and 6 characters'
+        errorDiv.classList.remove('hidden')
+        return
+      }
+
       try {
         const response = await fetch(`${this.apiService['baseUrl']}/api/register`, {
           method: 'POST',

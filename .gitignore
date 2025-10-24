@@ -142,4 +142,4 @@ dist
 .env/
 
 # Mac system files
-*.DStore
+*.DS_Store
