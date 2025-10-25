@@ -2,6 +2,9 @@ export class Tournament {
 	constructor(id) {
 		this.id = id;
         this.players = new Map(); // Map of player number to player data
+        this.playersCount = 0;
+
+        // first round matches
         this.group1A = {
             roomId: null,
             player1: null,
@@ -18,6 +21,7 @@ export class Tournament {
             winner: null,
             gameOver: false,
         }
+
         // final match
         this.group2A = {
             roomId: null,
@@ -36,6 +40,7 @@ export class Tournament {
             winner: null,
             gameOver: false,
         }
+
         this.champions = {
             first: null,
             second: null,
@@ -46,20 +51,51 @@ export class Tournament {
 
     addPlayer(name, socket) {
         let size = this.players.size;
-        if (size >= 4) {
+        if (this.playersCount == 4) {
             socket.send(JSON.stringify({ type: 'fail', message: 'Tournament is full' }));
             socket.close();
             return -1; // Tournament is full
         }
-        this.sendStateUpdate('tournament-player-joined', { playerNumber: size + 1, playerName: name, state: this.state });
-        this.players.set(size + 1, { name, socket });
-        size = this.players.size;
+        if (size == this.playersCount) {
+            this.players.set(size + 1, { name: name, socket: socket });
+            this.playersCount++;
+            this.sendStateUpdate('tournament-player-joined', { playerNumber: size + 1, playerName: name, state: this.state });
+        }
+        else {
+            for (let [number, player] of this.players) {
+                if (!player.name) {
+                    player.name = name;
+                    player.socket = socket;
+                this.playersCount++;
+                this.sendStateUpdate('tournament-player-joined', { playerNumber: number, playerName: name, state: this.state });
+                break;
+                }
+            }
+        }
         const participants = [];
         for (let [_, player] of this.players) {
             participants.push(player.name);
         }
         socket.send(JSON.stringify({ type: 'registered', payload: { tournamentId: this.id, players: participants, state: this.state } }));
-        return size;
+        return this.playersCount;
+    }
+
+    removePlayer(socket) {
+        let numberToRemove = 0;
+        for (let [playerNumber, player] of this.players) {
+            if (player.socket === socket) {
+                numberToRemove = playerNumber;
+                break;
+            }
+        }
+        const playerGone = this.players.get(numberToRemove);
+        if (!playerGone) return;
+        playerGone.socket = null; // mark as disconnected
+        if (this.state === 'waiting') {
+            this.sendStateUpdate('tournament-player-left', { playersCount: this.players.size, playerName: playerGone.name, state: this.state });
+        }
+        playerGone.name = null;
+        this.playersCount--;
     }
 
     setFirstRound(room1, room2) {
@@ -213,6 +249,23 @@ export class Tournament {
             },
             champions: this.champions 
         });
+        this.closeSockets();
+    }
+    
+    cancel(socket) {
+        this.removePlayer(socket);
+        this.sendStateUpdate('tournament-cancelled', { message: 'Tournament has been cancelled due to player disconnect' });
+        this.closeSockets();
+    }
+    
+    closeSockets() {
+        if (!this.players) return;
+        for (let [_, player] of this.players) {
+            if (player.socket) {
+                player.socket.close();
+            }
+        }
+        this.playersCount = 0;
     }
 
     sendStateUpdate(state, data) {

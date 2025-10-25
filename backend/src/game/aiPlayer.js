@@ -9,7 +9,7 @@ export class AIplayer {
             z: gameProperties.GAME_WIDTH / 2, // + gameProperties.PADDLE_WIDTH,
             x: 0,
             speed: gameProperties.PADDLE_SPEED,
-            delta: 0.5, // adjust the precision of the AI movement prediction
+            delta: 0.6, // adjust the precision of the AI movement prediction
         }
         this.ballPos = {
             z: 0,
