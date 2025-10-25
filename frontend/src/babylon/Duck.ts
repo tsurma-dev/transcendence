@@ -98,4 +98,12 @@ export class Duck {
     // Add entire model as shadow caster (true -> recursive)
     shadowGenerator.addShadowCaster(mesh, true);
   }
+
+  // dispose the duck mesh
+  public dispose(): void {
+    if (this.mesh) {
+      this.mesh.dispose();
+      this.mesh = null;
+    }
+  }
 }

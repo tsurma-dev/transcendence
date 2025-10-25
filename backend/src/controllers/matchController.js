@@ -275,15 +275,15 @@ function roomsLoop(rooms) {
 				room.game.update();
 				sendGameState(roomId, "update");
 				//end game if one of players disconnected
-				// if (!room.player1.socket || 
-				// 	(!room.player2.socket && room.player2.name !== "AIplayer")) {
-				// 	sendGameState(roomId, "failed");
-				// 	console.log("Game in room " + roomId + " ended due to player disconnect");
-				// 	clearRoom(roomId);
-				//} else {
-				// 	room.game.update();
-				// 	sendGameState(roomId, "update");
-				// }
+				if (!room.player1.socket || 
+					(!room.player2.socket && room.player2.name !== "AIplayer")) {
+					sendGameState(roomId, "failed");
+					console.log("Game in room " + roomId + " ended due to player disconnect");
+					clearRoom(roomId);
+				} else {
+					room.game.update();
+					sendGameState(roomId, "update");
+				}
 				if (room.game.gameState === "finished") {
 						endGame(roomId);
 				}

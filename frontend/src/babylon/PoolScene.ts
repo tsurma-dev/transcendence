@@ -97,11 +97,11 @@ export class PoolScene {
   private onGameFailedCallback?: (message: string) => void;
   private onGameEndCallback?: (finalState: GameState) => void;
   private onTournamentPlayerJoinedCallback?: (playerNumber: number, playerName: string, state: string) => void;
+  private onTournamentPlayerLeftCallback?: (playerName: string) => void;
   private onTournamentRegisteredCallback?: (tournamentId: string, players: string[], state: string) => void;
   private onTournamentGameInviteCallback?: (roomId: string) => void;
   private onTournamentRoundFinishedCallback?: (results: any, round: number) => void;
   private onTournamentFinishedCallback?: (results: any) => void;
-  private tournamentGameResolver?: () => void;
 
 
   // -------------------
@@ -242,16 +242,6 @@ export class PoolScene {
     await this.Paddle2.waitForLoad();
   }
 
-  // Public method for online games to initialize scene when ready
-  public async initializeSceneWhenReady(): Promise<void> {
-    if (this.engine && this.scene) {
-      console.log('🎮 Scene already initialized, skipping');
-      return;
-    }
-
-    await this.initializeScene();
-  }
-
   // *****************************
   // *** INITIALIZE CONNECTION ***
   // *****************************
@@ -287,6 +277,11 @@ export class PoolScene {
     this.client.setOnTournamentPlayerJoined((playerNumber: number, playerName: string, state: string) => {
       this.onTournamentPlayerJoinedCallback?.(playerNumber, playerName, state);
     });
+
+    this.client.setOnTournamentPlayerLeft((playerName: string) => {
+      this.onTournamentPlayerLeftCallback?.(playerName);
+    });
+
     this.client.setOnTournamentGameInvite((roomId: string) => {
       this.onTournamentGameInviteCallback?.(roomId);
     });
@@ -366,6 +361,10 @@ export class PoolScene {
 
   public setOnTournamentPlayerJoinedCallback(callback: (playerNumber: number, playerName: string, state: string) => void): void {
     this.onTournamentPlayerJoinedCallback = callback;
+  }
+
+  public setOnTournamentPlayerLeftCallback(callback: (playerName: string) => void): void {
+    this.onTournamentPlayerLeftCallback = callback;
   }
 
   public setOnTournamentRegisteredCallback(callback: (tournamentId: string, players: string[], state: string) => void): void {
@@ -489,8 +488,7 @@ export class PoolScene {
     this.scoreboard.updateFromGameState(finalState);
 
     // Handle different game modes for end animations and screens
-    if (this.gameMode === 'tournament') {
-      // Tournament game - play animation but return to tournament lobby instead of game over screen
+    if (this.gameMode != 'local') {
       const currentPlayerWon = finalState.winner === this.player1Name;
 
       // Play animation first
@@ -500,26 +498,10 @@ export class PoolScene {
         await this.playLoserAnimation();
       }
 
-      // For tournament, show tournament results instead of regular game over
-      // The tournament system will handle showing results and next round info
       if (this.onGameEndCallback) {
         this.onGameEndCallback(finalState);
       }
-    } else if (this.gameMode === 'online' || this.gameMode === 'AI') {
-      const currentPlayerWon = finalState.winner === this.player1Name;
-
-      // Play animation first, then show game over screen
-      if (currentPlayerWon) {
-        await this.playWinnerAnimation();
-      } else {
-        await this.playLoserAnimation();
-      }
-
-      // Show regular game over screen
-      if (this.onGameEndCallback) {
-        this.onGameEndCallback(finalState);
-      }
-    } else if (this.gameMode === 'local') {
+    } else {
       // Always play winning animation for local games (both players can enjoy it)
       await this.playWinnerAnimation();
 
@@ -549,6 +531,7 @@ export class PoolScene {
     // Create new render callback
     this.renderCallback = () => {
       if (!this.gameStarted) return; // prevent updates before Start
+      if (!this.scene || !this.engine) return;
       const deltaTime = this.engine.getDeltaTime();
       if (this.localGameEngine) {
         this.localGameEngine.update(deltaTime);
@@ -600,14 +583,20 @@ export class PoolScene {
   // -----------------------------
   // TOURNAMENT RESTART (websocket preserved)
   // -----------------------------
-  public resetTournamentVisualState(): void {
+  public async resetTournamentVisualState(): Promise<void> {
     console.log('🔄  Resetting game for second round');
 
+    this.isLoaded = false;
     this.gameStarted = false;
     this.gameEnded = false;
 
-    // Reset visual elements
+    // Recreate duck
+    this.duck.dispose();
+    this.duck = new Duck(this.scene!, this.shadowGenerator);
+    await this.duck.waitForLoad();
     this.duck.updatePosition({ x: 0, z: 0, dir: Math.PI / 2 });
+
+    // Reset other visual elements
     this.Paddle1.updatePosition({ x: 0 });
     this.Paddle2.updatePosition({ x: 0 });
     this.scoreboard.reset();
@@ -616,12 +605,11 @@ export class PoolScene {
     // The server will start sending game states for the next round right away
     this.gameStarted = true;
 
-    // Reset camera position smoothly (no await needed for tournament)
-    this.resetCameraPosition().catch(() => {
-      console.warn('Failed to reset camera position');
-    });
+    // Reset camera position to INTRO_START_POSITION
+    this.camera.setPosition(CAMERA_SETTINGS.INTRO_START_POSITION);
 
-    console.log('🏆 Tournament visual state reset complete');
+    console.log('✅ Tournament visual state reset complete');
+    this.isLoaded = true;
   }
 
   // **************************
@@ -643,7 +631,27 @@ export class PoolScene {
       this.player2Name = player2Name;
     }
 
-    await this.initializeScene();
+    if (this.isLoaded) {
+      console.log('✅ Scene already loaded');
+      //update scoreboard names
+      if (this.client) {
+        const myPosition = this.client.getMyPosition();
+        let scoreboardPlayer1Name: string;
+        let scoreboardPlayer2Name: string;
+
+        if (myPosition === 2) {
+          scoreboardPlayer1Name = this.player2Name;
+          scoreboardPlayer2Name = this.player1Name;
+        } else {
+          scoreboardPlayer1Name = this.player1Name;
+          scoreboardPlayer2Name = this.player2Name;
+        }
+        this.scoreboard.updatePlayerNames(scoreboardPlayer1Name, scoreboardPlayer2Name);
+      }
+    } else {
+       await this.initializeScene();
+    }
+   
 
     this.onGameStartCallback?.(); // Tell Game3D to hide loading screen
 
@@ -657,57 +665,6 @@ export class PoolScene {
     console.log('⏳ Waiting for server to start countdown...');
   }
 
-  // private async initializeOnlineGameAndWait(): Promise<void> {
-  //   return new Promise((resolve) => {
-  //     console.log('🔄 Initializing online game');
-
-  //     // For tournament mode with roomId, reuse existing client
-  //     if (this.gameMode === 'tournament' && this.roomId && this.client) {
-  //       // Update the existing client's roomId and switch to online game mode
-  //       this.client.updateRoomId(this.roomId);
-  //     }
-
-  //     // Override the specific callbacks we need for this promise resolution
-  //     this.client.setOnStartCountdown(async () => {
-  //       await this.runCountdown();
-  //       this.gameStarted = true;
-  //       resolve();
-  //     });
-
-  //   });
-  // }
-
-  // *****************************
-  // --- TOURNAMENT GAME SETUP ---
-  // *****************************
-  // private async initializeTournamentAndWait(): Promise<void> {
-  //   return new Promise((resolve) => {
-  //     console.log('🏆 Initializing tournament connection');
-
-  //     this.client = new GameClient(
-  //       GAME_CONFIG.SERVER_URL,
-  //       this.player1Name,
-  //       '', // No roomId for tournament lobby
-  //       'tournament'
-  //     );
-
-  //     // Set up all callbacks
-  //     this.setupClientCallbacks();
-
-  //     // Override specific tournament callbacks to handle UI updates
-  //     this.client.setOnTournamentRegistered((tournamentId: string, players: string[], state: string) => {
-  //       this.onTournamentRegisteredCallback?.(tournamentId, players, state);
-  //       this.onRoomIdCallback?.(tournamentId);
-  //     });
-
-  //     // Connect to tournament server (just for lobby)
-  //     this.client.connect();
-
-  //     // This promise resolves when tournament game actually starts (called from updateRoomIdAndStartGame)
-  //     this.tournamentGameResolver = resolve;
-  //   });
-  // }
-
   public async updateRoomIdandSendJoin(roomId: string): Promise<void> {
     if (this.client) {
       this.roomId = roomId;
@@ -717,32 +674,6 @@ export class PoolScene {
       console.warn('⚠️ Cannot update room ID - client not initialized');
     }
   }
-
-  // // Start actual tournament game - called when user clicks "Start Tournament Game"
-  // public async updateRoomIdAndStartGame(roomId: string): Promise<void> {
-
-  //   // Update room ID but KEEP tournament mode (don't switch to online)
-  //   this.roomId = roomId;
-  //   // Keep this.gameMode = 'tournament' - don't change it!
-
-  //   // Initialize 3D scene now if it hasn't been initialized yet
-  //   if (!this.isLoaded) {
-  //     console.log("🏆 Loading tournament game assets...");
-  //     await this.initializeSceneWhenReady();
-  //   }
-
-  //   // Now initialize the actual online game
-  //   await this.initializeOnlineGameAndWait();
-
-  //   // Resolve the tournament promise to indicate game has started
-  //   if (this.tournamentGameResolver) {
-  //     this.tournamentGameResolver();
-  //     this.tournamentGameResolver = undefined;
-  //   }
-  // }
-
-
-
 
   // --------------------------------
   // !!! --- MAIN UPDATE LOOP --- !!!
@@ -1024,7 +955,8 @@ export class PoolScene {
     this.camera.animations = [positionAnimation, targetAnimation];
 
     return new Promise((resolve) => {
-      const animatable = this.scene.beginAnimation(this.camera, 0, 300, false);
+
+      const animatable = this.scene!.beginAnimation(this.camera, 0, 300, false);
       animatable.onAnimationEndObservable.add(() => {
         this.isIntroPlaying = false;
         resolve();
@@ -1106,7 +1038,7 @@ export class PoolScene {
     this.camera.animations = [positionAnimation, targetAnimation];
 
     return new Promise((resolve) => {
-      const animatable = this.scene.beginAnimation(this.camera, 0, orbitFrames, false);
+      const animatable = this.scene!.beginAnimation(this.camera, 0, orbitFrames, false);
       animatable.onAnimationEndObservable.add(() => {
         resolve();
       });
@@ -1205,7 +1137,7 @@ export class PoolScene {
       // Apply animations
       this.camera.animations = [positionAnimation, targetAnimation];
 
-      const animatable = this.scene.beginAnimation(this.camera, 0, durationFrames, false);
+      const animatable = this.scene!.beginAnimation(this.camera, 0, durationFrames, false);
       animatable.onAnimationEndObservable.add(() => {
         resolve();
       });
@@ -1272,7 +1204,7 @@ export class PoolScene {
       // Apply and start
       this.camera.animations = [positionAnimation, targetAnimation];
 
-      const animatable = this.scene.beginAnimation(this.camera, 0, orbitFrames, false);
+      const animatable = this.scene!.beginAnimation(this.camera, 0, orbitFrames, false);
       animatable.onAnimationEndObservable.add(() => {
         resolve();
       });
@@ -1383,7 +1315,7 @@ export class PoolScene {
       rotationAnimation.setEasingFunction(easingFunction);
 
       // Start both animations
-      const animatable = this.scene.beginDirectAnimation(duckMesh, [rotationAnimation, bounceAnimation], 0, 180, false);
+      const animatable = this.scene!.beginDirectAnimation(duckMesh, [rotationAnimation, bounceAnimation], 0, 180, false);
 
       animatable.onAnimationEnd = () => {
         resolve();
@@ -1446,7 +1378,7 @@ export class PoolScene {
       tiltAnimation.setEasingFunction(easingFunction);
 
       // Start both animations - 6 seconds long
-      const animatable = this.scene.beginDirectAnimation(duckMesh, [sinkAnimation, tiltAnimation], 0, 180, false);
+      const animatable = this.scene!.beginDirectAnimation(duckMesh, [sinkAnimation, tiltAnimation], 0, 180, false);
 
       animatable.onAnimationEnd = () => {
         resolve();
@@ -1526,7 +1458,7 @@ export class PoolScene {
       this.camera.animations = [positionAnimation, targetAnimation];
 
       // Start animation with callback
-      const animatable = this.scene.beginAnimation(this.camera, 0, 120, false);
+      const animatable = this.scene!.beginAnimation(this.camera, 0, 120, false);
       animatable.onAnimationEnd = () => {
         resolve();
       };
@@ -1576,7 +1508,7 @@ export class PoolScene {
       this.camera.animations = [positionAnimation, targetAnimation];
 
       // Start animation with callback - 2 seconds duration
-      const animatable = this.scene.beginAnimation(this.camera, 0, 120, false);
+      const animatable = this.scene!.beginAnimation(this.camera, 0, 120, false);
       animatable.onAnimationEnd = () => {
         resolve();
       };
@@ -1915,5 +1847,6 @@ export class PoolScene {
     if (this.scoreboard) this.scoreboard.dispose();
     if (this.scene) this.scene.dispose();
     if (this.engine) this.engine.dispose();
+    console.log("🧹 PoolScene disposed.");
   }
 }
