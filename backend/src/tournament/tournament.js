@@ -91,7 +91,7 @@ export class Tournament {
         const playerGone = this.players.get(numberToRemove);
         if (!playerGone) return;
         playerGone.socket = null; // mark as disconnected
-        if (this.state !== 'waiting') {
+        if (this.state === 'waiting') {
             this.sendStateUpdate('tournament-player-left', { playersCount: this.players.size, playerName: playerGone.name, state: this.state });
         }
         playerGone.name = null;
