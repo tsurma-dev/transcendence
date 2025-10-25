@@ -14,6 +14,9 @@ export type ServerToClient =
   | { type: "join-tournament-room"; payload: { roomId: string } }
   | { type: "tournament-first-round-finished"; payload: { matchA: any; matchB: any } }
   | { type: "tournament-finished"; payload: { finalMatch: any; thirdPlaceMatch: any; champions: any } }
+  | { type: "pong"; timestamp: number }
+  | { type: "tournament-player-left"; payload: { playerName: string; playerNumber: number } }
+  | { type: "tournament-cancelled"; payload: { message: string } }
 
 export type Snapshot = {
   //version: number;           // = GAME_CONFIG.VERSION
@@ -29,5 +32,7 @@ export type ClientToServer =
   | { type: "ready-to-play"; payload: { roomId: string; playerId: "first" | "second" } }
   | { type: "input"; payload: { roomId: string; playerId: "first" | "second"; direction: number } }
   | { type: "tournament-join"; payload: { playerName: string } }
+  | { type: "ping" }
+
 
 

@@ -705,21 +705,9 @@ export class Game3DComponent {
   private updateTournamentLobby(players: string[], state: string): void {
     if (!this.tournamentLobbyOverlay || this.tournamentLobbyOverlay.style.display === 'none') return;
 
-    // Ensure players array is valid
-    if (!players || !Array.isArray(players)) {
-      console.warn('updateTournamentLobby: players array is invalid', players);
-      return;
-    }
-
-    // Hide players in final lobby
-    const playerCountElement = document.getElementById('tournamentPlayers');
-    if (playerCountElement) {
-      if (state === 'finished') {
-        playerCountElement.textContent = '';
-      } else {
-        playerCountElement.textContent = players.length.toString();
-      }
-    }
+    // Ensure players array is always 4 slots
+    const slots = 4;
+    const normalizedPlayers = Array.from({ length: slots }, (_, i) => players[i] || "");
 
     // Update tournament status
     const statusElement = document.getElementById('tournamentStatus');
@@ -727,16 +715,21 @@ export class Game3DComponent {
       statusElement.textContent = state.toUpperCase();
     }
 
+    // Update Players Joined count
+    const playerCountElement = document.getElementById('tournamentPlayers');
+    if (playerCountElement) {
+      const joinedCount = normalizedPlayers.filter(p => p.trim() !== '').length;
+      playerCountElement.textContent = joinedCount.toString();
+    }
+
     // Update main status message based on player count
     const statusMessageElement = document.getElementById('tournamentStatusMessage');
     if (statusMessageElement) {
-      if (players.length >= 4) {
-        // All players joined - show ready message with lighter green
+      if (normalizedPlayers.filter(p => p.trim() !== '').length >= 4) {
         statusMessageElement.textContent = 'All players ready!';
         statusMessageElement.style.color = '';
         statusMessageElement.style.fontWeight = '';
       } else {
-        // Still waiting for players - keep black as requested
         statusMessageElement.textContent = 'Waiting for players to join...';
         statusMessageElement.style.color = '';
         statusMessageElement.style.fontWeight = '';
@@ -746,62 +739,48 @@ export class Game3DComponent {
     // Update player list
     const playersList = document.getElementById('tournamentPlayersList');
     if (playersList) {
-      if (state === 'finished') {
-        playersList.innerHTML = '';
-      } else if (players.length === 0) {
-        playersList.innerHTML = `
-          <div class="col-span-2 text-center text-gray-500 font-mono p-8">
-            Loading tournament players...
-          </div>
-        `;
-      } else {
-        // Create player slots (4 slots total)
-        const playerSlots = [];
-        for (let i = 0; i < 4; i++) {
-          const player = players[i];
-          if (player && player.trim() !== '') {
-            playerSlots.push(`
-              <div class="bg-white border-2 border-black p-4 text-center">
-                <div class="text-black font-mono font-bold text-lg">${player}</div>
-                <div class="text-green-600 font-mono text-sm">✓ READY</div>
-              </div>
-            `);
-          } else {
-            playerSlots.push(`
-              <div class="bg-gray-100 border-2 border-dashed border-gray-400 p-4 text-center">
-                <div class="text-gray-500 font-mono font-bold text-lg">Waiting...</div>
-                <div class="text-gray-400 font-mono text-sm">Player ${i + 1}</div>
-              </div>
-            `);
-          }
+      // Always show 4 slots
+      const playerSlots = [];
+      for (let i = 0; i < slots; i++) {
+        const player = normalizedPlayers[i];
+        if (player && player.trim() !== '') {
+          playerSlots.push(`
+            <div class="bg-white border-2 border-black p-4 text-center">
+              <div class="text-black font-mono font-bold text-lg">${player}</div>
+              <div class="text-green-600 font-mono text-sm">✓ READY</div>
+            </div>
+          `);
+        } else {
+          playerSlots.push(`
+            <div class="bg-gray-100 border-2 border-dashed border-gray-400 p-4 text-center">
+              <div class="text-gray-500 font-mono font-bold text-lg">Waiting...</div>
+              <div class="text-gray-400 font-mono text-sm">Player ${i + 1}</div>
+            </div>
+          `);
         }
-        playersList.innerHTML = playerSlots.join('');
       }
+      playersList.innerHTML = playerSlots.join('');
     }
 
     // Show/hide tournament bracket based on player count
     const placeholderElement = document.getElementById('tournamentPlaceholder');
     const bracketElement = document.getElementById('tournamentBracketContainer');
 
-    if (players.length >= 4) {
-      // Show bracket and populate with players
+    if (normalizedPlayers.filter(p => p.trim() !== '').length >= 4) {
       if (placeholderElement) placeholderElement.style.display = 'none';
       if (bracketElement) {
         bracketElement.classList.remove('hidden');
-
         // Update semifinal matches
         const semi1Player1 = document.getElementById('semi1Player1');
         const semi1Player2 = document.getElementById('semi1Player2');
         const semi2Player1 = document.getElementById('semi2Player1');
         const semi2Player2 = document.getElementById('semi2Player2');
-
-        if (semi1Player1) semi1Player1.textContent = players[0] || 'Player 1';
-        if (semi1Player2) semi1Player2.textContent = players[1] || 'Player 2';
-        if (semi2Player1) semi2Player1.textContent = players[2] || 'Player 3';
-        if (semi2Player2) semi2Player2.textContent = players[3] || 'Player 4';
+        if (semi1Player1) semi1Player1.textContent = normalizedPlayers[0] || 'Player 1';
+        if (semi1Player2) semi1Player2.textContent = normalizedPlayers[1] || 'Player 2';
+        if (semi2Player1) semi2Player1.textContent = normalizedPlayers[2] || 'Player 3';
+        if (semi2Player2) semi2Player2.textContent = normalizedPlayers[3] || 'Player 4';
       }
     } else {
-      // Show placeholder
       if (placeholderElement) placeholderElement.style.display = 'block';
       if (bracketElement) bracketElement.classList.add('hidden');
     }
@@ -824,7 +803,6 @@ export class Game3DComponent {
       });
     }
   }
-
 
   // ********************
   // Pop-up overlays
@@ -1325,20 +1303,22 @@ export class Game3DComponent {
 
   // Handle when a new player joins the tournament
   public onTournamentPlayerJoined(playerNumber: number, playerName: string, state: string): void {
-
-    // Update state
     this.tournamentState = state;
-
-    // Update players list to ensure correct order
-    while (this.tournamentPlayers.length < playerNumber) {
-      this.tournamentPlayers.push('');
-    }
-
-    // Set the player at the correct position (playerNumber is 1-based, array is 0-based)
+    // Always normalize to 4 slots
+    while (this.tournamentPlayers.length < 4) this.tournamentPlayers.push('');
     this.tournamentPlayers[playerNumber - 1] = playerName;
+    this.updateTournamentLobby([...this.tournamentPlayers], this.tournamentState);
+  }
 
-    // Update the tournament lobby with current player list
-    this.updateTournamentLobby(this.tournamentPlayers, this.tournamentState);
+  // Handle when a player leaves the tournament lobby
+  public onTournamentPlayerLeft(playerName: string, state: string): void {
+    this.tournamentState = state;
+    const playerIndex = this.tournamentPlayers.indexOf(playerName);
+    if (playerIndex !== -1) {
+      this.tournamentPlayers[playerIndex] = '';
+    }
+    this.tournamentPlayers = Array.from({ length: 4 }, (_, i) => this.tournamentPlayers[i] || "");
+    this.updateTournamentLobby([...this.tournamentPlayers], this.tournamentState);
   }
 
   // Handle when tournament game invite is received from server
@@ -1594,6 +1574,12 @@ export class Game3DComponent {
     this.poolScene.setOnTournamentPlayerJoinedCallback((playerNumber, playerName, state) => {
       // Update tournament lobby with new player information
       this.onTournamentPlayerJoined(playerNumber, playerName, state);
+    });
+
+    // Tournament player left callback
+    this.poolScene.setOnTournamentPlayerLeftCallback((playerNumber) => {
+      // Update tournament lobby to remove player information
+      this.onTournamentPlayerLeft(playerNumber, this.tournamentState);
     });
 
     // Tournament game invite callback - when server assigns players to tournament matches

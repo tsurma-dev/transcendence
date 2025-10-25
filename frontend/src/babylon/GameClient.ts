@@ -25,10 +25,14 @@ export class GameClient {
   // Tournament-specific event handlers
   private onTournamentRegistered?: (tournamentId: string, players: string[], state: string) => void;
   private onTournamentPlayerJoined?: (playerNumber: number, playerName: string, state: string) => void;
+  private onTournamentPlayerLeft?: (playerName: string) => void;
   private onTournamentGameInvite?: (roomId: string) => void;
   private onTournamentRoundFinished?: (results: any, round: number) => void;
   private onTournamentFinished?: (results: any) => void;
 
+  private pingIntervalId?: number;
+  private lastPongTimestamp: number = Date.now();
+  private connectionAlive: boolean = true;
 
   constructor(serverUrl: string, playerName: string, roomId?: string, gameMode?: string) {
     this.serverUrl = serverUrl;
@@ -51,6 +55,8 @@ export class GameClient {
       } else {
         this.createRoom();
       }
+
+      this.setupPingPong(this.ws!);
     };
 
     this.ws.onmessage = (event) => {
@@ -160,6 +166,11 @@ export class GameClient {
         this.onGameFailed?.(message.payload.message || "Game failed");
         break;
 
+      case "tournament-cancelled":
+        console.log("🏆 Tournament cancelled:", message.payload);
+        this.onGameFailed?.(message.payload.message || "Tournament canceled");
+        break;
+
       case "registered":
         console.log("🏆 Tournament registered with ID:", message.payload.tournamentId);
         this.onTournamentRegistered?.(
@@ -191,6 +202,17 @@ export class GameClient {
       case "tournament-finished":
         console.log("🏆 Tournament finished:", message.payload);
         this.onTournamentFinished?.(message.payload);
+        break;
+
+      case "tournament-player-left":
+        console.log("🏆 Tournament player left:", message.payload.playerName);
+        if (this.onTournamentPlayerLeft) {
+          this.onTournamentPlayerLeft(message.payload.playerName);
+        }
+        break;
+
+      case "pong":
+        // Handled in ping-pong setup
         break;
 
       default:
@@ -292,6 +314,10 @@ export class GameClient {
     this.onTournamentPlayerJoined = handler;
   }
 
+  public setOnTournamentPlayerLeft(handler: (playerName: string) => void): void {
+    this.onTournamentPlayerLeft = handler;
+  }
+
   public setOnTournamentGameInvite(handler: (roomId: string) => void): void {
     this.onTournamentGameInvite = handler;
   }
@@ -304,7 +330,37 @@ export class GameClient {
     this.onTournamentFinished = handler;
   }
 
+  private setupPingPong(ws: WebSocket) {
+    // Send ping every second
+    this.pingIntervalId = window.setInterval(() => {
+      ws.send(JSON.stringify({ type: "ping" }));
+      // If no pong received in last 5 seconds, mark as disconnected
+      if (Date.now() - this.lastPongTimestamp > 5000) {
+        if (this.connectionAlive) {
+          this.connectionAlive = false;
+          this.onGameFailed?.("Disconnected from server"); // Show overlay
+        }
+      } else {
+        this.connectionAlive = true;
+      }
+    }, 1000);
+
+    ws.addEventListener("message", (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "pong") {
+          this.lastPongTimestamp = Date.now();
+          this.connectionAlive = true;
+        }
+      } catch {}
+    });
+  }
+
   public dispose(): void {
+    if (this.pingIntervalId) {
+      window.clearInterval(this.pingIntervalId);
+      this.pingIntervalId = undefined;
+    }
     this.ws?.close();
     this.ws = undefined;
   }

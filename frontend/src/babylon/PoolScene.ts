@@ -97,11 +97,11 @@ export class PoolScene {
   private onGameFailedCallback?: (message: string) => void;
   private onGameEndCallback?: (finalState: GameState) => void;
   private onTournamentPlayerJoinedCallback?: (playerNumber: number, playerName: string, state: string) => void;
+  private onTournamentPlayerLeftCallback?: (playerName: string) => void;
   private onTournamentRegisteredCallback?: (tournamentId: string, players: string[], state: string) => void;
   private onTournamentGameInviteCallback?: (roomId: string) => void;
   private onTournamentRoundFinishedCallback?: (results: any, round: number) => void;
   private onTournamentFinishedCallback?: (results: any) => void;
-  private tournamentGameResolver?: () => void;
 
 
   // -------------------
@@ -277,6 +277,11 @@ export class PoolScene {
     this.client.setOnTournamentPlayerJoined((playerNumber: number, playerName: string, state: string) => {
       this.onTournamentPlayerJoinedCallback?.(playerNumber, playerName, state);
     });
+
+    this.client.setOnTournamentPlayerLeft((playerName: string) => {
+      this.onTournamentPlayerLeftCallback?.(playerName);
+    });
+
     this.client.setOnTournamentGameInvite((roomId: string) => {
       this.onTournamentGameInviteCallback?.(roomId);
     });
@@ -356,6 +361,10 @@ export class PoolScene {
 
   public setOnTournamentPlayerJoinedCallback(callback: (playerNumber: number, playerName: string, state: string) => void): void {
     this.onTournamentPlayerJoinedCallback = callback;
+  }
+
+  public setOnTournamentPlayerLeftCallback(callback: (playerName: string) => void): void {
+    this.onTournamentPlayerLeftCallback = callback;
   }
 
   public setOnTournamentRegisteredCallback(callback: (tournamentId: string, players: string[], state: string) => void): void {
