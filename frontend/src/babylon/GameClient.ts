@@ -159,6 +159,7 @@ export class GameClient {
       case "game-over":
         console.log("🏁 Game over!", message.payload);
         this.onGameOver?.(message.payload);
+        this.disposePingPong();
         break;
 
       case "game-failed":
@@ -354,6 +355,13 @@ export class GameClient {
         }
       } catch {}
     });
+  }
+
+  private disposePingPong(): void {
+    if (this.pingIntervalId) {
+      window.clearInterval(this.pingIntervalId);
+      this.pingIntervalId = undefined;
+    }
   }
 
   public dispose(): void {

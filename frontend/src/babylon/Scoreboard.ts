@@ -18,8 +18,8 @@ export class Scoreboard {
 
     // Create main container
     this.scoreboardContainer = new Rectangle("scoreboardContainer");
-    this.scoreboardContainer.widthInPixels = 400;
-    this.scoreboardContainer.heightInPixels = 150;
+    this.scoreboardContainer.width = "250px";
+    this.scoreboardContainer.height = "80px";
     this.scoreboardContainer.cornerRadius = 10;
     this.scoreboardContainer.color = "white";
     this.scoreboardContainer.thickness = 2;
@@ -35,7 +35,7 @@ export class Scoreboard {
       this.scoreboardContainer.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
       this.scoreboardContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
       this.scoreboardContainer.topInPixels = 20;
-      this.scoreboardContainer.leftInPixels = -20; // **20px from right edge**
+      this.scoreboardContainer.leftInPixels = -20; 
     }
     this.guiTexture.addControl(this.scoreboardContainer);
 
@@ -47,57 +47,63 @@ export class Scoreboard {
     // Game Status (TOP)
     this.gameStatusText = new TextBlock("gameStatus", "Game starting...");
     this.gameStatusText.color = "white";
-    this.gameStatusText.fontSize = 16;
+    this.gameStatusText.fontSize = "14px";
     this.gameStatusText.fontWeight = "bold";
     this.gameStatusText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    this.gameStatusText.topInPixels = -60; // Move higher
+    this.gameStatusText.topInPixels = -25; 
+    this.gameStatusText.resizeToFit = true;
     this.scoreboardContainer.addControl(this.gameStatusText);
 
     // Player 1 (LEFT SIDE - Orange  paddle)
     this.player1NameText = new TextBlock("player1Name", this.player1NameText.text);
     this.player1NameText.color = "#ff6b35"; // **Orange**
-    this.player1NameText.fontSize = 18;
+    this.player1NameText.fontSize = "18px";
     this.player1NameText.fontWeight = "bold";
     this.player1NameText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    this.player1NameText.leftInPixels = -100; // Move closer to center
-    this.player1NameText.topInPixels = -20; // Move up
+    this.player1NameText.leftInPixels = -80;
+    this.player1NameText.topInPixels = -5;
+    this.player1NameText.resizeToFit = true;
     this.scoreboardContainer.addControl(this.player1NameText);
 
     this.player1ScoreText = new TextBlock("player1Score", "0");
     this.player1ScoreText.color = "#ff6b35"; // **Orange**
-    this.player1ScoreText.fontSize = 32; // Bigger
+    this.player1ScoreText.fontSize = "32px";
     this.player1ScoreText.fontWeight = "bold";
     this.player1ScoreText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    this.player1ScoreText.leftInPixels = -100;
-    this.player1ScoreText.topInPixels = 10; // Below name
+    this.player1ScoreText.leftInPixels = -80;
+    this.player1ScoreText.topInPixels = 15; 
+    this.player1ScoreText.resizeToFit = true;
     this.scoreboardContainer.addControl(this.player1ScoreText);
 
     // VS text (CENTER)
     const vsText = new TextBlock("vsText", "VS");
     vsText.color = "white";
-    vsText.fontSize = 16;
+    vsText.fontSize = "16px";
     vsText.fontWeight = "bold";
     vsText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    vsText.topInPixels = -5; // Center vertically
+    vsText.topInPixels = 5;
+    vsText.resizeToFit = true;
     this.scoreboardContainer.addControl(vsText);
 
     // Player 2 (RIGHT SIDE - Pink paddle)
     this.player2NameText = new TextBlock("player2Name", this.player2NameText.text);
     this.player2NameText.color = "#ff69b4"; // **Pink**
-    this.player2NameText.fontSize = 18;
+    this.player2NameText.fontSize = "18px";
     this.player2NameText.fontWeight = "bold";
     this.player2NameText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    this.player2NameText.leftInPixels = 100; // Move closer to center
-    this.player2NameText.topInPixels = -20; // Move up
+    this.player2NameText.leftInPixels = 80;
+    this.player2NameText.topInPixels = -5;
+    this.player2NameText.resizeToFit = true;
     this.scoreboardContainer.addControl(this.player2NameText);
 
     this.player2ScoreText = new TextBlock("player2Score", "0");
     this.player2ScoreText.color =  "#ff69b4"; // **Pink**
-    this.player2ScoreText.fontSize = 32; // Bigger
+    this.player2ScoreText.fontSize = "32px"; 
     this.player2ScoreText.fontWeight = "bold";
     this.player2ScoreText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    this.player2ScoreText.leftInPixels = 100;
-    this.player2ScoreText.topInPixels = 10; // Below name
+    this.player2ScoreText.leftInPixels = 80;
+    this.player2ScoreText.topInPixels = 15;
+    this.player2ScoreText.resizeToFit = true;
     this.scoreboardContainer.addControl(this.player2ScoreText);
   }
 
