@@ -1,4 +1,5 @@
 import { createMatch } from "../models/matchModel.js";
+import { findUserByUsername } from "../models/userModel.js";
 
 import { Game } from "../game/pongGame.js";
 import { AIplayer } from "../game/aiPlayer.js";
@@ -151,11 +152,11 @@ function endGame(roomId) {
 	if (room.player2.socket) {
 		room.player2.socket.send(JSON.stringify(endState));
 	}
-	
-	//store match result in DB if both players are real
-	// if (room.player2.name !== "AIplayer") {
-	// 	storeMatchResult(roomId);
-	// }
+
+	// store match result in DB if both players are real
+	if (room.player2.name !== "AIplayer") {
+		storeMatchResult(roomId);
+	}
 
 	console.log("Game ended in room " + roomId + ", rooms count: " + rooms.size);
 
@@ -173,15 +174,26 @@ function storeMatchResult(roomId) {
 	}
 	const room = rooms.get(roomId);
 	if (!room) return;
-	createMatch(
-		db,
-		1, // tournament_id - not implemented
-		room.player1.id, // get actual user IDs from auth system
-		room.player2.id,
-		room.game.score.player1,
-		room.game.score.player2,
-		room.game.score.player1 > room.game.score.player2 ? room.player1.id : room.player2.id
-	);
+	try {
+		const player1 = findUserByUsername(db, room.player1.name);
+		const player2 = findUserByUsername(db, room.player2.name);
+		if (!player1 || !player2) {
+			console.error("One or both players not found in DB");
+			return;
+		}
+		createMatch(
+			db,
+			room.tournamentId,
+			player1.id, // get actual user IDs from auth system
+			player2.id,
+			room.game.score.player1,
+			room.game.score.player2,
+			room.game.score.player1 > room.game.score.player2 ? player1.id : player2.id
+		);
+	} catch (error) {
+		console.error("Match result not stored in DB because of error: ", error);
+		return;
+	}
 	console.log("Match result stored in DB for room " + roomId);
 }
 

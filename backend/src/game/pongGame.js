@@ -79,9 +79,7 @@ export class Game {
 
 		// Move paddles
 		this.paddle1.x = this.movePaddle(this.paddle1);
-		console.log("Paddle1 new position: " + this.paddle1.x + ", direction: " + this.paddle1.direction);
 		this.paddle2.x = this.movePaddle(this.paddle2);
-		console.log("Paddle2 new position: " + this.paddle2.x + ", direction: " + this.paddle2.direction);
 
 		// Ball collision with top/bottom
 		if (this.ball.x - this.ball.radius < -gameProperties.GAME_HEIGHT / 2 
