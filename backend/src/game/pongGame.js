@@ -97,7 +97,7 @@ export class Game {
 			this.ball.x - this.ball.radius / 2 < this.paddle1.x + gameProperties.PADDLE_HEIGHT / 2
 		) {
 			this.ball.speedZ *= -1;
-			this.ball.deltaSpeed = Math.max(this.ball.deltaSpeed - 1, 3);
+			this.ball.deltaSpeed = Math.max(this.ball.deltaSpeed - 1, 4);
 			this.ball.z = this.paddle1.z + this.ball.radius;
 			this.collisionEvent = "paddle";
 		}
@@ -110,7 +110,7 @@ export class Game {
 			this.ball.x - this.ball.radius / 2 < this.paddle2.x + gameProperties.PADDLE_HEIGHT / 2
 		) {
 			this.ball.speedZ *= -1;
-			this.ball.deltaSpeed = Math.max(this.ball.deltaSpeed - 1, 3);
+			this.ball.deltaSpeed = Math.max(this.ball.deltaSpeed - 1, 4);
 			this.ball.z = this.paddle2.z - this.ball.radius;
 			this.collisionEvent = "paddle";
 		}
@@ -119,11 +119,11 @@ export class Game {
 		if (this.ball.z < -gameProperties.GAME_WIDTH / 2 - gameProperties.EXTRA_SPACE - gameProperties.BALL_SIZE) {
 			this.score.player2 += 1;
 			this.scoreEvent = "second";
-			this.resetBall();
+			this.resetBall("second");
 		} else if (this.ball.z > gameProperties.GAME_WIDTH / 2 + gameProperties.EXTRA_SPACE + gameProperties.BALL_SIZE) {
 			this.score.player1 += 1;
 			this.scoreEvent = "first";
-			this.resetBall();
+			this.resetBall("first");
 		}
 	}
 
@@ -137,6 +137,17 @@ export class Game {
 				playerID: this.scoreEvent, 
 				points: this.scoreEvent === "first" ? this.score.player1 : this.score.player2
 			});
+
+		let duckDirection = 0;
+		if (this.ball.speedX > 0 && this.ball.speedZ > 0)
+			duckDirection = Math.PI / 4;
+		else if (this.ball.speedX < 0 && this.ball.speedZ > 0)
+			duckDirection = 3 * Math.PI / 4;
+		else if (this.ball.speedX < 0 && this.ball.speedZ < 0)
+			duckDirection = 5 * Math.PI / 4;
+		else if (this.ball.speedX > 0 && this.ball.speedZ < 0)
+			duckDirection = 7 * Math.PI / 4;
+
 		return {
 			ballPosX: this.ball.x,
 			ballPosZ: this.ball.z,
@@ -146,7 +157,7 @@ export class Game {
 			player2Score: this.score.player2,
 			gameState: this.gameState,
 			winner: this.winner,
-			//duck direction
+			duckDir: duckDirection,
 			events: evs,
 		};
 	}
@@ -164,3 +175,10 @@ export class Game {
 }
 
 //module.exports = Game;
+
+    // const directions = [
+    //   Math.PI / 4,     // 45° (up-right)
+    //   3 * Math.PI / 4, // 135° (up-left)
+    //   5 * Math.PI / 4, // 225° (down-left)
+    //   7 * Math.PI / 4  // 315° (down-right)
+    // ];

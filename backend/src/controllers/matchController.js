@@ -6,7 +6,7 @@ import { AIplayer } from "../game/aiPlayer.js";
 import { Tournament } from "../tournament/tournament.js";
 
 const TIMEOUT = 30 * 60 * 5; // 30 times per second * 60 seconds * n minutes
-const PING_INTERVAL = 33; // approx 30 times per second
+const PING_DELAY = 100; // approx 3 seconds
 
 let db = null;
 const connections = new Map(); // socket -> { tournamentId, roomId, playerName, lastPing }
@@ -20,7 +20,7 @@ roomsLoop(rooms);
 export function handlePongWebSocket(socket, req) {
 	db = req.server.db;
 	socket.on("message", (msg) => {
-	console.log("received ws msg: " + msg);
+	//console.log("received ws msg: " + msg);
 
 	let data;
 	try {
@@ -255,7 +255,7 @@ function checkConnections() {
 	// Update lastPing for each connection
 	connections.forEach((conn, socket) => {
 		conn.lastPing += 1;
-		if (conn.lastPing > PING_INTERVAL) {
+		if (conn.lastPing > PING_DELAY) {
 			// Timeout reached, close socket and clean up
 			console.log("Client " + conn.playerName + " disconnected");
 			socket.close();
@@ -267,7 +267,7 @@ function checkConnections() {
 //loop through rooms and call room.game.update() and send game state to both players
 function roomsLoop(rooms) {
 	setInterval(() => {
-		//checkConnections();
+		checkConnections();
 		if (!rooms || rooms.size === 0) return;
 		rooms.forEach((room, roomId) => {
 			if (!room.game) {
@@ -286,16 +286,6 @@ function roomsLoop(rooms) {
 				}
 				room.game.update();
 				sendGameState(roomId, "update");
-				//end game if one of players disconnected
-				if (!room.player1.socket || 
-					(!room.player2.socket && room.player2.name !== "AIplayer")) {
-					sendGameState(roomId, "failed");
-					console.log("Game in room " + roomId + " ended due to player disconnect");
-					clearRoom(roomId);
-				} else {
-					room.game.update();
-					sendGameState(roomId, "update");
-				}
 				if (room.game.gameState === "finished") {
 						endGame(roomId);
 				}
