@@ -1,6 +1,6 @@
 import { Component } from './Component';
 import { ApiService } from './ApiService';
-import { GameMode } from '../components/Game3D';
+import { GameMode } from '../components/types';
 import { 
   StartPageScreen, 
   QuickPlaySetupScreen, 

@@ -20,7 +20,7 @@ roomsLoop(rooms);
 export function handlePongWebSocket(socket, req) {
 	db = req.server.db;
 	socket.on("message", (msg) => {
-	console.log("received ws msg: " + msg);
+	// console.log("received ws msg: " + msg);
 
 	let data;
 	try {

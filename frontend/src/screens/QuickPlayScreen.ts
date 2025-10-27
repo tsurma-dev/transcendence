@@ -2,7 +2,8 @@ import { Component, AppRouter, ApiService } from '../core'
 import { StartPageScreen } from './StartPageScreen'
 import { LoggedInLandingScreen } from './LoggedInLandingScreen'
 // ApiService imported from core
-import { Game3DComponent, GameMode } from '../components/Game3D'
+import { Game3DComponent} from '../components/Game3D'
+import { GameMode } from '../components/types'
 
 /**
  * Game Screen with Player Names

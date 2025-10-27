@@ -23,7 +23,7 @@ export class GameClient {
   private onGameFailed?: (message: string) => void;
 
   // Tournament-specific event handlers
-  private onTournamentRegistered?: (tournamentId: string, players: string[], state: string) => void;
+  private onTournamentRegistered?: (players: string[], state: string) => void;
   private onTournamentPlayerJoined?: (playerNumber: number, playerName: string, state: string) => void;
   private onTournamentPlayerLeft?: (playerName: string) => void;
   private onTournamentGameInvite?: (roomId: string) => void;
@@ -175,7 +175,6 @@ export class GameClient {
       case "registered":
         console.log("🏆 Tournament registered with ID:", message.payload.tournamentId);
         this.onTournamentRegistered?.(
-          message.payload.tournamentId,
           message.payload.players,
           message.payload.state
         );
@@ -307,7 +306,7 @@ export class GameClient {
   }
 
   // Tournament callback setters
-  public setOnTournamentRegistered(handler: (tournamentId: string, players: string[], state: string) => void): void {
+  public setOnTournamentRegistered(handler: (players: string[], state: string) => void): void {
     this.onTournamentRegistered = handler;
   }
 
@@ -335,10 +334,11 @@ export class GameClient {
     // Send ping every second
     this.pingIntervalId = window.setInterval(() => {
       ws.send(JSON.stringify({ type: "ping" }));
-      // If no pong received in last 5 seconds, mark as disconnected
-      if (Date.now() - this.lastPongTimestamp > 5000) {
+      // If no pong received in last 10 seconds, mark as disconnected
+      if (Date.now() - this.lastPongTimestamp > 10000) {
         if (this.connectionAlive) {
           this.connectionAlive = false;
+          console.log("❌ Connection lost - no pong received");
           this.onGameFailed?.("Disconnected from server"); // Show overlay
         }
       } else {
@@ -365,6 +365,7 @@ export class GameClient {
   }
 
   public dispose(): void {
+    console.log("🧹 GameClient disposed");
     if (this.pingIntervalId) {
       window.clearInterval(this.pingIntervalId);
       this.pingIntervalId = undefined;

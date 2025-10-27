@@ -342,6 +342,6 @@ private createInitialGameState(): GameState {
   }
 
   dispose(): void {
-    console.log('⛔ Local game engine disposed');
+    console.log('🧹 Local game engine disposed');
   }
 }
