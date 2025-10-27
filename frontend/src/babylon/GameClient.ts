@@ -242,7 +242,7 @@ export class GameClient {
       duck: {
         x: serverState.ballPosX || 0,
         z: serverState.ballPosZ || 0,
-        dir: 0 // Server doesn't track ball rotation
+        dir: serverState.duckDir || 0
       },
       player1: { x: serverState.paddle1X || 0 },
       player2: { x: serverState.paddle2X || 0 },

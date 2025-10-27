@@ -27,7 +27,7 @@ export class AIplayer {
         this.ballPos.x = ball.x;
         this.ballSpeed.z = ball.speedZ;
         this.ballSpeed.x = ball.speedX;
-        //this.ballSpeed.delta = ball.deltaSpeed;
+        this.ballSpeed.delta = ball.deltaSpeed;
         this.paddle.x = paddleX;
     }
 
