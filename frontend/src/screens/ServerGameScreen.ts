@@ -1,7 +1,8 @@
 import { Component, AppRouter, ApiService } from '../core'
 import { LoggedInLandingScreen } from './LoggedInLandingScreen'
 import { RemoteGameLobbyScreen } from './RemoteGameLobbyScreen'
-import { Game3DComponent, GameMode } from '../components/Game3D'
+import { Game3DComponent} from '../components/Game3D'
+import { GameMode } from '../components/types'
 
 /**
  * Server Game Screen

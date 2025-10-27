@@ -98,7 +98,7 @@ export class PoolScene {
   private onGameEndCallback?: (finalState: GameState) => void;
   private onTournamentPlayerJoinedCallback?: (playerNumber: number, playerName: string, state: string) => void;
   private onTournamentPlayerLeftCallback?: (playerName: string) => void;
-  private onTournamentRegisteredCallback?: (tournamentId: string, players: string[], state: string) => void;
+  private onTournamentRegisteredCallback?: (players: string[], state: string) => void;
   private onTournamentGameInviteCallback?: (roomId: string) => void;
   private onTournamentRoundFinishedCallback?: (results: any, round: number) => void;
   private onTournamentFinishedCallback?: (results: any) => void;
@@ -271,8 +271,8 @@ export class PoolScene {
 
     // Tournament callbacks (used only in tournament mode)
 
-    this.client.setOnTournamentRegistered((tournamentId: string, players: string[], state: string) => {
-      this.onTournamentRegisteredCallback?.(tournamentId, players, state);
+    this.client.setOnTournamentRegistered((players: string[], state: string) => {
+      this.onTournamentRegisteredCallback?.(players, state);
     });
     this.client.setOnTournamentPlayerJoined((playerNumber: number, playerName: string, state: string) => {
       this.onTournamentPlayerJoinedCallback?.(playerNumber, playerName, state);
@@ -367,7 +367,7 @@ export class PoolScene {
     this.onTournamentPlayerLeftCallback = callback;
   }
 
-  public setOnTournamentRegisteredCallback(callback: (tournamentId: string, players: string[], state: string) => void): void {
+  public setOnTournamentRegisteredCallback(callback: (players: string[], state: string) => void): void {
     this.onTournamentRegisteredCallback = callback;
   }
 
@@ -473,7 +473,7 @@ export class PoolScene {
 
   // Handles the end of the game, displaying the winner and playing sounds.
   private async handleGameEnd(finalState: GameState): Promise<void> {
-    console.log(`🏆 Final Result: ${finalState.winner} WINS!`);
+    console.log(`🏆 Final Result: ${finalState.winner} WINS ${finalState.scores?.player1} - ${finalState.scores?.player2}`);
 
     // Play final score sound if audio is enabled
     if (this.audioEnabled && this.scoreAudio) {
