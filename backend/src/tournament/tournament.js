@@ -56,6 +56,12 @@ export class Tournament {
             socket.close();
             return -1; // Tournament is full
         }
+        for (let [_, player] of this.players) {
+            if (player.name === name) {
+                this.cancel(socket, 'Player name already registered in tournament');
+                return -2; // Player name already registered
+            }
+        }
         if (size == this.playersCount) {
             this.players.set(size + 1, { name: name, socket: socket });
             this.playersCount++;
@@ -249,12 +255,12 @@ export class Tournament {
             },
             champions: this.champions 
         });
-        this.closeSockets();
+        //this.closeSockets();
     }
     
-    cancel(socket) {
+    cancel(socket, reason) {
         this.removePlayer(socket);
-        this.sendStateUpdate('tournament-cancelled', { message: 'Tournament has been cancelled due to player disconnect' });
+        this.sendStateUpdate('tournament-cancelled', { message: 'Tournament has been cancelled: ' + reason });
         this.closeSockets();
     }
     
