@@ -90,7 +90,7 @@ function setReady(roomId, playerId, socket) {
 		if (room.player2.socket !== socket) return;
 		room.player2.ready = true;
 	}
-	
+
 	// When both players are ready, send start-countdown message
 	if (room.player1.ready && (room.player2.ready || room.player2.name === "AIplayer")) {
 		console.log("Both players ready in room " + roomId + " - sending start-countdown");
@@ -154,7 +154,7 @@ function endGame(roomId) {
 	}
 
 	// store match result in DB if both players are real
-	if (room.player2.name !== "AIplayer") {
+	if (room.player2.name !== "AIplayer" || room.tournamentId === null) {
 		storeMatchResult(roomId);
 	}
 
@@ -197,6 +197,16 @@ function storeMatchResult(roomId) {
 	console.log("Match result stored in DB for room " + roomId);
 }
 
+function storeTournamentResult(tournamentId) {
+  if (!db) {
+    console.error("Database connection not available");
+    return;
+  }
+  const tournament = tournaments.get(tournamentId);
+  if (!tournament) return;
+  // store final results
+}
+
 function clearRoom(roomId) {
 	const room = rooms.get(roomId);
 	if (!room) return;
@@ -235,7 +245,7 @@ function sendRoomReady(roomId) {
 	if (!room || !room.player1.socket || (!room.player2.socket && room.player2.name !== "AIplayer")) return;
 
 	console.log("Room " + roomId + " is ready! Sending room-ready to both players");
-	
+
 	const roomReadyMessage = {
 		type: "room-ready",
 		payload: {
@@ -243,7 +253,7 @@ function sendRoomReady(roomId) {
 			player2: { name: room.player2.name, id: "second" }
 		}
 	};
-	
+
 	room.player1.socket.send(JSON.stringify(roomReadyMessage));
 	if (room.player2.socket) {
 		room.player2.socket.send(JSON.stringify(roomReadyMessage));
@@ -404,7 +414,7 @@ function joinRoom(socket, roomId, playerName) {
 		room.player1.id = "first";
 		room.player1.socket = socket;
 		room.player1.name = playerName || "Player 1";
-		let message = { 
+		let message = {
 			type: "room-joined",
 			payload: { roomId: roomId }
 		};
@@ -421,12 +431,12 @@ function joinRoom(socket, roomId, playerName) {
 		room.player2.id = "second";
 		room.player2.socket = socket;
 		room.player2.name = playerName || "Player 2";
-		let message = { 
+		let message = {
 			type: "room-joined",
 			payload: { roomId: roomId }
 		};
 		socket.send(JSON.stringify(message));
-		
+
 		// Send room-ready message to both players with names and positions
 		sendRoomReady(roomId);
 		if (!room.tournamentId) {
@@ -456,6 +466,7 @@ function handleTournamentResult(tournamentId, roomId) {
 		// tournament finished
 		tournaments.delete(tournamentId);
 	}
+  storeTournamentResult(tournamentId);
 }
 
 function setAIroom(socket, playerName) {

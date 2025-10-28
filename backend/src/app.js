@@ -60,6 +60,7 @@ await app.register(fastifyCors, {
     "http://127.0.0.1:3000",
     "http://localhost:3000",
     "http://localhost:5173",
+    "http://c4c6c1:5173", // testing on local network
   ], // Allow frontend dev servers, 5173 is for Vite
   credentials: true,
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],

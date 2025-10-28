@@ -159,7 +159,9 @@ export class GameClient {
       case "game-over":
         console.log("🏁 Game over!", message.payload);
         this.onGameOver?.(message.payload);
-        this.disposePingPong();
+        if (this.gameMode != 'tournament') {
+          this.disposePingPong();
+        }
         break;
 
       case "game-failed":
@@ -201,6 +203,7 @@ export class GameClient {
 
       case "tournament-finished":
         console.log("🏆 Tournament finished:", message.payload);
+        this.disposePingPong();
         this.onTournamentFinished?.(message.payload);
         break;
 

@@ -11,11 +11,11 @@ BALL_SPEED_X : 0.3,
 PADDLE_SPEED : 0.1,
 DELTA_SPEED : 8,
 BALL_COUNT : 3,
-WINNING_SCORE : 5,
+WINNING_SCORE : 3,
 }
 export const PAD_MAX_POS_X = (gameProperties.GAME_HEIGHT - gameProperties.PADDLE_HEIGHT) / 2
 
-/* 
+/*
   TABLE_WIDTH: 4,
   TABLE_DEPTH: 8,
   WATER_EXTRA_SPACE: 1,
