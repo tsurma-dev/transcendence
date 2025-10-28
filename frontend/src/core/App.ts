@@ -1,12 +1,12 @@
 import { AppRouter } from './AppRouter';
 import { ApiService } from './ApiService';
-import { 
-  UserProfileScreen, 
-  UserSettingsScreen, 
-  LoggedInLandingScreen, 
-  LoggedOutScreen, 
-  StartPageScreen, 
-  LoginScreen 
+import {
+  UserProfileScreen,
+  UserSettingsScreen,
+  LoggedInLandingScreen,
+  LoggedOutScreen,
+  StartPageScreen,
+  LoginScreen
 } from '../screens';
 
 export class App {

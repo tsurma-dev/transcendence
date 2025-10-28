@@ -1,20 +1,20 @@
 import { Component } from './Component';
 import { ApiService } from './ApiService';
 import { GameMode } from '../components/types';
-import { 
-  StartPageScreen, 
-  QuickPlaySetupScreen, 
-  LoginScreen, 
-  RegisterScreen, 
-  LoggedOutScreen, 
-  AuthErrorScreen, 
-  LoggedInLandingScreen, 
+import {
+  StartPageScreen,
+  QuickPlaySetupScreen,
+  LoginScreen,
+  RegisterScreen,
+  LoggedOutScreen,
+  AuthErrorScreen,
+  LoggedInLandingScreen,
   RemoteGameLobbyScreen,
   ServerGameScreen,
-  TournamentLobbyScreen, 
-  QuickPlayScreen, 
-  UserProfileScreen, 
-  UserSettingsScreen, 
+  TournamentLobbyScreen,
+  QuickPlayScreen,
+  UserProfileScreen,
+  UserSettingsScreen,
   MatchHistoryScreen,
   JoinRoomInputScreen
 } from '../screens';
@@ -262,7 +262,7 @@ export class AppRouter {
         const serverPlayer2 = args[1] ? encodeURIComponent(args[1]) : 'Player2'
         const serverGameMode: GameMode = args[2] || 'AI'
         const serverRoomId = args[3] ? encodeURIComponent(args[3]) : ''
-        
+
         // Generate URL based on server game mode
         switch (serverGameMode) {
           case 'AI':
@@ -291,9 +291,9 @@ export class AppRouter {
   async handleInitialRoute(): Promise<void> {
     const path = window.location.pathname
     const search = window.location.search
-    
+
     // Redirect logged-in users from /start to /landing
-    if (path === '/start' || path === '/') {
+    if (path === '/start' || path === '/' || path === '/login') {
       const apiService = new ApiService()
       try {
         const user = await apiService.getCurrentUser()
@@ -307,7 +307,7 @@ export class AppRouter {
         // User not logged in, continue to start page
       }
     }
-    
+
     const routeInfo = this.routes.get(path)
 
     if (routeInfo) {
