@@ -450,7 +450,9 @@ function joinTournament(socket, tournamentId, playerName) {
 	let res = tournament.addPlayer(playerName, socket);
 	if (res === -1) {
 		return; // error handled in addPlayer
-	}if (res === -2) {
+	} else if (res === -2) {
+		socket.send(JSON.stringify({ type: 'tournament-cancelled', message: 'Tournament has been cancelled: player already registered'}));
+		socket.close();
 		tournaments.delete(tournamentId);
 		return; // error handled in addPlayer
 	}
