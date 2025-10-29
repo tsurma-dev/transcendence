@@ -99,7 +99,7 @@ function setReady(roomId, playerId, socket) {
 	}
 
 	// When both players are ready, send start-countdown message
-	if (room.player1.ready && (room.player2.ready || room.player2.name === "AIplayer")) {
+	if (room.player1.ready && (room.player2.ready || room.player2.name === "AI")) {
 		console.log("Both players ready in room " + roomId + " - sending start-countdown");
 		const startCountdownMessage = {
 			type: "start-countdown",
@@ -120,11 +120,11 @@ function setReady(roomId, playerId, socket) {
 function startGame(roomId) {
 	const room = rooms.get(roomId);
 	if (!room || room.game) return;
-	if (!room.player1.socket || (!room.player2.socket && room.player2.name !== "AIplayer")) return;
+	if (!room.player1.socket || (!room.player2.socket && room.player2.name !== "AI")) return;
 	room.game = new Game("playing");
 	const startState = {type: "game-start"};
 	room.player1.socket.send(JSON.stringify(startState));
-	if (room.player2.name === "AIplayer") {
+	if (room.player2.name === "AI") {
 		const ai = new AIplayer(room.game);
 		aiPlayers.set(roomId, ai);
 		if (aiPlay === 0) {
@@ -161,7 +161,8 @@ function endGame(roomId) {
 	}
 
 	// store match result in DB if both players are real
-	if (room.player2.name !== "AIplayer" || room.tournamentId === null) {
+	//if (room.player2.name !== "AI" || room.tournamentId === null) {
+	if (room.tournamentId === null) {
 		storeMatchResult(roomId);
 	}
 
@@ -302,7 +303,7 @@ function clearRoom(roomId) {
 // Send room-ready message to both players when room is full
 function sendRoomReady(roomId) {
 	const room = rooms.get(roomId);
-	if (!room || !room.player1.socket || (!room.player2.socket && room.player2.name !== "AIplayer")) return;
+	if (!room || !room.player1.socket || (!room.player2.socket && room.player2.name !== "AI")) return;
 
 	console.log("Room " + roomId + " is ready! Sending room-ready to both players");
 
@@ -349,7 +350,7 @@ function roomsLoop(rooms) {
 				}
 			}
 			if (room.game && room.game.gameState === "playing") {
-				if (room.player2.name === "AIplayer" && aiPlayers.has(roomId)) {
+				if (room.player2.name === "AI" && aiPlayers.has(roomId)) {
 					const ai = aiPlayers.get(roomId);
 					const aiDirection = ai.updatePaddle();
 					room.game.paddle2.direction = aiDirection;
@@ -560,7 +561,7 @@ function setAIroom(socket, playerName) {
   joinRoom(socket, roomId, playerName);
   // set AI as player2
   const room = rooms.get(roomId);
-  room.player2.name = "AIplayer";
+  room.player2.name = "AI";
   room.player2.id = "second";
   room.player2.ready = true;
   // no socket for AI
