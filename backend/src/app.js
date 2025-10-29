@@ -64,13 +64,11 @@ if (isDev) {
 } else {
   const distPath = path.join(__dirname, "../../frontend/dist");
 
-  // 1️⃣ Serve static assets first
   app.register(fastifyStatic, {
     root: distPath,
     prefix: "/", // default
   });
 
-  // 2️⃣ Serve index.html for all unknown (non-API, non-WS) routes
   app.setNotFoundHandler((req, reply) => {
     // Avoid intercepting API and WebSocket routes
     if (req.raw.url.startsWith("/api") || req.raw.url.startsWith("/ws")) {
