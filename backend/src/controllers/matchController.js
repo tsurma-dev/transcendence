@@ -228,10 +228,10 @@ function storeTournamentResult(tournamentId) {
 	addParticipant(db, tid, player4);
 	createTournamentMatch(db, tid, 0, 0);
 	recordMatchAndLink(
-		db, tid, 0, 0, 
-		player1, player2, 
-		tournament.group1A.score[0], 
-		tournament.group1A.score[1], 
+		db, tid, 0, 0,
+		player1, player2,
+		tournament.group1A.score[0],
+		tournament.group1A.score[1],
 		tournament.group1A.winner === tournament.group1A.player1 ? player1 : player2);
 	createTournamentMatch(db, tid, 0, 1);
 	recordMatchAndLink(
@@ -451,7 +451,7 @@ function joinTournament(socket, tournamentId, playerName) {
 	if (res === -1) {
 		return; // error handled in addPlayer
 	} else if (res === -2) {
-		socket.send(JSON.stringify({ type: 'tournament-cancelled', message: 'Tournament has been cancelled: player already registered'}));
+		socket.send(JSON.stringify({ type: 'tournament-cancelled', payload: { message: 'Tournament cancelled: You can only register once!' } }));
 		socket.close();
 		tournaments.delete(tournamentId);
 		return; // error handled in addPlayer
@@ -500,7 +500,7 @@ function joinRoom(socket, roomId, playerName) {
 	}
 	if (!room.player2.socket) {
 		if (room.player1.name === playerName) {
-			socket.send(JSON.stringify({ 
+			socket.send(JSON.stringify({
 				type: "game-failed",
 				payload: { message: "Login error: player already registered" },}));
 			connections.delete(socket);
