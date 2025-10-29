@@ -434,12 +434,12 @@ export class Game3DOverlays {
 
                     <!-- Tournament Bracket (hidden by default) -->
                     <div id="tournamentBracketContainer" class="tournament-bracket space-y-6 hidden">
-                        
+
                         <!-- Semifinals -->
                         <div class="semifinals">
                             <h3 class="text-lg font-bold text-black mb-4 text-center font-mono uppercase">Semifinals</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                
+
                                 <!-- Semi-Final 1 -->
                                 <div class="match-card container-shadowed bg-gradient-to-r from-blue-100 to-blue-200 p-4">
                                     <div class="text-center mb-2">
@@ -690,17 +690,17 @@ export class Game3DOverlays {
             border: 4px solid black;">
             <div style="margin-bottom: 24px;">
             <h2 style="
-                font-family: monospace; 
-                color: white; 
-                font-size: 30px; 
-                font-weight: bold; 
+                font-family: monospace;
+                color: white;
+                font-size: 30px;
+                font-weight: bold;
                 margin-bottom: 8px;">
                 🏆 Game Over
             </h2>
             <p style="
-                font-family: monospace; 
-                color: white; 
-                font-size: 20px; 
+                font-family: monospace;
+                color: white;
+                font-size: 20px;
                 font-weight: bold;">
                 ${winner} Wins!
             </p>
@@ -785,31 +785,31 @@ export class Game3DOverlays {
             if (roomID) {
                 overlayContent = `
                 <button id="continueTournamentBtn" style="
-                    width: 100%; 
-                    color: white; 
-                    font-family: monospace; 
-                    font-size: 18px; 
-                    font-weight: bold; 
-                    background: rgb(34, 197, 94); 
-                    padding: 12px 24px; 
-                    border-radius: 8px; 
-                    border: 2px solid black; 
-                    cursor: pointer; 
+                    width: 100%;
+                    color: white;
+                    font-family: monospace;
+                    font-size: 18px;
+                    font-weight: bold;
+                    background: rgb(34, 197, 94);
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    border: 2px solid black;
+                    cursor: pointer;
                     transition: background 0.2s, transform 0.2s;">
                     🎮 CONTINUE TO MATCH
                 </button>`;
             } else {
                 overlayContent = `
                 <div id="waitingForOtherGame" class="animate-pulse" style="
-                    width: 100%; 
-                    color: #333; 
-                    font-family: monospace; 
-                    font-size: 18px; 
-                    font-weight: bold; 
-                    background: #f3f4f6; 
-                    padding: 12px 24px; 
-                    border-radius: 8px; 
-                    border: 2px solid #aaa; 
+                    width: 100%;
+                    color: #333;
+                    font-family: monospace;
+                    font-size: 18px;
+                    font-weight: bold;
+                    background: #f3f4f6;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    border: 2px solid #aaa;
                     margin-bottom: 8px;">
                     ⏳ Waiting for the other game to finish...
                 </div>`;
@@ -826,23 +826,23 @@ export class Game3DOverlays {
                 border: 4px solid black;">
                 <div style="margin-bottom: 24px">
                     <h2 style="
-                        font-family: monospace; 
-                        color: white; 
-                        font-size: 30px; 
-                        font-weight: bold; 
+                        font-family: monospace;
+                        color: white;
+                        font-size: 30px;
+                        font-weight: bold;
                         margin-bottom: 8px;">
                         ${isCurrentPlayerWinner ? '🏆 You Won!!' : '💔 You Lost!'}
                     <p style="
-                        font-family: monospace; 
-                        color: rgb(249, 115, 22); 
-                        font-size: 16px; 
+                        font-family: monospace;
+                        color: rgb(249, 115, 22);
+                        font-size: 16px;
                         margin-top: 8px;">
                         ${isCurrentPlayerWinner ? 'You advance to the Final!' : 'You can still fight for 3rd place!'}
                     </p>
                 </div>
                 <div style="
-                    display: flex; 
-                    flex-direction: column; 
+                    display: flex;
+                    flex-direction: column;
                     gap: 12px;">
                     ${overlayContent}
                     <button id="returnToMenuBtn" style="
@@ -856,7 +856,7 @@ export class Game3DOverlays {
                         border-radius: 8px;
                         border: 2px solid black;
                         cursor: pointer;
-                        transition: all 0.2s;" 
+                        transition: all 0.2s;"
                         onmouseover="this.style.background='rgb(75, 85, 99)'" onmouseout="this.style.background='rgb(107, 114, 128)'">
                         🏠 Return to Menu
                     </button>
@@ -896,17 +896,17 @@ export class Game3DOverlays {
             let resultsButtonHtml = '';
             if (state === 'finished') {
                 resultsButtonHtml = `<button id="goToResultsBtn" style="
-                    width: 100% ; 
-                    color: white; 
-                    font-family: monospace; 
-                    font-size: 18px; 
-                    font-weight: bold; 
-                    background: rgb(236, 72, 153); 
-                    padding: 12px 24px; 
-                    border-radius: 8px; 
-                    border: 2px solid black; 
-                    cursor: pointer; 
-                    transition: all 0.2s;" 
+                    width: 100% ;
+                    color: white;
+                    font-family: monospace;
+                    font-size: 18px;
+                    font-weight: bold;
+                    background: rgb(236, 72, 153);
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    border: 2px solid black;
+                    cursor: pointer;
+                    transition: all 0.2s;"
                     onmouseover="this.style.background='rgb(219, 39, 119)'" onmouseout="this.style.background='rgb(236, 72, 153)'">
                     🏆 View Tournament Results
                 </button>`;
@@ -973,16 +973,16 @@ export class Game3DOverlays {
         const waitingDiv = this.gameEndOverlay.querySelector('#waitingForOtherGame');
         if (waitingDiv) {
           waitingDiv.outerHTML = `<button id="continueTournamentBtn" style=
-            "width: 100% ; 
-            color: white ; 
-            font-family: monospace ; 
-            font-size: 18px ; 
-            font-weight: bold ; 
-            background: rgb(34, 197, 94) ; 
-            padding: 12px 24px ; 
-            border-radius: 8px ; 
-            border: 2px solid black ; 
-            cursor: pointer ; 
+            "width: 100% ;
+            color: white ;
+            font-family: monospace ;
+            font-size: 18px ;
+            font-weight: bold ;
+            background: rgb(34, 197, 94) ;
+            padding: 12px 24px ;
+            border-radius: 8px ;
+            border: 2px solid black ;
+            cursor: pointer ;
             transition: all 0.2s ;">
             🎮 CONTINUE TO MATCH
             </button>`;
@@ -1066,7 +1066,7 @@ export class Game3DOverlays {
     }
 
 
-    // Handle final tournament results from server 
+    // Handle final tournament results from server
     public updateTournamentFinalResults(tournamentResults: any): void {
         // Update final match card
         if (tournamentResults.finalMatch) {
@@ -1104,7 +1104,7 @@ export class Game3DOverlays {
         statusElement.style.fontWeight = 'bold';
         }
 
-        // Update main status message 
+        // Update main status message
         const statusMessageElement = document.getElementById('tournamentStatusMessage');
         if (statusMessageElement) {
             statusMessageElement.textContent = 'TOURNAMENT FINISHED!';
@@ -1139,7 +1139,7 @@ export class Game3DOverlays {
       border: 4px solid black ;
     ">
       <div style="margin-bottom: 24px ;">
-        <h2 style="font-family: monospace ; color: #ef4444 ; font-size: 30px ; font-weight: bold ; margin-bottom: 8px ;">⚠️ Connection Lost</h2>
+        <h2 style="font-family: monospace ; color: #ef4444 ; font-size: 30px ; font-weight: bold ; margin-bottom: 8px ;">⚠️ Oops! Something went wrong</h2>
         <p style="font-family: monospace ; color: white ; font-size: 18px ; font-weight: bold ;">${message}</p>
       </div>
 
