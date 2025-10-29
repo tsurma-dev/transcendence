@@ -91,7 +91,7 @@ export class AppRouter {
     console.log('PopState event:', { path, search, state })
 
     // Redirect logged-in users from /start to /landing
-    if (path === '/start' || path === '/') {
+    if (path === '/start' || path === '/' || path === '/login') {
       const apiService = new ApiService()
       try {
         const user = await apiService.getCurrentUser()
@@ -99,6 +99,9 @@ export class AppRouter {
           // User is logged in, redirect to landing
           window.history.replaceState({ componentName: 'LoggedInLandingScreen' }, '', '/landing')
           this.renderComponent(LoggedInLandingScreen)
+          // Notify App instance that user is logged in to show navigation menu
+          const { App } = await import('./App')
+          App.getInstance().setUserLoggedIn(true)
           return
         }
       } catch (error) {
@@ -301,6 +304,9 @@ export class AppRouter {
           // User is logged in, redirect to landing
           window.history.replaceState({ componentName: 'LoggedInLandingScreen' }, '', '/landing')
           this.renderComponent(LoggedInLandingScreen)
+          // Notify App instance that user is logged in to show navigation menu
+          const { App } = await import('./App')
+          App.getInstance().setUserLoggedIn(true)
           return
         }
       } catch (error) {
