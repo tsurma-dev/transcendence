@@ -1,0 +1,11 @@
+Model Information:
+* title:	Cute Rubber Duck
+* source:	https://sketchfab.com/3d-models/cute-rubber-duck-ce4c8eb455e64041b8dd09bfc44f9c8f
+* author:	cyberhirsch (https://sketchfab.com/cyberhirsch)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Cute Rubber Duck" (https://sketchfab.com/3d-models/cute-rubber-duck-ce4c8eb455e64041b8dd09bfc44f9c8f) by cyberhirsch (https://sketchfab.com/cyberhirsch) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

@@ -12,14 +12,25 @@ import type { DuckState } from "@shared/types";
 export class Duck {
   private mesh: AbstractMesh | null = null;
   private loadingPromise: Promise<void>;
+  private eas: boolean = false;
 
-  constructor(scene: Scene, shadowGenerator: ShadowGenerator) {
-    this.loadingPromise = SceneLoader.ImportMeshAsync("", "/rubber_duck/", "scene.gltf", scene)
+  constructor(scene: Scene, shadowGenerator: ShadowGenerator, easterEgg: boolean = false) {
+    if (easterEgg) {
+      this.eas = true;
+      this.loadingPromise = SceneLoader.ImportMeshAsync("", "/black_duck/", "scene.gltf", scene)
       .then((result) => {
         const rootMesh = result.meshes[0];
         this._setupMesh(rootMesh, shadowGenerator);
         this.mesh = rootMesh;
       });
+    } else {
+      this.loadingPromise = SceneLoader.ImportMeshAsync("", "/rubber_duck/", "scene.gltf", scene)
+      .then((result) => {
+        const rootMesh = result.meshes[0];
+        this._setupMesh(rootMesh, shadowGenerator);
+        this.mesh = rootMesh;
+      });
+    }
   }
 
   public waitForLoad(): Promise<void> {
@@ -89,11 +100,19 @@ export class Duck {
     mesh.scaling.setAll(scale);
 
     // Place the duck at the water level (small downward offset so it sits nicely)
-    mesh.position = new Vector3(0, GAME_CONFIG.WATER_LEVEL - 0.15, 0);
+    if (this.eas) {
+      mesh.position = new Vector3(0, GAME_CONFIG.WATER_LEVEL + 0.15, 0);
+    } else {
+      mesh.position = new Vector3(0, GAME_CONFIG.WATER_LEVEL - 0.15, 0);
+    }
 
     // Use Euler rotations
     mesh.rotationQuaternion = null;
-    mesh.rotation.y = Math.PI; // Initial rotation to face +Z
+    if (this.eas) {
+      mesh.rotation.y = Math.PI / 2; // Initial rotation to face +Z
+    } else {
+      mesh.rotation.y = Math.PI; // Initial rotation to face +Z
+    }
 
     // Add entire model as shadow caster (true -> recursive)
     shadowGenerator.addShadowCaster(mesh, true);
