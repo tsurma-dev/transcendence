@@ -328,7 +328,6 @@ export class PoolScene {
     });
 
     this.client.setOnGameFailed((message: string) => {
-      console.log('🚨 Game failed in PoolScene:', message);
       this.onGameFailedCallback?.(message);
     });
   }
@@ -651,7 +650,7 @@ export class PoolScene {
     } else {
        await this.initializeScene();
     }
-   
+
 
     this.onGameStartCallback?.(); // Tell Game3D to hide loading screen
 

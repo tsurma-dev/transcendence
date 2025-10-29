@@ -58,7 +58,7 @@ export class Tournament {
         }
         for (let [_, player] of this.players) {
             if (player.name === name) {
-                this.cancel(socket, 'Player name already registered in tournament');
+                this.cancel(socket, 'Tournament has been cancelled due to bad behavior from players. Please try again.');
                 return -2; // Player name already registered
             }
         }
@@ -202,19 +202,19 @@ export class Tournament {
             this.group1B.winner = this.group1B.player2;
         }
         this.sendStateUpdate(
-            'tournament-first-round-finished', { 
-            matchA: { 
-                player1: this.group1A.player1.name, 
-                player2: this.group1A.player2.name, 
-                score: this.group1A.score, 
-                winner: this.group1A.winner.name 
-            }, 
-            matchB: { 
-                player1: this.group1B.player1.name, 
-                player2: this.group1B.player2.name, 
-                score: this.group1B.score, 
-                winner: this.group1B.winner.name 
-            } 
+            'tournament-first-round-finished', {
+            matchA: {
+                player1: this.group1A.player1.name,
+                player2: this.group1A.player2.name,
+                score: this.group1A.score,
+                winner: this.group1A.winner.name
+            },
+            matchB: {
+                player1: this.group1B.player1.name,
+                player2: this.group1B.player2.name,
+                score: this.group1B.score,
+                winner: this.group1B.winner.name
+            }
         });
     }
 
@@ -240,30 +240,30 @@ export class Tournament {
 
         this.state = 'finished';
         this.sendStateUpdate(
-            'tournament-finished', { 
-            finalMatch: { 
-                player1: this.group2A.player1.name, 
-                player2: this.group2A.player2.name, 
-                score: this.group2A.score, 
-                winner: this.group2A.winner.name 
-            }, 
-            thirdPlaceMatch: { 
-                player1: this.group2B.player1.name, 
-                player2: this.group2B.player2.name, 
-                score: this.group2B.score, 
-                winner: this.group2B.winner.name 
+            'tournament-finished', {
+            finalMatch: {
+                player1: this.group2A.player1.name,
+                player2: this.group2A.player2.name,
+                score: this.group2A.score,
+                winner: this.group2A.winner.name
             },
-            champions: this.champions 
+            thirdPlaceMatch: {
+                player1: this.group2B.player1.name,
+                player2: this.group2B.player2.name,
+                score: this.group2B.score,
+                winner: this.group2B.winner.name
+            },
+            champions: this.champions
         });
         //this.closeSockets();
     }
-    
+
     cancel(socket, reason) {
         this.removePlayer(socket);
-        this.sendStateUpdate('tournament-cancelled', { message: 'Tournament has been cancelled: ' + reason });
+        this.sendStateUpdate('tournament-cancelled', { message: reason });
         this.closeSockets();
     }
-    
+
     closeSockets() {
         if (!this.players) return;
         for (let [_, player] of this.players) {

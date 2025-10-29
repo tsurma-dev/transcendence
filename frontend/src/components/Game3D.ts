@@ -71,7 +71,7 @@ export class Game3DComponent {
   // ============================================================================
 
   private async startGameFlow(): Promise<void> {
- 
+
     switch (this.gameMode) {
       case 'local':
         this.overlays.showLoadingScreen();
