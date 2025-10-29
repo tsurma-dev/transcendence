@@ -31,6 +31,10 @@ export default fp(async function (fastify, opts) {
     INSERT OR IGNORE INTO users (id, username, email, password_hash) VALUES
     (0, '[deleted]', 'deleted@example.com', '');
 
+    INSERT OR IGNORE INTO users (id, username, email, password_hash) VALUES
+    (1, 'AI', 'AI@AI.com', '');
+
+
     CREATE TABLE IF NOT EXISTS friendships (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id TEXT NOT NULL DEFAULT '0',
