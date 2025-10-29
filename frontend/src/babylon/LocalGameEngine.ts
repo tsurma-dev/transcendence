@@ -18,11 +18,20 @@ export class LocalGameEngine {
   private readonly BASE_DUCK_SPEED = GAME_CONFIG.BALL_SPEED;
   private currentDuckSpeed = GAME_CONFIG.BALL_SPEED;
   private readonly SPEED_INCREASE_FACTOR = 1.1; // 10% speed increase per collision
+  private DUCK_RADIUS: number = GAME_CONFIG.BALL_RADIUS; // Default duck radius
 
-constructor(player1Name: string, player2Name: string) {
+  private easterEgg: boolean = false;
+
+constructor(player1Name: string, player2Name: string, easterEgg: boolean = false) {
+  this.easterEgg = easterEgg;
   this.gameState = this.createInitialGameState();
   this.Player1Name = player1Name;
   this.Player2Name = player2Name;
+  if (easterEgg) {
+    console.log('🐤 Easter Egg Activated: Black Duck Mode!');
+    this.DUCK_RADIUS = 0.5; // Increase the duck radius for the Easter egg
+  }
+
   console.log('🎮 Local game engine created');
 }
 
@@ -104,7 +113,7 @@ private createInitialGameState(): GameState {
 
   private checkWallCollisions(): void {
     const duck = this.gameState.duck;
-    const maxX = GAME_CONFIG.TABLE_WIDTH / 2 - GAME_CONFIG.BALL_RADIUS;
+    const maxX = GAME_CONFIG.TABLE_WIDTH / 2 - this.DUCK_RADIUS;
 
     // Bounce from wall and rotate duck accordingly
     if (duck.x <= -maxX) {
@@ -126,17 +135,16 @@ private createInitialGameState(): GameState {
     const player2 = this.gameState.player2;
 
     const paddleHalfWidth = GAME_CONFIG.PADDLE_WIDTH / 2;
-    const duckRadius = GAME_CONFIG.BALL_RADIUS;
+    const duckRadius = this.DUCK_RADIUS;
 
     // --- Player 1 paddle (at negative Z end) ---
     const paddle1FaceZ = -GAME_CONFIG.TABLE_DEPTH / 2;
     const paddle1BackZ = paddle1FaceZ - GAME_CONFIG.PADDLE_DEPTH;
 
     // **Check if duck is in paddle zone**
-    if (duck.z <= paddle1FaceZ && duck.z >= paddle1BackZ) {
+    if (duck.z - duckRadius <= paddle1FaceZ && duck.z + duckRadius >= paddle1BackZ) {
       // **FACE COLLISION: Duck hits paddle front face**
       if (
-        duck.z >= paddle1FaceZ - duckRadius &&
         duck.dir > Math.PI && // Moving towards paddle
         duck.x >= player1.x - paddleHalfWidth &&
         duck.x <= player1.x + paddleHalfWidth
@@ -151,10 +159,9 @@ private createInitialGameState(): GameState {
       }
       // **END COLLISION: Duck hits paddle sides**
       else if (
-        Math.abs(duck.x - player1.x) <= paddleHalfWidth + duckRadius &&
-        Math.abs(duck.x - player1.x) > paddleHalfWidth
+        Math.abs(duck.x - player1.x) <= paddleHalfWidth + duckRadius
       ) {
-        const hitLeftEnd = duck.x < player1.x;
+        const hitLeftEnd = duck.x - duckRadius < player1.x;
 
         if (hitLeftEnd) {
           // Hit left end - bounce toward left bottom corner
@@ -180,10 +187,9 @@ private createInitialGameState(): GameState {
     const paddle2BackZ = paddle2FaceZ + GAME_CONFIG.PADDLE_DEPTH;
 
     // **Check if duck is in paddle zone**
-    if (duck.z >= paddle2FaceZ && duck.z <= paddle2BackZ) {
+    if (duck.z + duckRadius >= paddle2FaceZ && duck.z - duckRadius <= paddle2BackZ) {
       // **FACE COLLISION: Duck hits paddle front face**
       if (
-        duck.z <= paddle2FaceZ + duckRadius &&
         duck.dir < Math.PI && // Moving towards paddle
         duck.x >= player2.x - paddleHalfWidth &&
         duck.x <= player2.x + paddleHalfWidth
@@ -198,10 +204,9 @@ private createInitialGameState(): GameState {
       }
       // **END COLLISION: Duck hits paddle sides**
       else if (
-        Math.abs(duck.x - player2.x) <= paddleHalfWidth + duckRadius &&
-        Math.abs(duck.x - player2.x) > paddleHalfWidth
+        Math.abs(duck.x - player2.x) <= paddleHalfWidth + duckRadius
       ) {
-        const hitLeftEnd = duck.x < player2.x;
+        const hitLeftEnd = duck.x - duckRadius < player2.x;
 
         if (hitLeftEnd) {
           // Hit left end - bounce toward left upper corner
@@ -226,7 +231,7 @@ private createInitialGameState(): GameState {
   private checkScoring(): void {
     if (this.gameState.status === 'finished') return;
     const duck = this.gameState.duck;
-    const duckRadius = GAME_CONFIG.BALL_RADIUS;
+    const duckRadius = this.DUCK_RADIUS;
 
     // Scoring zones are the pool ends
     const scoreZone1 = -GAME_CONFIG.TABLE_DEPTH / 2 - GAME_CONFIG.WATER_EXTRA_SPACE; // Behind Player 1's paddle
@@ -276,7 +281,7 @@ private createInitialGameState(): GameState {
     this.paddleCollisionCooldown = 0;
     // Reset duck speed to base speed after scoring
     this.currentDuckSpeed = this.BASE_DUCK_SPEED;
-    
+
     // Start with one of four diagonal directions
     const directions = [
       Math.PI / 4,     // 45° (up-right)
