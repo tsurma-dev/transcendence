@@ -220,7 +220,11 @@ export class PoolScene {
     }
 
     // Initialize game objects and wait for them to load
-    this.duck = new Duck(this.scene, this.shadowGenerator);
+    if (this.gameMode === 'local' && this.player1Name === 'forty' && this.player2Name === 'two') {
+      this.duck = new Duck(this.scene, this.shadowGenerator, true);
+    } else {
+      this.duck = new Duck(this.scene, this.shadowGenerator);
+    }
     await this.duck.waitForLoad();
 
     this.Paddle1 = new Paddle(
@@ -801,20 +805,20 @@ export class PoolScene {
       this.wallHitAudio.volume = 0.6;
 
       this.paddleHitAudio = new Audio('/sounds/squeak.mp3');
-      this.paddleHitAudio.volume = 0.4;
+      this.paddleHitAudio.volume = 0.2
 
       this.scoreAudio = new Audio('/sounds/score.mp3');
-      this.scoreAudio.volume = 0.7;
+      this.scoreAudio.volume = 0.6;
 
       this.bgMusicAudio = new Audio('/sounds/bg_music.mp3');
-      this.bgMusicAudio.volume = 0.2;
+      this.bgMusicAudio.volume = 0.4;
       this.bgMusicAudio.loop = true;
 
       this.winningAudio = new Audio('/sounds/winning.mp3');
-      this.winningAudio.volume = 0.8;
+      this.winningAudio.volume = 0.7;
 
       this.losingAudio = new Audio('/sounds/losing.mp3');
-      this.losingAudio.volume = 0.8;
+      this.losingAudio.volume = 0.7;
 
       this.audioEnabled = true;
     } catch (error) {
