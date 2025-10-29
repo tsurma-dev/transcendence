@@ -34,23 +34,8 @@
 */
 
 import './index.css'
-import { Game3DComponent, GameMode } from './components/Game3D'
 import { Component, TemplateManager, AppRouter, App, ApiService } from './core'
-import {
-  StartPageScreen,
-  QuickPlaySetupScreen,
-  LoginScreen,
-  RegisterScreen,
-  LoggedOutScreen,
-  AuthErrorScreen,
-  LoggedInLandingScreen,
-  TournamentLobbyScreen,
 
-  QuickPlayScreen,
-  UserProfileScreen,
-  UserSettingsScreen,
-  MatchHistoryScreen
-} from './screens'
 
 // =================================
 // LEGACY CODE REMOVED
