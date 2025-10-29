@@ -1,5 +1,12 @@
 import { createMatch } from "../models/matchModel.js";
 import { findUserByUsername } from "../models/userModel.js";
+import {
+  createTournament,
+  addParticipant,
+  createTournamentMatch,
+  getMatchesForTournament,
+  recordMatchAndLink,
+} from '../models/tournamentModel.js';
 
 import { Game } from "../game/pongGame.js";
 import { AIplayer } from "../game/aiPlayer.js";
@@ -205,6 +212,59 @@ function storeTournamentResult(tournamentId) {
   const tournament = tournaments.get(tournamentId);
   if (!tournament) return;
   // store final results
+  try {
+	const tid = createTournament(db, tournamentId, 'A simple tournament');
+	const player1 = findUserByUsername(db, tournament.group1A.player1.name).id;
+	const player2 = findUserByUsername(db, tournament.group1A.player2.name).id;
+	const player3 = findUserByUsername(db, tournament.group2B.player1.name).id;
+	const player4 = findUserByUsername(db, tournament.group2B.player2.name).id;
+	if (!player1 || !player2 || !player3 || !player4) {
+	  console.error("Player not found in DB");
+	  return;
+	}
+	addParticipant(db, tid, player1);
+	addParticipant(db, tid, player2);
+	addParticipant(db, tid, player3);
+	addParticipant(db, tid, player4);
+	createTournamentMatch(db, tid, 0, 0);
+	recordMatchAndLink(
+		db, tid, 0, 0, 
+		player1, player2, 
+		tournament.group1A.score[0], 
+		tournament.group1A.score[1], 
+		tournament.group1A.winner === tournament.group1A.player1 ? player1 : player2);
+	createTournamentMatch(db, tid, 0, 1);
+	recordMatchAndLink(
+		db, tid, 0, 1,
+		player3, player4,
+		tournament.group1B.score[0],
+		tournament.group1B.score[1],
+		tournament.group1B.winner === tournament.group1B.player1 ? player3 : player4
+	);
+	createTournamentMatch(db, tid, 1, 0);
+	const finalist1 = findUserByUsername(db, tournament.group2A.player1.name).id;
+	const finalist2 = findUserByUsername(db, tournament.group2A.player2.name).id;
+	recordMatchAndLink(
+		db, tid, 1, 0,
+		finalist1, finalist2,
+		tournament.group2A.score[0],
+		tournament.group2A.score[1],
+		tournament.group2A.winner === tournament.group2A.player1 ? finalist1 : finalist2
+	);
+	createTournamentMatch(db, tid, -1, 0);
+	const finalist3 = findUserByUsername(db, tournament.group2B.player1.name).id;
+	const finalist4 = findUserByUsername(db, tournament.group2B.player2.name).id;
+	recordMatchAndLink(
+		db, tid, -1, 0,
+		finalist3, finalist4,
+		tournament.group2B.score[0],
+		tournament.group2B.score[1],
+		tournament.group2B.winner === tournament.group2B.player1 ? finalist3 : finalist4
+	);
+  } catch (error) {
+	console.error("Tournament result not stored in DB because of error: ", error);
+	return;
+  }
 }
 
 function clearRoom(roomId) {
@@ -323,6 +383,12 @@ function sendGameState(roomId, state) {
 				payload: { message: "Room closed because of inactivity" },
 			};
 			break;
+		case "login-error":
+			gameState = {
+				type: "game-failed",
+				payload: { message: "Login error: player already registered" },
+			};
+			break;
 		case "update":
 			const body = room.game.getState();
 			gameState = {
@@ -381,8 +447,16 @@ function joinTournament(socket, tournamentId, playerName) {
 		socket.close();
 		return;
 	}
-	connections.set(socket, { tournamentId: tournamentId, roomId: null, playerName: playerName, lastPing: 0 });
 	let res = tournament.addPlayer(playerName, socket);
+	if (res === -1) {
+		return; // error handled in addPlayer
+	} else if (res === -2) {
+		socket.send(JSON.stringify({ type: 'tournament-cancelled', message: 'Tournament has been cancelled: player already registered'}));
+		socket.close();
+		tournaments.delete(tournamentId);
+		return; // error handled in addPlayer
+	}
+	connections.set(socket, { tournamentId: tournamentId, roomId: null, playerName: playerName, lastPing: 0 });
 	setupCloseHandler(socket);
 	if (res === 4) {
 		tournament.setFirstRound(createRoom('tournament', tournamentId), createRoom('tournament', tournamentId));
@@ -425,6 +499,17 @@ function joinRoom(socket, roomId, playerName) {
 		return;
 	}
 	if (!room.player2.socket) {
+		if (room.player1.name === playerName) {
+			socket.send(JSON.stringify({ 
+				type: "game-failed",
+				payload: { message: "Login error: player already registered" },}));
+			connections.delete(socket);
+			socket.close();
+			sendGameState(roomId, "login-error");
+			clearRoom(roomId);
+			console.log("Player tried to join with duplicate name: " + playerName);
+			return;
+		}
 		if (roomId === waitingRoom) {
 			waitingRoom = null;
 		}
@@ -464,9 +549,10 @@ function handleTournamentResult(tournamentId, roomId) {
 		tournament.setSecondRound(createRoom('tournament', tournamentId), createRoom('tournament', tournamentId));
 	} else if (round === 2) {
 		// tournament finished
+		storeTournamentResult(tournamentId);
+		tournament.closeSockets();
 		tournaments.delete(tournamentId);
 	}
-  storeTournamentResult(tournamentId);
 }
 
 function setAIroom(socket, playerName) {
@@ -512,7 +598,7 @@ function setupCloseHandler(socket) {
 			if (tournament.state === 'waiting') {
 				tournament.removePlayer(socket);
 			} else if (tournament.state !== 'finished') {
-				tournament.cancel(socket);
+				tournament.cancel(socket, 'player disconnect');
 			}
 			if (tournament.playersCount === 0) {
 				tournaments.delete(tournamentId);
