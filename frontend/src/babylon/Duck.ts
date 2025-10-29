@@ -12,11 +12,13 @@ import type { DuckState } from "@shared/types";
 export class Duck {
   private mesh: AbstractMesh | null = null;
   private loadingPromise: Promise<void>;
-  private eas: boolean = false;
+  private easterEgg: boolean = false;
+  private DUCK_RADIUS: number = GAME_CONFIG.BALL_RADIUS;
 
   constructor(scene: Scene, shadowGenerator: ShadowGenerator, easterEgg: boolean = false) {
     if (easterEgg) {
-      this.eas = true;
+      this.easterEgg = true;
+      this.DUCK_RADIUS = 0.5; // Increase the duck radius for the Easter egg
       this.loadingPromise = SceneLoader.ImportMeshAsync("", "/black_duck/", "scene.gltf", scene)
       .then((result) => {
         const rootMesh = result.meshes[0];
@@ -62,8 +64,14 @@ export class Duck {
     const vz = Math.sin(state.dir);
     // Babylon uses rotation.y == 0 to face +Z. The angle from +Z to (vx, vz) is atan2(vx, vz).
     // Using atan2(x, z) returns the yaw to rotate +Z to the velocity vector.
-    const rotationY = Math.atan2(vx, vz) + Math.PI;
-    this.mesh.rotation.y = rotationY;
+    if (this.easterEgg) {
+      const rotationY = Math.atan2(vx, vz);
+      this.mesh.rotation.y = rotationY;
+    } else {
+      const rotationY = Math.atan2(vx, vz) + Math.PI;
+      this.mesh.rotation.y = rotationY;
+    }
+
   }
 
   // Scales and positions the duck model based on its bounding box.
@@ -94,22 +102,22 @@ export class Duck {
         return;
     }
 
-    const targetDiameter = GAME_CONFIG.BALL_RADIUS * 2;
+    const targetDiameter = this.DUCK_RADIUS * 2;
     const scale = targetDiameter / duckDiameter;
 
     mesh.scaling.setAll(scale);
 
     // Place the duck at the water level (small downward offset so it sits nicely)
-    if (this.eas) {
-      mesh.position = new Vector3(0, GAME_CONFIG.WATER_LEVEL + 0.15, 0);
+    if (this.easterEgg) {
+      mesh.position = new Vector3(0, GAME_CONFIG.WATER_LEVEL + 0.2, 0);
     } else {
       mesh.position = new Vector3(0, GAME_CONFIG.WATER_LEVEL - 0.15, 0);
     }
 
     // Use Euler rotations
     mesh.rotationQuaternion = null;
-    if (this.eas) {
-      mesh.rotation.y = Math.PI / 2; // Initial rotation to face +Z
+    if (this.easterEgg) {
+      mesh.rotation.y = 0; // Initial rotation to face +Z
     } else {
       mesh.rotation.y = Math.PI; // Initial rotation to face +Z
     }

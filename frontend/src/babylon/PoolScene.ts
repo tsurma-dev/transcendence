@@ -103,6 +103,8 @@ export class PoolScene {
   private onTournamentRoundFinishedCallback?: (results: any, round: number) => void;
   private onTournamentFinishedCallback?: (results: any) => void;
 
+  // Easter egg activation
+  private easterEggActivated: boolean = false;
 
   // -------------------
   // --- CONSTRUCTOR ---
@@ -121,9 +123,17 @@ export class PoolScene {
     this.player2Name = player2Name || "Player 2";
     this.roomId = roomId || "";
 
+    if (this.gameMode === 'local' && this.player1Name === 'forty' && this.player2Name === 'two') {
+      this.easterEggActivated = true;
+    }
+
     if (this.gameMode === 'local') {
       // For local games, initialize scene immediately
-      this.localGameEngine = new LocalGameEngine(this.player1Name, this.player2Name);
+      if (this.easterEggActivated) {
+        this.localGameEngine = new LocalGameEngine(this.player1Name, this.player2Name, true);
+      } else {
+        this.localGameEngine = new LocalGameEngine(this.player1Name, this.player2Name);
+      }
       this.initializeScene().catch(error => {
         console.error('Failed to initialize local game scene:', error);
       });
@@ -220,7 +230,7 @@ export class PoolScene {
     }
 
     // Initialize game objects and wait for them to load
-    if (this.gameMode === 'local' && this.player1Name === 'forty' && this.player2Name === 'two') {
+    if (this.easterEggActivated) {
       this.duck = new Duck(this.scene, this.shadowGenerator, true);
     } else {
       this.duck = new Duck(this.scene, this.shadowGenerator);
@@ -810,7 +820,12 @@ export class PoolScene {
       this.scoreAudio = new Audio('/sounds/score.mp3');
       this.scoreAudio.volume = 0.6;
 
-      this.bgMusicAudio = new Audio('/sounds/bg_music.mp3');
+      if (this.easterEggActivated) {
+        this.bgMusicAudio = new Audio('/sounds/bg_techno.mp3');
+      }
+      else {
+        this.bgMusicAudio = new Audio('/sounds/bg_music.mp3');
+      }
       this.bgMusicAudio.volume = 0.4;
       this.bgMusicAudio.loop = true;
 
@@ -1400,7 +1415,12 @@ export class PoolScene {
 
       // Move duck to center of the pool for cinematic effect
       const centerPosition = new Vector3(0, GAME_CONFIG.WATER_LEVEL - 0.15, 0);
-      duckMesh.position = centerPosition.clone();
+      if (this.easterEggActivated) {
+        const centerPosition = new Vector3(0, GAME_CONFIG.WATER_LEVEL + 0.15, 0);
+        duckMesh.position = centerPosition.clone();
+      } else {
+        duckMesh.position = centerPosition.clone();
+      }
 
       // Get duck's current rotation to position camera facing it
       const duckRotation = duckMesh.rotation.y;
@@ -1409,8 +1429,16 @@ export class PoolScene {
       // Position camera opposite to where duck is facing for a front view
       const cameraDistance = 2.5;
       const cameraHeight = 1.2;
-      const cameraX = centerPosition.x + Math.sin(duckRotation + Math.PI) * cameraDistance;
-      const cameraZ = centerPosition.z + Math.cos(duckRotation + Math.PI) * cameraDistance;
+      let cameraX: number;
+      let cameraZ: number;
+      if (this.easterEggActivated) {
+        cameraX = centerPosition.x + Math.sin(duckRotation) * cameraDistance;
+        cameraZ = centerPosition.z + Math.cos(duckRotation) * cameraDistance;
+      }
+      else {
+        cameraX = centerPosition.x + Math.sin(duckRotation + Math.PI) * cameraDistance;
+        cameraZ = centerPosition.z + Math.cos(duckRotation + Math.PI) * cameraDistance;
+      }
 
       const zoomPosition = new Vector3(
         cameraX,
