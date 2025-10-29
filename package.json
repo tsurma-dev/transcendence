@@ -3,15 +3,19 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
+    "dev": "NODE_ENV=development concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
     "back": "npm run dev --prefix backend",
-    "front": "npm run dev --prefix frontend"
+    "front": "npm run dev --prefix frontend",
+    "build": "cd frontend && npm run build && npm run copy:assets",
+    "start": "NODE_ENV=production node backend/src/server.js"
   },
   "devDependencies": {
     "concurrently": "^9.2.0"
   },
   "dependencies": {
-    "@fastify/multipart": "^9.0.3",
+    "@fastify/http-proxy": "^11.3.0",
+    "@fastify/static": "^8.3.0",
+    "fastify": "^5.0.0",
     "vite": "^7.1.5"
   }
 }

@@ -6,15 +6,15 @@ export class ApiService {
 
   constructor() {
     // Backend runs on HTTPS
-    this.baseUrl = 'https://localhost:8443'
+    this.baseUrl = window.location.origin;
   }
 
   async getOnlineUsersCount(): Promise<number> {
     try {
-      console.log('Fetching online users from:', `${this.baseUrl}/api/loggedinusers`)
-      const response = await fetch(`${this.baseUrl}/api/loggedinusers`, {
+      console.log('Fetching online users from:', `/api/loggedinusers`)
+      const response = await fetch(`/api/loggedinusers`, {
         method: 'GET',
-        mode: 'cors',
+
         credentials: 'include'
       })
       console.log('Response status:', response.status)
@@ -37,10 +37,10 @@ export class ApiService {
 
   async getOnlineUsersList(): Promise<{id: number, username: string}[]> {
     try {
-      console.log('Fetching online users list from:', `${this.baseUrl}/api/loggedinusers`)
-      const response = await fetch(`${this.baseUrl}/api/loggedinusers`, {
+      console.log('Fetching online users list from:', `/api/loggedinusers`)
+      const response = await fetch(`/api/loggedinusers`, {
         method: 'GET',
-        mode: 'cors',
+
         credentials: 'include'
       })
 
@@ -60,10 +60,10 @@ export class ApiService {
 
   async getCurrentUser(): Promise<{id: number, username: string, email: string, createdAt: string, twoFAEnabled?: boolean} | null> {
     try {
-      console.log('Fetching current user from:', `${this.baseUrl}/api/me`)
-      const response = await fetch(`${this.baseUrl}/api/me`, {
+      console.log('Fetching current user from:', `/api/me`)
+      const response = await fetch(`/api/me`, {
         method: 'GET',
-        mode: 'cors',
+
         credentials: 'include'
       })
 
@@ -87,10 +87,10 @@ export class ApiService {
 
   async getUserProfile(username: string): Promise<{id: number, username: string, email: string, createdAt: string, twoFAEnabled?: boolean} | null> {
     try {
-      console.log('Fetching user profile from:', `${this.baseUrl}/api/users/${encodeURIComponent(username)}`)
-      const response = await fetch(`${this.baseUrl}/api/users/${encodeURIComponent(username)}`, {
+      console.log('Fetching user profile from:', `/api/users/${encodeURIComponent(username)}`)
+      const response = await fetch(`/api/users/${encodeURIComponent(username)}`, {
         method: 'GET',
-        mode: 'cors',
+
         credentials: 'include'
       })
 
@@ -123,10 +123,10 @@ export class ApiService {
     playedAt: string
   }[] | null> {
     try {
-      console.log('Fetching user matches from:', `${this.baseUrl}/users/${encodeURIComponent(username)}/matches`)
-      const response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(username)}/matches`, {
+      console.log('Fetching user matches from:', `/users/${encodeURIComponent(username)}/matches`)
+      const response = await fetch(`/users/${encodeURIComponent(username)}/matches`, {
         method: 'GET',
-        mode: 'cors',
+
         credentials: 'include'
       })
 
@@ -151,10 +151,10 @@ export class ApiService {
 
   async logout(): Promise<boolean> {
     try {
-      console.log('Logging out from:', `${this.baseUrl}/api/logout`)
-      const response = await fetch(`${this.baseUrl}/api/logout`, {
+      console.log('Logging out from:', `/api/logout`)
+      const response = await fetch(`/api/logout`, {
         method: 'POST',
-        mode: 'cors',
+
         credentials: 'include'
       })
 
@@ -181,9 +181,9 @@ export class ApiService {
       }
 
       // Use the login endpoint to verify current credentials
-      const response = await fetch(`${this.baseUrl}/api/login`, {
+      const response = await fetch(`/api/login`, {
         method: 'POST',
-        mode: 'cors',
+
         headers: {
           'Content-Type': 'application/json',
         },
@@ -209,9 +209,9 @@ export class ApiService {
 
   async updatePassword(newPassword: string, currentPassword: string): Promise<{success: boolean, message?: string}> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/me/password`, {
+      const response = await fetch(`/api/me/password`, {
         method: 'PATCH',
-        mode: 'cors',
+
         headers: {
           'Content-Type': 'application/json',
         },
@@ -236,9 +236,9 @@ export class ApiService {
 
   async updateEmail(email: string): Promise<{success: boolean, message?: string}> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/me/email`, {
+      const response = await fetch(`/api/me/email`, {
         method: 'PATCH',
-        mode: 'cors',
+
         headers: {
           'Content-Type': 'application/json',
         },
@@ -261,9 +261,9 @@ export class ApiService {
 
   async updateUsername(username: string): Promise<{success: boolean, message?: string}> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/me/username`, {
+      const response = await fetch(`/api/me/username`, {
         method: 'PATCH',
-        mode: 'cors',
+
         headers: {
           'Content-Type': 'application/json',
         },
@@ -302,7 +302,7 @@ export class ApiService {
 
   async enable2FA(): Promise<{success: boolean, qrCode?: string, secret?: string, message?: string}> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/me/2fa/setup`, {
+      const response = await fetch(`/api/me/2fa/setup`, {
         method: 'POST',
         credentials: 'include'
       })
@@ -322,7 +322,7 @@ export class ApiService {
 
   async verify2FA(code: string): Promise<{success: boolean, message?: string}> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/me/2fa/verify`, {
+      const response = await fetch(`/api/me/2fa/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -346,9 +346,9 @@ export class ApiService {
 
   async disable2FA(): Promise<{success: boolean, message?: string}> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/me/2fa/remove`, {
+      const response = await fetch(`/api/me/2fa/remove`, {
         method: 'POST',
-        mode: 'cors',
+
         credentials: 'include'
       })
       const result = await response.json().catch(() => ({}))
@@ -365,9 +365,9 @@ export class ApiService {
 
   async deleteAccount(password: string): Promise<{success: boolean, message?: string}> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/me/delete`, {
+      const response = await fetch(`/api/me/delete`, {
         method: 'POST',
-        mode: 'cors',
+
         headers: {
           'Content-Type': 'application/json',
         },
@@ -395,14 +395,14 @@ export class ApiService {
         return { success: false, message: 'Only PNG files are allowed.' }
       }
 
-      console.log('Uploading avatar to:', `${this.baseUrl}/api/me/avatar`)
+      console.log('Uploading avatar to:', `/api/me/avatar`)
 
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch(`${this.baseUrl}/api/me/avatar`, {
+      const response = await fetch(`/api/me/avatar`, {
         method: 'PUT',
-        mode: 'cors',
+
         body: formData,
         credentials: 'include'
       })
@@ -424,11 +424,11 @@ export class ApiService {
 
   async deleteAvatar(): Promise<{success: boolean, message?: string}> {
     try {
-      console.log('Deleting avatar from:', `${this.baseUrl}/api/me/avatar`)
+      console.log('Deleting avatar from:', `/api/me/avatar`)
 
-      const response = await fetch(`${this.baseUrl}/api/me/avatar`, {
+      const response = await fetch(`/api/me/avatar`, {
         method: 'DELETE',
-        mode: 'cors',
+
         credentials: 'include'
       })
 
@@ -449,9 +449,9 @@ export class ApiService {
 
   async sendFriendRequest(username: string): Promise<{success: boolean, message?: string}> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}/request`, {
+      const response = await fetch(`/api/me/friends/${username}/request`, {
         method: 'POST',
-        mode: 'cors',
+
         credentials: 'include'
       })
 
@@ -470,9 +470,9 @@ export class ApiService {
 
   async acceptFriendRequest(username: string): Promise<{success: boolean, message?: string}> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}/accept`, {
+      const response = await fetch(`/api/me/friends/${username}/accept`, {
         method: 'POST',
-        mode: 'cors',
+
         credentials: 'include'
       })
 
@@ -491,9 +491,9 @@ export class ApiService {
 
   async rejectFriendRequest(username: string): Promise<{success: boolean, message?: string}> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}/reject`, {
+      const response = await fetch(`/api/me/friends/${username}/reject`, {
         method: 'POST',
-        mode: 'cors',
+
         credentials: 'include'
       })
 
@@ -512,9 +512,9 @@ export class ApiService {
 
   async removeFriend(username: string): Promise<{success: boolean, message?: string}> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}`, {
+      const response = await fetch(`/api/me/friends/${username}`, {
         method: 'DELETE',
-        mode: 'cors',
+
         credentials: 'include'
       })
 
@@ -533,9 +533,9 @@ export class ApiService {
 
   async getFriendsAndRequests(): Promise<{success: boolean, friends?: any[], pendingRequests?: any[], message?: string}> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/me/friends`, {
+      const response = await fetch(`/api/me/friends`, {
         method: 'GET',
-        mode: 'cors',
+
         credentials: 'include'
       })
 
@@ -560,9 +560,9 @@ export class ApiService {
 
   async checkFriendshipStatus(username: string): Promise<{success: boolean, status?: string, message?: string}> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/me/friends/${username}/status`, {
+      const response = await fetch(`/api/me/friends/${username}/status`, {
         method: 'GET',
-        mode: 'cors',
+
         credentials: 'include'
       })
 
@@ -582,7 +582,7 @@ export class ApiService {
   getAvatarUrl(username?: string): string {
     if (username) {
       // Backend serves user avatars via username and handles fallback automatically
-      return `${this.baseUrl}/users/${username}/avatar`
+      return `/users/${username}/avatar`
     }
     // Default avatar fallback for when no username is provided
     return 'images/default_avatar.jpg'
