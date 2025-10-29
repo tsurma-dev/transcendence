@@ -338,7 +338,7 @@ export class GameClient {
     this.pingIntervalId = window.setInterval(() => {
       ws.send(JSON.stringify({ type: "ping" }));
       // If no pong received in last 10 seconds, mark as disconnected
-      if (Date.now() - this.lastPongTimestamp > 10000) {
+      if (Date.now() - this.lastPongTimestamp > 5000) {
         if (this.connectionAlive) {
           this.connectionAlive = false;
           console.log("❌ Connection lost - no pong received");
