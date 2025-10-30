@@ -28,6 +28,8 @@ export class AppRouter {
   private appContainer: HTMLElement
   // Map to hold routes and their corresponding components, to enable browser history navigation
   private routes: Map<string, { component: new(...args: any[]) => Component, args?: any[] }> = new Map()
+  // Reverse map: component class to path (for production builds where class names are mangled)
+  private componentToPath: Map<new(...args: any[]) => Component, string> = new Map()
   private isNavigating: boolean = false
 
   constructor() {
@@ -72,6 +74,23 @@ export class AppRouter {
     this.routes.set('/game/join-room', { component: ServerGameScreen })
     this.routes.set('/logged-out', { component: LoggedOutScreen })
     this.routes.set('/auth-error', { component: AuthErrorScreen })
+
+    // Build reverse mapping for production builds (where class names are mangled)
+    this.componentToPath.set(StartPageScreen, '/start')
+    this.componentToPath.set(LoginScreen, '/login')
+    this.componentToPath.set(RegisterScreen, '/register')
+    this.componentToPath.set(LoggedInLandingScreen, '/landing')
+    this.componentToPath.set(RemoteGameLobbyScreen, '/remote-game')
+    this.componentToPath.set(JoinRoomInputScreen, '/join')
+    this.componentToPath.set(UserProfileScreen, '/profile')
+    this.componentToPath.set(UserSettingsScreen, '/settings')
+    this.componentToPath.set(MatchHistoryScreen, '/match-history')
+    this.componentToPath.set(QuickPlaySetupScreen, '/quick-play')
+    this.componentToPath.set(TournamentLobbyScreen, '/tournament-lobby')
+    this.componentToPath.set(QuickPlayScreen, '/game/local')
+    this.componentToPath.set(LoggedOutScreen, '/logged-out')
+    this.componentToPath.set(AuthErrorScreen, '/auth-error')
+    // Note: ServerGameScreen maps to multiple paths based on game mode
   }
 
   private setupHistoryListener(): void {
@@ -225,69 +244,53 @@ export class AppRouter {
   }
 
   private getPathForComponent(componentClass: new(...args: any[]) => Component, ...args: any[]): string {
-    // Map component classes to URL paths
-    switch (componentClass.name) {
-      case 'StartPageScreen':
-        return '/start'
-      case 'LoginScreen':
-        return '/login'
-      case 'RegisterScreen':
-        return '/register'
-      case 'LoggedInLandingScreen':
-        return '/landing'
-      case 'RemoteGameLobbyScreen':
-        return '/remote-game'
-      case 'JoinRoomInputScreen':
-        return '/join'
-      case 'UserProfileScreen':
-        // Handle username parameter for viewing other users' profiles
-        const profileUser = args[0] ? encodeURIComponent(args[0]) : undefined
-        return profileUser ? `/profile?user=${profileUser}` : '/profile'
-      case 'UserSettingsScreen':
-        return '/settings'
-      case 'MatchHistoryScreen':
-        // Handle username parameter for viewing specific user's match history
-        const historyUser = args[0] ? encodeURIComponent(args[0]) : undefined
-        return historyUser ? `/match-history?user=${historyUser}` : '/match-history'
-      case 'QuickPlaySetupScreen':
-        return '/quick-play'
-      case 'TournamentLobbyScreen':
-        return '/tournament-lobby'
-      case 'QuickPlayScreen':
-        // Handle local game parameters: player1Name, player2Name
-        const player1 = args[0] ? encodeURIComponent(args[0]) : 'Player1'
-        const player2 = args[1] ? encodeURIComponent(args[1]) : 'Player2'
-        // QuickPlayScreen is only for local games
-        return `/game/local?p1=${player1}&p2=${player2}`
-      case 'ServerGameScreen':
-        // Handle server game parameters: player1Name, player2Name, gameMode, roomId?
-        const serverPlayer1 = args[0] ? encodeURIComponent(args[0]) : 'Player1'
-        const serverPlayer2 = args[1] ? encodeURIComponent(args[1]) : 'Player2'
-        const serverGameMode: GameMode = args[2] || 'AI'
-        const serverRoomId = args[3] ? encodeURIComponent(args[3]) : ''
-
-        // Generate URL based on server game mode
-        switch (serverGameMode) {
-          case 'AI':
-            return `/game/ai?p1=${serverPlayer1}`
-          case 'createRoom':
-            return `/game/create-room?p1=${serverPlayer1}`
-          case 'joinRoom':
-            return `/game/join-room?p1=${serverPlayer1}${serverRoomId ? `&roomId=${serverRoomId}` : ''}`
-          case 'tournament':
-            return `/game/tournament?p1=${serverPlayer1}`
-          default:
-            return `/game/ai?p1=${serverPlayer1}`
-        }
-      case 'LoggedOutScreen':
-        // Handle username parameter
-        const username = args[0] ? encodeURIComponent(args[0]) : 'User'
-        return `/logged-out?user=${username}`
-      case 'AuthErrorScreen':
-        return '/auth-error'
-      default:
-        return '/start'
+    // First check if we have a direct mapping (works in both dev and production)
+    const basePath = this.componentToPath.get(componentClass)
+    
+    // Handle special cases with parameters
+    if (componentClass === UserProfileScreen) {
+      const profileUser = args[0] ? encodeURIComponent(args[0]) : undefined
+      return profileUser ? `/profile?user=${profileUser}` : '/profile'
     }
+    
+    if (componentClass === MatchHistoryScreen) {
+      const historyUser = args[0] ? encodeURIComponent(args[0]) : undefined
+      return historyUser ? `/match-history?user=${historyUser}` : '/match-history'
+    }
+    
+    if (componentClass === QuickPlayScreen) {
+      const player1 = args[0] ? encodeURIComponent(args[0]) : 'Player1'
+      const player2 = args[1] ? encodeURIComponent(args[1]) : 'Player2'
+      return `/game/local?p1=${player1}&p2=${player2}`
+    }
+    
+    if (componentClass === ServerGameScreen) {
+      const serverPlayer1 = args[0] ? encodeURIComponent(args[0]) : 'Player1'
+      const serverPlayer2 = args[1] ? encodeURIComponent(args[1]) : 'Player2'
+      const serverGameMode: GameMode = args[2] || 'AI'
+      const serverRoomId = args[3] ? encodeURIComponent(args[3]) : ''
+
+      switch (serverGameMode) {
+        case 'AI':
+          return `/game/ai?p1=${serverPlayer1}`
+        case 'createRoom':
+          return `/game/create-room?p1=${serverPlayer1}`
+        case 'joinRoom':
+          return `/game/join-room?p1=${serverPlayer1}${serverRoomId ? `&roomId=${serverRoomId}` : ''}`
+        case 'tournament':
+          return `/game/tournament?p1=${serverPlayer1}`
+        default:
+          return `/game/ai?p1=${serverPlayer1}`
+      }
+    }
+    
+    if (componentClass === LoggedOutScreen) {
+      const username = args[0] ? encodeURIComponent(args[0]) : 'User'
+      return `/logged-out?user=${username}`
+    }
+    
+    // Return base path if found, otherwise default to /start
+    return basePath || '/start'
   }
 
   // Method to handle initial page load routing
@@ -341,18 +344,19 @@ export class AppRouter {
 
   // Method to check if a route requires authentication
   private requiresAuthentication(componentClass: new(...args: any[]) => Component): boolean {
-    const protectedRoutes = [
-      'LoggedInLandingScreen',
-      'RemoteGameLobbyScreen',
-      'UserProfileScreen',
-      'UserSettingsScreen',
-      'MatchHistoryScreen',
-      'TournamentLobbyScreen',
-      'QuickPlayScreen',
-      'ServerGameScreen'
+    // Check component class directly instead of using class names (which get mangled in production)
+    const protectedComponents: Array<new(...args: any[]) => Component> = [
+      LoggedInLandingScreen,
+      RemoteGameLobbyScreen,
+      UserProfileScreen,
+      UserSettingsScreen,
+      MatchHistoryScreen,
+      TournamentLobbyScreen,
+      QuickPlayScreen,
+      ServerGameScreen
     ]
 
-    return protectedRoutes.includes(componentClass.name)
+    return protectedComponents.includes(componentClass)
   }
 
   // Method to check authentication and redirect to auth error if needed

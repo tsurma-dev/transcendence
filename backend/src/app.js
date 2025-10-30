@@ -8,8 +8,8 @@ import fastifyJwt from "@fastify/jwt";
 import fastifyCookie from "@fastify/cookie";
 import fastifyHelmet from "@fastify/helmet";
 import fastifyRedis from "@fastify/redis";
+import fastifyHttpProxy from "@fastify/http-proxy";
 import fastifyWebsocket from "@fastify/websocket";
-import fastifyCors from "@fastify/cors";
 import fs from "fs";
 import dbPlugin from "./plugins/db.js";
 import authPlugin from "./plugins/auth.js";
@@ -18,12 +18,13 @@ import authRoutes from "./routes/authRoutes.js";
 import friendRoutes from "./routes/friendRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import fastifyMultipart from "@fastify/multipart";
-import pongRoutes from './routes/matchRoutes.js';
+import pongRoutes from "./routes/matchRoutes.js";
 
 import "./utils/seedUsers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const isDev = process.env.NODE_ENV === "development";
 
 const app = Fastify({
   logger: {
@@ -43,7 +44,7 @@ const app = Fastify({
 });
 
 await app.register(fastifyRedis, {
-  host: "127.0.0.1",
+  host: "localhost",
   port: 6379,
   // password: 'supersecret'
 });
@@ -54,17 +55,30 @@ await app.register(fastifyMultipart, {
   },
 });
 
-// Register CORS to allow frontend requests
-await app.register(fastifyCors, {
-  origin: [
-    "http://127.0.0.1:3000",
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://c4c6c1:5173", // testing on local network
-  ], // Allow frontend dev servers, 5173 is for Vite
-  credentials: true,
-  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-});
+if (isDev) {
+  app.register(fastifyHttpProxy, {
+    upstream: "http://localhost:5173",
+    prefix: "/",
+    websocket: true,
+  });
+} else {
+  const distPath = path.join(__dirname, "../../frontend/dist");
+
+  app.register(fastifyStatic, {
+    root: distPath,
+    prefix: "/", // default
+  });
+
+  app.setNotFoundHandler((req, reply) => {
+    // Avoid intercepting API and WebSocket routes
+    if (req.raw.url.startsWith("/api") || req.raw.url.startsWith("/ws")) {
+      return reply.code(404).send({ error: "Not Found" });
+    }
+    reply
+      .type("text/html")
+      .send(fs.readFileSync(path.join(distPath, "index.html")));
+  });
+}
 
 await app.register(fastifyFormbody);
 
@@ -86,10 +100,13 @@ await app.register(fastifyHelmet, {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:"],
+      imgSrc: ["'self'", "https:", "blob:", "data:"],
       connectSrc: ["'self'"],
       fontSrc: ["'self'", "https:"],
       objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
       upgradeInsecureRequests: [],
     },
   },
@@ -103,16 +120,5 @@ await app.register(profileRoutes);
 await app.register(authRoutes);
 await app.register(friendRoutes);
 await app.register(pongRoutes);
-await app.register(fastifyStatic, {
-  root: path.resolve("./public"),
-  prefix: "/",
-  preHandler: (request, reply, done) => {
-    // Set CORS headers for static files
-    reply.header('Access-Control-Allow-Origin', 'http://localhost:3000')
-    reply.header('Access-Control-Allow-Credentials', 'true')
-    reply.header('Cross-Origin-Resource-Policy', 'cross-origin')
-    done()
-  }
-}); // will be removed with frontend
 
 export default app;
