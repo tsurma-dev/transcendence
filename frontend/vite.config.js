@@ -7,7 +7,7 @@ export default defineConfig({
   build: {
     outDir: '../dist',
     emptyOutDir: true,
-    chunkSizeWarningLimit: 2000, // Suppress warning for chunks larger than 500kb (set to 2MB)
+    chunkSizeWarningLimit: 7000, // Suppress warning for chunks larger than 500kb (set to 7MB for BabylonJS)
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'src/index.html')
