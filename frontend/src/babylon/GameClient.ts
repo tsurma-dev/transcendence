@@ -125,17 +125,17 @@ export class GameClient {
     });
   }
 
-  private handleServerMessage(message: ServerToClient): void {
-    switch (message.type) {
+  private handleServerMessage(data: ServerToClient): void {
+    switch (data.type) {
       case "room-joined":
-        this.roomId = message.payload.roomId;
+        this.roomId = data.payload.roomId;
         console.log(`🎯 ${this.playerName} Joined room: ${this.roomId}`);
         this.onRoomJoined?.(this.roomId);
         break;
 
       case "room-ready":
-        this.player1Name = message.payload.player1.name;
-        this.player2Name = message.payload.player2.name;
+        this.player1Name = data.payload.player1.name;
+        this.player2Name = data.payload.player2.name;
         console.log(`🎮 Room ready! ${this.player1Name} vs ${this.player2Name}`);
         this.onRoomReady?.(this.player1Name, this.player2Name);
         break;
@@ -152,65 +152,65 @@ export class GameClient {
 
       case "game-state":
         // console.log("🔄 Game state update:", message.payload);
-        const convertedState = this.convertServerState(message.payload);
+        const convertedState = this.convertServerState(data.payload);
         this.onGameState?.(convertedState);
         break;
 
       case "game-over":
-        console.log("🏁 Game over!", message.payload);
-        this.onGameOver?.(message.payload);
+        // console.log("🏁 Game over!", data.payload);
+        this.onGameOver?.(data.payload);
         if (this.gameMode != 'tournament') {
           this.disposePingPong();
         }
         break;
 
       case "game-failed":
-        console.log("💥 Game failed!", message.payload);
-        this.onGameFailed?.(message.payload.message || "Game failed");
+        console.log("💥 Game failed!", data.payload);
+        this.onGameFailed?.(data.payload.message || "Game failed");
         break;
 
       case "tournament-cancelled":
-        console.log("🏆 Tournament cancelled:", message.payload);
-        this.onGameFailed?.(message.payload.message || "Tournament canceled");
+        console.log("❌", data.payload.message);
+        this.onGameFailed?.(data.payload.message || "Tournament canceled");
         break;
 
       case "registered":
-        console.log("🏆 Tournament registered with ID:", message.payload.tournamentId);
+        console.log("🏆 Tournament registered with ID:", data.payload.tournamentId);
         this.onTournamentRegistered?.(
-          message.payload.players,
-          message.payload.state
+          data.payload.players,
+          data.payload.state
         );
         break;
 
       case "tournament-player-joined":
-        console.log("🏆New player joined:", message.payload.playerName);
+        console.log("🏆New player joined:", data.payload.playerName);
         this.onTournamentPlayerJoined?.(
-          message.payload.playerNumber,
-          message.payload.playerName,
-          message.payload.state
+          data.payload.playerNumber,
+          data.payload.playerName,
+          data.payload.state
         );
         break;
 
       case "join-tournament-room":
-        console.log("🏆 Tournament game invitation:", message.payload);
-        this.onTournamentGameInvite?.(message.payload.roomId);
+        console.log("🏆 Tournament game invitation:", data.payload);
+        this.onTournamentGameInvite?.(data.payload.roomId);
         break;
 
       case "tournament-first-round-finished":
-        console.log("🏆 Tournament first round finished:", message.payload);
-        this.onTournamentRoundFinished?.(message.payload, 1);
+        console.log("🏆 Tournament first round finished:", data.payload);
+        this.onTournamentRoundFinished?.(data.payload, 1);
         break;
 
       case "tournament-finished":
-        console.log("🏆 Tournament finished:", message.payload);
+        console.log("🏆 Tournament finished:", data.payload);
         this.disposePingPong();
-        this.onTournamentFinished?.(message.payload);
+        this.onTournamentFinished?.(data.payload);
         break;
 
       case "tournament-player-left":
-        console.log("🏆 Tournament player left:", message.payload.playerName);
+        console.log("❌ Tournament player left:", data.payload.playerName);
         if (this.onTournamentPlayerLeft) {
-          this.onTournamentPlayerLeft(message.payload.playerName);
+          this.onTournamentPlayerLeft(data.payload.playerName);
         }
         break;
 
@@ -220,15 +220,15 @@ export class GameClient {
 
       default:
         // Handle error messages from server
-        if (message && typeof message === 'object' && 'message' in message) {
-          const errorMessage = (message as any).message;
+        if (data && typeof data === 'object' && 'message' in data) {
+          const errorMessage = (data as any).message;
           if (errorMessage === "Room full") {
             alert("This room is already full. Please try creating a new room or joining a different one.");
           } else {
             console.error("Server error:", errorMessage);
           }
         } else {
-          console.warn("Unknown message:", message);
+          console.warn("Unknown message:", data);
         }
     }
   }
@@ -271,11 +271,6 @@ export class GameClient {
   public updateRoomId(roomId: string): void {
     console.log("🏆 Updating GameClient room ID to:", roomId);
     this.roomId = roomId;
-  }
-
-  public switchToGameMode(): void {
-    console.log("🏆 Switching GameClient from tournament to game mode");
-    this.gameMode = 'online';
   }
 
   // Callback setters
