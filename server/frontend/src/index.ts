@@ -34,7 +34,7 @@
 */
 
 import './index.css'
-import { Component, TemplateManager, AppRouter, App, ApiService } from './core'
+import { App } from './core'
 
 
 // =================================

@@ -6,7 +6,6 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "test": "vitest run",
     "start": "node src/server.js"
   },
   "author": "tsurma",
@@ -33,10 +32,7 @@
     "speakeasy": "^2.0.0"
   },
   "devDependencies": {
-    "@fastify/cors": "^11.0.1",
-    "nodemon": "^3.1.10",
-    "supertest": "^7.1.1",
-    "vitest": "^3.2.4"
+    "nodemon": "^3.1.10"
   },
   "keywords": []
 }

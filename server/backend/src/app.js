@@ -20,8 +20,6 @@ import profileRoutes from "./routes/profileRoutes.js";
 import fastifyMultipart from "@fastify/multipart";
 import pongRoutes from "./routes/matchRoutes.js";
 
-import "./utils/seedUsers.js";
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isDev = process.env.NODE_ENV === "development";
@@ -46,7 +44,6 @@ const app = Fastify({
 await app.register(fastifyRedis, {
   host: process.env.REDIS_HOST || "localhost",
   port: Number(process.env.REDIS_PORT) || 6379,
-  // password: 'supersecret'
 });
 
 await app.register(fastifyMultipart, {
@@ -66,7 +63,7 @@ if (isDev) {
 
   app.register(fastifyStatic, {
     root: distPath,
-    prefix: "/", // default
+    prefix: "/",
   });
 
   app.setNotFoundHandler((req, reply) => {

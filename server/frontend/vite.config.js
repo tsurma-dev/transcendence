@@ -7,9 +7,22 @@ export default defineConfig({
   build: {
     outDir: '../dist',
     emptyOutDir: true,
+    chunkSizeWarningLimit: 7000, // Suppress warning for chunks larger than 500kb (set to 7MB for BabylonJS)
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'src/index.html')
+      },
+      onwarn(warning, warn) {
+        // Suppress "Module level directives cause errors when bundled" warnings
+        // and dynamic import warnings for App.ts (expected due to circular dependency handling)
+        if (
+          warning.code === 'MODULE_LEVEL_DIRECTIVE' ||
+          (warning.code === 'CIRCULAR_DEPENDENCY' && warning.ids?.includes('App.ts')) ||
+          warning.message.includes('is dynamically imported by') && warning.message.includes('App.ts')
+        ) {
+          return
+        }
+        warn(warning)
       }
     }
   },

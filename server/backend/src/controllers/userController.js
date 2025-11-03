@@ -48,6 +48,14 @@ export async function listLoggedInUsers(req, reply) {
   return users;
 }
 
+/**
+ * Serve user avatar image. If user has no custom avatar, serve default image.
+ * 
+ * Security: The /public/uploads/avatars directory is NOT exposed as a static file directory.
+ * All avatar access is controlled through the /users/:username/avatar endpoint, which:
+ * - Validates user existence before serving files
+ * - Prevents directory traversal attacks by using controlled file paths
+ */
 export function getUserAvatar(req, reply) {
   try {
     const { username } = req.params;
@@ -60,20 +68,36 @@ export function getUserAvatar(req, reply) {
 
     const avatarDir = path.join(__dirname, "../../public/uploads/avatars");
     const possibleExtensions = [".png", ".jpg"];
-    let avatarFile = null;
-    reply.header("Access-Control-Allow-Origin", "http://localhost:3000");
-    reply.header("Access-Control-Allow-Credentials", "true");
-    reply.header("Cross-Origin-Resource-Policy", "cross-origin");
+    let avatarPath = null;
+    
+    console.log(`Looking for avatar for user ${username} (ID: ${user.id})`);
+    console.log(`Avatar directory: ${avatarDir}`);
+    
     for (const ext of possibleExtensions) {
       const filePath = path.join(avatarDir, `${user.id}${ext}`);
+      console.log(`Checking: ${filePath}`);
       if (fs.existsSync(filePath)) {
-        avatarFile = `uploads/avatars/${user.id}${ext}`;
+        avatarPath = filePath;
+        console.log(`Found avatar: ${avatarPath}`);
         break;
       }
     }
 
-    const defaultAvatar = "uploads/avatars/default.jpg";
-    return reply.sendFile(avatarFile || defaultAvatar);
+    // If no custom avatar found, use default
+    if (!avatarPath) {
+      avatarPath = path.join(avatarDir, "default.jpg");
+      console.log(`Using default avatar: ${avatarPath}`);
+    }
+
+    // Read and send the file directly
+    const origin = req.headers.origin || req.headers.referer || 'https://127.0.0.1:8443';
+    reply.header("Access-Control-Allow-Origin", origin);
+    reply.header("Access-Control-Allow-Credentials", "true");
+    reply.header("Cross-Origin-Resource-Policy", "cross-origin");
+    reply.header("Content-Type", avatarPath.endsWith('.png') ? "image/png" : "image/jpeg");
+    
+    const fileStream = fs.createReadStream(avatarPath);
+    return reply.send(fileStream);
   } catch (error) {
     req.log.error(error);
     reply.code(500).send({ message: "Internal Server Error" });
