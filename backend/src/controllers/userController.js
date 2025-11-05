@@ -48,6 +48,14 @@ export async function listLoggedInUsers(req, reply) {
   return users;
 }
 
+/**
+ * Serve user avatar image. If user has no custom avatar, serve default image.
+ * 
+ * Security: The /public/uploads/avatars directory is NOT exposed as a static file directory.
+ * All avatar access is controlled through the /users/:username/avatar endpoint, which:
+ * - Validates user existence before serving files
+ * - Prevents directory traversal attacks by using controlled file paths
+ */
 export function getUserAvatar(req, reply) {
   try {
     const { username } = req.params;
