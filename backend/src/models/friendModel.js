@@ -31,8 +31,7 @@ export function acceptFriendRequest(db, userId, friendId) {
 
 export function rejectFriendRequest(db, userId, friendId) {
   const stmt = db.prepare(`
-    UPDATE friendships
-    SET status = 'rejected'
+    DELETE FROM friendships
     WHERE user_id = ? AND friend_id = ? AND status = 'pending'
   `);
   const info = stmt.run(friendId, userId);
