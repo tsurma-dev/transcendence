@@ -198,13 +198,6 @@ export async function deleteUserAvatar(req, reply) {
   const user = req.user;
   if (!user) return reply.code(401).send({ message: "Unauthorized" });
 
-  const avatarPath = path.join(
-    process.cwd(),
-    "public",
-    "uploads",
-    "avatars",
-    `${user.id}.png`
-  );
   const status = await delAvatar(user);
   if (status.message !== "Success") {
     return reply.code(500).send(status);
@@ -213,7 +206,14 @@ export async function deleteUserAvatar(req, reply) {
 }
 
 export async function delAvatar(user) {
-  const avatarDir = path.join(process.cwd(), "public", "uploads", "avatars");
+  const avatarDir = path.join(
+    __dirname,
+    "..",
+    "..",
+    "public",
+    "uploads",
+    "avatars"
+  );
   const possibleExtensions = [".png", ".jpg"];
   let deleted = false;
 
