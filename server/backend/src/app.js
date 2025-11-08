@@ -96,6 +96,7 @@ await app.register(fastifyHelmet, {
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrcAttr: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "https:", "blob:", "data:"],
       connectSrc: ["'self'"],
