@@ -385,7 +385,7 @@ export class UserProfileScreen extends Component {
               if (addFriendBtn) addFriendBtn.style.display = 'block'
 
               // Show success message
-              alert(result.message || 'Friend removed successfully!')
+              //alert(result.message || 'Friend removed successfully!')
             } else {
               console.error('Failed to remove friend:', result.message)
               alert(result.message || 'Failed to remove friend')
@@ -441,7 +441,7 @@ export class UserProfileScreen extends Component {
             if (alreadyFriendsContainer) alreadyFriendsContainer.style.display = 'block'
 
             // Show success message
-            alert(result.message || 'Friend request accepted!')
+            //result.message || 'Friend request accepted!')
           } else {
             console.error('Failed to accept friend request:', result.message)
             alert(result.message || 'Failed to accept friend request')
@@ -466,7 +466,7 @@ export class UserProfileScreen extends Component {
             if (addFriendBtn) addFriendBtn.style.display = 'block'
 
             // Show success message
-            alert(result.message || 'Friend request rejected!')
+            //alert(result.message || 'Friend request rejected!')
           } else {
             console.error('Failed to reject friend request:', result.message)
             alert(result.message || 'Failed to reject friend request')
