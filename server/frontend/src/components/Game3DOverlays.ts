@@ -673,6 +673,15 @@ export class Game3DOverlays {
         }
     }
 
+    // Hide Start tournament button
+    public hideStartTournamentButton(): void {
+        const startTournamentBtn = this.tournamentLobbyOverlay?.querySelector('#startTournamentBtn') as HTMLButtonElement;
+
+        if (startTournamentBtn) {
+        startTournamentBtn.style.display = 'none';
+        }
+    }
+
     // GAME END OVERLAY POP-UP - also used for DISCONNECTS
 
     public showGameEndOverlay(winner: string, isLocalGame: boolean): void {

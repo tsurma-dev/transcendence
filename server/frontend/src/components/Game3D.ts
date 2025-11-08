@@ -387,6 +387,7 @@ export class Game3DComponent {
     // Start tournament game (triggered by start button or continue button)
     this.overlays.onStartTournamentGame = async (roomId: string) => {
       await this.startTournamentGame(roomId);
+      this.overlays.hideStartTournamentButton();
     };
   }
 
