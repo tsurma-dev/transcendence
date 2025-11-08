@@ -390,12 +390,14 @@ export class UserSettingsScreen extends Component {
     if (passwordInput) passwordInput.value = ''
   }
 
-  private hidePasswordConfirmation2FA(): void {
+  // When hiding the password confirmation section, optionally restore the enable button.
+  // If restoreEnable is false, the enable button remains hidden (used when proceeding to QR setup).
+  private hidePasswordConfirmation2FA(restoreEnable: boolean = true): void {
     const enable2FABtn = this.element?.querySelector('#enable2FABtn') as HTMLButtonElement
     const passwordSection = this.element?.querySelector('#twoFAPasswordSection') as HTMLElement
     const responseDiv = this.element?.querySelector('#twoFAResponse') as HTMLElement
 
-    if (enable2FABtn) enable2FABtn.classList.remove('hidden')
+    if (enable2FABtn && restoreEnable) enable2FABtn.classList.remove('hidden')
     if (passwordSection) passwordSection.classList.add('hidden')
     if (responseDiv) responseDiv.classList.add('hidden')
 
@@ -428,8 +430,8 @@ export class UserSettingsScreen extends Component {
       return
     }
 
-    // Password verified, hide confirmation and enable 2FA
-    this.hidePasswordConfirmation2FA()
+  // Password verified, hide confirmation (do NOT restore the enable button) and enable 2FA
+  this.hidePasswordConfirmation2FA(false)
     responseDiv.textContent = 'Password verified. Setting up 2FA...'
     responseDiv.className = 'text-info'
     responseDiv.classList.remove('hidden')

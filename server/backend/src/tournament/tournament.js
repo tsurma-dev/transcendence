@@ -49,6 +49,15 @@ export class Tournament {
         this.state = 'waiting'; // waiting, ongoing-first-round, ongoing-second-round, finished
 	}
 
+    getPlayerByName(name) {
+        for (let [_, player] of this.players) {
+            if (player.name === name) {
+                return player;
+            }
+        }
+        return null;
+    }
+
     addPlayer(name, socket) {
         let size = this.players.size;
         if (this.playersCount == 4) {
@@ -165,18 +174,46 @@ export class Tournament {
 
     setScore(room, score) {
         if (room === this.group1A.roomId) {
-            this.group1A.score = score;
+            if (score[0].name === this.group1A.player1.name) {
+                this.group1A.score = [score[0].score, score[1].score];
+            } else {
+                this.group1A.score = [score[1].score, score[0].score];
+            }
             this.group1A.gameOver = true;
         } else if (room === this.group1B.roomId) {
-            this.group1B.score = score;
+            if (score[0].name === this.group1B.player1.name) {
+                this.group1B.score = [score[0].score, score[1].score];
+            } else {
+                this.group1B.score = [score[1].score, score[0].score];
+            }
             this.group1B.gameOver = true;
         } else if (room === this.group2A.roomId) {
-            this.group2A.score = score;
+            if (score[0].name === this.group2A.player1.name) {
+                this.group2A.score = [score[0].score, score[1].score];
+            } else {
+                this.group2A.score = [score[1].score, score[0].score];
+            }
             this.group2A.gameOver = true;
         } else if (room === this.group2B.roomId) {
-            this.group2B.score = score;
+            if (score[0].name === this.group2B.player1.name) {
+                this.group2B.score = [score[0].score, score[1].score];
+            } else {
+                this.group2B.score = [score[1].score, score[0].score];
+            }
             this.group2B.gameOver = true;
         }
+        //     this.group1A.score = score;
+        //     this.group1A.gameOver = true;
+        // } else if (room === this.group1B.roomId) {
+        //     this.group1B.score = score;
+        //     this.group1B.gameOver = true;
+        // } else if (room === this.group2A.roomId) {
+        //     this.group2A.score = score;
+        //     this.group2A.gameOver = true;
+        // } else if (room === this.group2B.roomId) {
+        //     this.group2B.score = score;
+        //     this.group2B.gameOver = true;
+        // }
         if (this.group1A.gameOver && this.group1B.gameOver && this.state === 'ongoing-first-round') {
             this.finishFirstRound();
             return 1; // first round finished

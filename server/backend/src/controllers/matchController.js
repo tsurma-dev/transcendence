@@ -166,7 +166,7 @@ function endGame(roomId) {
 		storeMatchResult(roomId);
 	}
 
-	console.log("Game ended in room " + roomId + ", rooms count: " + rooms.size);
+	console.log("Game ended in room " + roomId + ", rooms count: " + rooms.size + ", tournamentId: " + room.tournamentId);
 
 	if (room.tournamentId) {
 		handleTournamentResult(room.tournamentId, roomId);
@@ -543,7 +543,11 @@ function handleTournamentResult(tournamentId, roomId) {
 	if (!tournament) return;
 	const room = rooms.get(roomId);
 	if (!room) return;
-	const score = [room.game.score.player1, room.game.score.player2];
+	const score = [
+    { name: room.player1.name, score: room.game.score.player1 },
+    { name: room.player2.name, score: room.game.score.player2 }
+  ];
+  console.log("Recording tournament result for tournament " + tournamentId + " room " + roomId + ": ", score);
 	const round = tournament.setScore(roomId, score);
 	if (round === 1) {
 		// first round finished, set up second round
