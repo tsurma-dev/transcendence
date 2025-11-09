@@ -19,10 +19,21 @@ import friendRoutes from "./routes/friendRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import fastifyMultipart from "@fastify/multipart";
 import pongRoutes from "./routes/matchRoutes.js";
+import dotenv from "dotenv";
 
+dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isDev = process.env.NODE_ENV === "development";
+
+const criticalEnvs = ["JWT_SECRET", "COOKIE_SECRET"];
+
+for (const key of criticalEnvs) {
+  if (!process.env[key]) {
+    console.error(`❌ Missing required environment variable: ${key}`);
+    process.exit(1);
+  }
+}
 
 const app = Fastify({
   logger: {
@@ -80,11 +91,11 @@ if (isDev) {
 await app.register(fastifyFormbody);
 
 await app.register(fastifyCookie, {
-  secret: "supersecret",
+  secret: process.env.COOKIE_SECRET,
 });
 
 app.register(fastifyJwt, {
-  secret: process.env.JWT_SECRET || "supersecret",
+  secret: process.env.JWT_SECRET,
   cookie: {
     cookieName: "logintoken",
     signed: true,

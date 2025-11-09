@@ -17,7 +17,7 @@ export class LocalGameEngine {
   private readonly PADDLE_SPEED = GAME_CONFIG.PADDLE_SPEED;
   private readonly BASE_DUCK_SPEED = GAME_CONFIG.BALL_SPEED;
   private currentDuckSpeed = GAME_CONFIG.BALL_SPEED;
-  private readonly SPEED_INCREASE_FACTOR = 1.1; // 10% speed increase per collision
+  private readonly SPEED_INCREASE_FACTOR = 1.2; // 20% speed increase per collision
   private DUCK_RADIUS: number = GAME_CONFIG.BALL_RADIUS; // Default duck radius
 
   private easterEgg: boolean = false;
