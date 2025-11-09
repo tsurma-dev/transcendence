@@ -108,7 +108,7 @@ export class Game {
         this.paddle1.x + gameProperties.PADDLE_HEIGHT / 2
     ) {
       this.ball.speedZ *= -1;
-      this.ball.deltaSpeed = Math.max(this.ball.deltaSpeed - 1, 5); // limit speed increment
+      this.ball.deltaSpeed = Math.max(this.ball.deltaSpeed - 1, 3); // limit speed increment
       this.ball.z = this.paddle1.z + this.ball.radius;
       this.collisionEvent = "paddle";
     }
@@ -124,7 +124,7 @@ export class Game {
         this.paddle2.x + gameProperties.PADDLE_HEIGHT / 2
     ) {
       this.ball.speedZ *= -1;
-      this.ball.deltaSpeed = Math.max(this.ball.deltaSpeed - 1, 5);
+      this.ball.deltaSpeed = Math.max(this.ball.deltaSpeed - 1, 3); // limit speed increment
       this.ball.z = this.paddle2.z - this.ball.radius;
       this.collisionEvent = "paddle";
     }
