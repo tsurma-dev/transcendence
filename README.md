@@ -8,6 +8,8 @@
 
 The project emphasizes security, performance, and user experience, integrating features like Two-Factor Authentication (2FA), an AI opponent, and a dynamic tournament system.
 
+
+
 ---
 
 ## ✨ Key Features
@@ -161,7 +163,7 @@ transcendence/
 
 ## 👥 Authors
 
-*   **chilituna** - *Frontend Gameplay & 3D Graphics*
+*   [**chilituna**](https://github.com/chilituna) - *Frontend Gameplay & 3D Graphics*
 
 
 ## 📄 License
