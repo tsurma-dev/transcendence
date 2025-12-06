@@ -8,6 +8,12 @@
 
 The project emphasizes security, performance, and user experience, integrating features like Two-Factor Authentication (2FA), an AI opponent, and a dynamic tournament system.
 
+<p align="center">
+  <img src="readme/Pool1.png" alt="Game Screenshot 1" width="45%">
+  &nbsp; &nbsp;
+  <img src="readme/Pool2.png" alt="Game Screenshot 2" width="45%">
+</p>
+
 ---
 
 ## ✨ Key Features
