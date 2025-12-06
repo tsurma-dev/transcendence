@@ -167,7 +167,7 @@ transcendence/
 
 ## 👥 Authors
 
-*   **chilituna** - *Frontend Gameplay & 3D Graphics*
+*   [**chilituna**](https://github.com/chilituna) - *Frontend Gameplay & 3D Graphics*
 
 
 ## 📄 License
