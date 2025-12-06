@@ -14,6 +14,12 @@ The project emphasizes security, performance, and user experience, integrating f
   <img src="readme/Pool2.png" alt="Game Screenshot 2" width="45%">
 </p>
 
+<p align="center">
+  <img src="readme/play1.gif" alt="Gameplay Gif 1" width="45%">
+  &nbsp; &nbsp;
+  <img src="readme/play2.gif" alt="Gameplay Gif 2" width="45%">
+</p>
+
 ---
 
 ## ✨ Key Features
@@ -21,6 +27,7 @@ The project emphasizes security, performance, and user experience, integrating f
 ### 🎮 Gameplay & Experience
 *   **Server-Side Pong:** Game logic (physics, scoring, ball movement) is calculated on the server to prevent cheating and ensure consistency.
 *   **3D Graphics:** Powered by **Babylon.js**, offering a visually engaging experience while maintaining the essence of the original 1972 game.
+*   **Immersive Audio:** Background music and sound effects included to set the atmosphere.
 *   **Game Modes:**
     *   **Classic 1v1:** Local or Remote multiplayer.
     *   **AI Opponent:** An intelligent AI that simulates human behavior and reaction times (no A* algorithms).
