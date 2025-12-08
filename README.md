@@ -175,6 +175,7 @@ transcendence/
 ## 👥 Authors
 
 *   [**chilituna**](https://github.com/chilituna) - *Frontend Gameplay & 3D Graphics*
+*   [**dzhoka**](https://github.com/dzhoka) - *Backend Game Engine with AI Player Simulation, Tournament and Matchmaking System Management*
 
 
 ## 📄 License
