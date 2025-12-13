@@ -176,7 +176,7 @@ transcendence/
 
 *   [**chilituna**](https://github.com/chilituna) - *Frontend Gameplay & 3D Graphics*
 *   [**dzhoka**](https://github.com/dzhoka) - *Backend Game Engine with AI Player Simulation, Tournament and Matchmaking System Management*
-*   [**zhedlund**](https://github.com/zhedlund) - *Frontend SPA architecture, including history fallback, navigation menus, user profile, and settings functionalities*
+*   [**zhedlund**](https://github.com/zhedlund) - *Frontend SPA architecture and UI, including history fallback, navigation menus, user profile, and settings functionalities*
 
 
 ## 📄 License
