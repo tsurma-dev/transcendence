@@ -2,6 +2,14 @@
 
 > The final project for the 42 core curriculum. A robust, full-stack online Pong platform featuring real-time multiplayer gameplay, advanced 3D graphics, and a secure, scalable architecture.
 
+
+## 👥 Authors
+
+*   [**chilituna**](https://github.com/chilituna) - *Frontend Gameplay & 3D Graphics*
+*   [**dzhoka**](https://github.com/dzhoka) - *Backend Game Engine with AI Player Simulation, Tournament and Matchmaking System Management*
+*   [**zhedlund**](https://github.com/zhedlund) - *Frontend SPA architecture and UI, including history fallback, navigation menus, user profile, and settings functionalities*
+
+
 ## 📖 Overview
 
 **Transcendence** is a Single Page Application (SPA) that reimagines the classic Pong game with modern web technologies. Built with a **Fastify** backend and a **TypeScript/Vite** frontend, it leverages **Babylon.js** for immersive 3D graphics and **WebSockets** for responsive server-side game logic.
@@ -62,7 +70,7 @@ The project emphasizes security, performance, and user experience, integrating f
 
 ---
 
-## 🚀 Getting Started
+## ▶️ Getting Started
 
 ### Prerequisites
 *   **Docker** & **Docker Compose**
@@ -171,12 +179,6 @@ transcendence/
 ├── Makefile            # Command shortcuts
 └── README.md           # Project documentation
 ```
-
-## 👥 Authors
-
-*   [**chilituna**](https://github.com/chilituna) - *Frontend Gameplay & 3D Graphics*
-*   [**dzhoka**](https://github.com/dzhoka) - *Backend Game Engine with AI Player Simulation, Tournament and Matchmaking System Management*
-*   [**zhedlund**](https://github.com/zhedlund) - *Frontend SPA architecture and UI, including history fallback, navigation menus, user profile, and settings functionalities*
 
 
 ## 📄 License
