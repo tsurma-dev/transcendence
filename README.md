@@ -70,6 +70,25 @@ The project emphasizes security, performance, and user experience, integrating f
 
 ---
 
+## 📂 Project Structure
+
+```
+transcendence/
+├── server/             # Monorepo-style server directory
+│   ├── backend/        # Fastify server, API, and Game Logic
+│   │   ├── src/        # Source code (Controllers, Models, Routes, Game Engine)
+│   │   └── public/     # Static assets
+│   ├── frontend/       # Vite + TypeScript Client
+│   │   ├── src/        # Components, Babylon.js scenes, UI logic
+│   │   └── assets/     # Images, textures, models
+│   └── shared/         # Shared types and utilities
+├── database/           # SQLite database file location
+├── docker-compose.yml  # Container orchestration
+├── Makefile            # Command shortcuts
+└── README.md           # Project documentation
+```
+
+
 ## ▶️ Getting Started
 
 ### Prerequisites
@@ -161,25 +180,6 @@ If you prefer to run the services locally without Docker for development purpose
         ```
 
 ---
-
-## 📂 Project Structure
-
-```
-transcendence/
-├── server/             # Monorepo-style server directory
-│   ├── backend/        # Fastify server, API, and Game Logic
-│   │   ├── src/        # Source code (Controllers, Models, Routes, Game Engine)
-│   │   └── public/     # Static assets
-│   ├── frontend/       # Vite + TypeScript Client
-│   │   ├── src/        # Components, Babylon.js scenes, UI logic
-│   │   └── assets/     # Images, textures, models
-│   └── shared/         # Shared types and utilities
-├── database/           # SQLite database file location
-├── docker-compose.yml  # Container orchestration
-├── Makefile            # Command shortcuts
-└── README.md           # Project documentation
-```
-
 
 ## 📄 License
 
